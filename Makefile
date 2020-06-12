@@ -13,4 +13,7 @@ prepare:
 	youtube-dl -o data/2.mp4 -f 22 'https://www.youtube.com/watch?v=zGDzdps75ns'
 
 test:
-	cargo run -- data/ -f mp4
+	cargo build --release ;\
+	target/release/vid_merger	data/ -f mp4 ;\
+	cd data ;\
+	../target/release/vid_merger . -f mp4
