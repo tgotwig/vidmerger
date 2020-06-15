@@ -10,6 +10,7 @@ use regex::Regex;
 use clap::{App, load_yaml};
 
 fn main() -> std::io::Result<()> {
+    // look for the prerequisite ffmpeg
     if find_it("ffmpeg").is_some() || find_it("ffmpeg.exe").is_some() {
         ()
     } else {
@@ -17,42 +18,46 @@ fn main() -> std::io::Result<()> {
         exit(1);
     }
 
+    // fetch arguments
     let matches = App::from(load_yaml!("cli.yaml")).get_matches();
     let file_format = matches.value_of("format").unwrap();
-    
-    let dir = if matches.value_of("DIR").unwrap() == "." {
-        "./"
-    } else {
-        matches.value_of("DIR").unwrap()
-    };
 
-    if Path::new(&format!("output.{}", file_format)).exists() {
-        fs::remove_file(format!("output.{}", file_format))?;
+    // i/o paths
+    let input_dir = Path::new(matches.value_of("DIR").unwrap());
+    let output_list = input_dir.join("input.txt");
+    let output_vid = input_dir.join(format!("output.{}", file_format));
+
+    // remove merged video from the last run
+    if Path::new(&output_vid).exists() {
+        fs::remove_file(&output_vid)?;
     }
 
     // get sorted paths
-    let mut paths: Vec<_> = fs::read_dir(dir).unwrap()
+    let mut paths: Vec<_> = fs::read_dir(input_dir).unwrap()
                                               .map(|r| r.unwrap())
                                               .collect();
-    paths.sort_by_key(|dir| dir.path());
+    paths.sort_by_key(|input_dir| input_dir.path());
 
     // Generate content for input.txt
     let mut input_txt = String::new();
     let re = Regex::new(
         format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
     for path in paths {
-        let my_path = path.path();
-        if re.is_match(&format!("{}", my_path.display())) {
+        let path = path.path();
+        if re.is_match(&format!("{}", path.display())) {
             if input_txt.chars().count() == 0 {
-                input_txt = format!("file '{}'", my_path.display().to_string().replace(dir, ""));
+                input_txt = format!("file '{}'", 
+                    path.file_name().unwrap().to_str().unwrap());
             } else {
-                input_txt = format!("{}\nfile '{}'", input_txt, my_path.display().to_string().replace(dir, ""));
+                input_txt = format!("{}\nfile '{}'", 
+                    input_txt, 
+                    path.file_name().unwrap().to_str().unwrap());
             }
         }
     }
 
     // write input.txt
-    let mut file = File::create(&format!("{}input.txt", dir))?;
+    let mut file = File::create(output_list.to_str().unwrap())?;
     file.write_all(input_txt.as_bytes())?;
 
     // generate and write the merged video by ffmpeg
@@ -60,14 +65,18 @@ fn main() -> std::io::Result<()> {
         Command::new("cmd")
             .arg("/C")
             .arg(format!(
-                "ffmpeg.exe -y -f concat -i {dir}input.txt -c copy {dir}output.{file_format}", file_format=file_format, dir=dir))
+                "ffmpeg.exe -y -f concat -i {format} -c copy {dir}", 
+                    dir=output_vid.to_str().unwrap(), 
+                    format=output_list.to_str().unwrap()))
             .output()
             .expect("failed to execute process")
     } else {
         Command::new("sh")
             .arg("-c")
             .arg(format!(
-                "ffmpeg -y -f concat -i {dir}input.txt -c copy {dir}output.{file_format}", file_format=file_format, dir=dir))
+                "ffmpeg -y -f concat -i {format} -c copy {dir}", 
+                    dir=output_vid.to_str().unwrap(),
+                    format=output_list.to_str().unwrap()))
             .output()
             .expect("failed to execute process")
     };
@@ -86,8 +95,8 @@ fn find_it<P>(exe_name: P) -> Option<PathBuf>
     where P: AsRef<Path>,
 {
     env::var_os("PATH").and_then(|paths| {
-        env::split_paths(&paths).filter_map(|dir| {
-            let full_path = dir.join(&exe_name);
+        env::split_paths(&paths).filter_map(|input_dir| {
+            let full_path = input_dir.join(&exe_name);
             if full_path.is_file() {
                 Some(full_path)
             } else {
