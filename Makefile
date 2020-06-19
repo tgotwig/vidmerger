@@ -30,8 +30,19 @@ build-linux:
 
 	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/tars
 
+dockerhub:
+	docker build -t vidmerger .
+	docker tag vidmerger tgotwig/vidmerger:0.1.0
+	docker push tgotwig/vidmerger:0.1.0
+	docker tag vidmerger tgotwig/vidmerger
+	docker push tgotwig/vidmerger
+
 test:
 	cargo build --release ;\
 	target/release/vid_merger	data/ -f mp4 ;\
 	cd data ;\
 	../target/release/vid_merger . -f mp4
+
+	make build-linux
+	docker build -t vidmerger .
+	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger

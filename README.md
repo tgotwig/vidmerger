@@ -35,3 +35,11 @@ file '2.mp4'
 brew tap tgotwig/vidmerger
 brew install vidmerger
 ```
+
+## Run it without installation
+
+[Docker](https://hub.docker.com/repository/docker/tgotwig/vidmerger/general) (Linux):
+
+```bash
+docker container run -it --rm -v <PATH-TO-VIDS>:/data -e format=<FORMAT> tgotwig/vidmerger
+```
