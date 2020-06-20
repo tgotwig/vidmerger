@@ -9,6 +9,7 @@ run:
 build:
 	make build-mac
 	make build-linux
+	make build-win
 
 build-mac:
 	@echo 'Building for MacOS... 🍏'
@@ -29,6 +30,16 @@ build-linux:
 	shasum -a 256 vidmerger-linux.tar.gz ;\
 
 	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/tars
+
+build-win:
+	@echo 'Building for Windows... 🏳️‍🌈'
+	cross build --release --target x86_64-pc-windows-gnu ;\
+	cd target/x86_64-pc-windows-gnu/release ;\
+	mv vid_merger.exe vidmerger.exe ;\
+	tar -czf vidmerger-win.tar.gz vidmerger.exe ;\
+	shasum -a 256 vidmerger-win.tar.gz ;\
+
+	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.tar.gz target/tars
 
 dockerhub:
 	docker build -t vidmerger .
