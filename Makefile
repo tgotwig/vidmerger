@@ -1,7 +1,9 @@
+all: prepare run test
+.PHONY: all
+
 prepare:
 	youtube-dl -o data/1.mp4 -f 22 'https://www.youtube.com/watch?v=zGDzdps75ns'
 	youtube-dl -o data/2.mp4 -f 22 'https://www.youtube.com/watch?v=zGDzdps75ns'
-	mkdir -p target/tars
 
 run:
 	cargo run -- data/ -f mp4
@@ -19,6 +21,7 @@ build-mac:
 	tar -czf vidmerger-mac.tar.gz vidmerger ;\
 	shasum -a 256 vidmerger-mac.tar.gz ;\
 
+	mkdir -p target/tars
 	mv target/x86_64-apple-darwin/release/vidmerger-mac.tar.gz target/tars
 
 build-linux:
@@ -29,6 +32,7 @@ build-linux:
 	tar -czf vidmerger-linux.tar.gz vidmerger ;\
 	shasum -a 256 vidmerger-linux.tar.gz ;\
 
+	mkdir -p target/tars
 	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/tars
 
 build-win:
@@ -39,6 +43,7 @@ build-win:
 	tar -czf vidmerger-win.tar.gz vidmerger.exe ;\
 	shasum -a 256 vidmerger-win.tar.gz ;\
 
+	mkdir -p target/tars
 	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.tar.gz target/tars
 
 dockerhub:
@@ -56,4 +61,6 @@ test:
 
 	make build-linux
 	docker build -t vidmerger .
-	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger
+	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger ;\
+
+	make build
