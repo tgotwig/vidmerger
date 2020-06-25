@@ -1,5 +1,9 @@
-all: prepare run test
+all: install prepare run test
 .PHONY: all
+
+install:
+	cargo install cross
+	rustup component add clippy
 
 prepare:
 	youtube-dl -o data/1.mp4 -f 22 'https://www.youtube.com/watch?v=zGDzdps75ns'
@@ -64,3 +68,6 @@ test:
 	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger ;\
 
 	make build
+
+lint:
+	cargo clippy

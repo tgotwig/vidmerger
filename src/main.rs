@@ -11,9 +11,7 @@ use clap::{App, load_yaml};
 
 fn main() -> std::io::Result<()> {
     // look for the prerequisite ffmpeg
-    if find_it("ffmpeg").is_some() || find_it("ffmpeg.exe").is_some() {
-        ()
-    } else {
+    if find_it("ffmpeg").is_none() && find_it("ffmpeg.exe").is_none() {
         eprintln!("ffmpeg not found 😬");
         exit(1);
     }
