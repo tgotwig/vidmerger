@@ -1,13 +1,13 @@
 use std::env;
-use std::process::Command;
-use std::process::exit;
-use std::path::PathBuf;
-use std::path::Path;
 use std::fs::{self, File};
 use std::io::prelude::*;
+use std::path::Path;
+use std::path::PathBuf;
+use std::process::exit;
+use std::process::Command;
 
+use clap::{load_yaml, App};
 use regex::Regex;
-use clap::{App, load_yaml};
 
 fn main() -> std::io::Result<()> {
     // look for the prerequisite ffmpeg
@@ -31,25 +31,26 @@ fn main() -> std::io::Result<()> {
     }
 
     // get sorted paths
-    let mut paths: Vec<_> = fs::read_dir(input_dir).unwrap()
-                                              .map(|r| r.unwrap())
-                                              .collect();
+    let mut paths: Vec<_> = fs::read_dir(input_dir)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
     paths.sort_by_key(|input_dir| input_dir.path());
 
     // Generate content for input.txt
     let mut input_txt = String::new();
-    let re = Regex::new(
-        format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
+    let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
     for path in paths {
         let path = path.path();
         if re.is_match(&format!("{}", path.display())) {
             if input_txt.chars().count() == 0 {
-                input_txt = format!("file '{}'", 
-                    path.file_name().unwrap().to_str().unwrap());
+                input_txt = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
             } else {
-                input_txt = format!("{}\nfile '{}'", 
-                    input_txt, 
-                    path.file_name().unwrap().to_str().unwrap());
+                input_txt = format!(
+                    "{}\nfile '{}'",
+                    input_txt,
+                    path.file_name().unwrap().to_str().unwrap()
+                );
             }
         }
     }
@@ -63,18 +64,20 @@ fn main() -> std::io::Result<()> {
         Command::new("cmd")
             .arg("/C")
             .arg(format!(
-                "ffmpeg.exe -y -f concat -i {format} -c copy {dir}", 
-                    dir=output_vid.to_str().unwrap(), 
-                    format=output_list.to_str().unwrap()))
+                "ffmpeg.exe -y -f concat -i {format} -c copy {dir}",
+                dir = output_vid.to_str().unwrap(),
+                format = output_list.to_str().unwrap()
+            ))
             .output()
             .expect("failed to execute process")
     } else {
         Command::new("sh")
             .arg("-c")
             .arg(format!(
-                "ffmpeg -y -f concat -i {format} -c copy {dir}", 
-                    dir=output_vid.to_str().unwrap(),
-                    format=output_list.to_str().unwrap()))
+                "ffmpeg -y -f concat -i {format} -c copy {dir}",
+                dir = output_vid.to_str().unwrap(),
+                format = output_list.to_str().unwrap()
+            ))
             .output()
             .expect("failed to execute process")
     };
@@ -90,16 +93,19 @@ fn main() -> std::io::Result<()> {
 }
 
 fn find_it<P>(exe_name: P) -> Option<PathBuf>
-    where P: AsRef<Path>,
+where
+    P: AsRef<Path>,
 {
     env::var_os("PATH").and_then(|paths| {
-        env::split_paths(&paths).filter_map(|input_dir| {
-            let full_path = input_dir.join(&exe_name);
-            if full_path.is_file() {
-                Some(full_path)
-            } else {
-                None
-            }
-        }).next()
+        env::split_paths(&paths)
+            .filter_map(|input_dir| {
+                let full_path = input_dir.join(&exe_name);
+                if full_path.is_file() {
+                    Some(full_path)
+                } else {
+                    None
+                }
+            })
+            .next()
     })
 }
