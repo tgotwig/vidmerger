@@ -1,15 +1,15 @@
 name: vidmerger
-version: "0.1"
+version: "0.1.1"
 author: Thomas Gotwig <tgotwig@gmail.com>
-about: A wrapper around ffmpeg which simlifies merging multiple videos 🎞 
+about: A wrapper around ffmpeg which simlifies merging multiple videos 🎞
 args:
-    - format:
-        short: f
-        long: format
-        about: Sets a format
-        required: true
-        takes_value: true
-    - DIR:
-        about: Sets the input file to use
-        required: true
-        index: 1
+  - format:
+      short: f
+      long: format
+      about: Sets a format
+      required: true
+      takes_value: true
+  - DIR:
+      about: Sets the input file to use
+      required: true
+      index: 1

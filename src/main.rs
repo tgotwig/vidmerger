@@ -8,6 +8,8 @@ use std::process::Command;
 
 use clap::{load_yaml, App};
 use regex::Regex;
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
 fn main() -> std::io::Result<()> {
     // look for the prerequisite ffmpeg
@@ -55,6 +57,10 @@ fn main() -> std::io::Result<()> {
         }
     }
 
+    // print order in blue
+    println!("\nOrder of merging 👇\n");
+    println!("{}\n", BrightBlue.paint(&input_txt));
+
     // write input.txt
     let mut file = File::create(output_list.to_str().unwrap())?;
     file.write_all(input_txt.as_bytes())?;
@@ -81,6 +87,9 @@ fn main() -> std::io::Result<()> {
             .output()
             .expect("failed to execute process")
     };
+
+    // remove input.txt
+    fs::remove_file(format!("{}", output_list.to_str().unwrap()))?;
 
     if output.status.success() {
         println!("Successfully generated 'output.{}'! 😆🎞", file_format);

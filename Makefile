@@ -51,9 +51,9 @@ build-win:
 	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.tar.gz target/tars
 
 dockerhub:
-	docker build -t vidmerger .
-	docker tag vidmerger tgotwig/vidmerger:0.1.0
-	docker push tgotwig/vidmerger:0.1.0
+	docker build --no-cache -t vidmerger .
+	docker tag vidmerger tgotwig/vidmerger:0.1.1
+	docker push tgotwig/vidmerger:0.1.1
 	docker tag vidmerger tgotwig/vidmerger
 	docker push tgotwig/vidmerger
 
