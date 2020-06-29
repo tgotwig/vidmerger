@@ -67,23 +67,29 @@ fn main() -> std::io::Result<()> {
 
     // generate and write the merged video by ffmpeg
     let output = if cfg!(target_os = "windows") {
+        let cmd = format!(
+            "ffmpeg.exe -y -f concat -i {format} -c copy {dir}",
+            dir = output_vid.to_str().unwrap(),
+            format = output_list.to_str().unwrap()
+        );
+        println!("Calling: '{}' 🚀\n", cmd);
+
         Command::new("cmd")
             .arg("/C")
-            .arg(format!(
-                "ffmpeg.exe -y -f concat -i {format} -c copy {dir}",
-                dir = output_vid.to_str().unwrap(),
-                format = output_list.to_str().unwrap()
-            ))
+            .arg(cmd)
             .output()
             .expect("failed to execute process")
     } else {
+        let cmd = format!(
+            "ffmpeg -y -f concat -i {format} -c copy {dir}",
+            dir = output_vid.to_str().unwrap(),
+            format = output_list.to_str().unwrap()
+        );
+        println!("Calling: '{}' 🚀\n", cmd);
+
         Command::new("sh")
             .arg("-c")
-            .arg(format!(
-                "ffmpeg -y -f concat -i {format} -c copy {dir}",
-                dir = output_vid.to_str().unwrap(),
-                format = output_list.to_str().unwrap()
-            ))
+            .arg(cmd)
             .output()
             .expect("failed to execute process")
     };
