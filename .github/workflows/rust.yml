@@ -1,0 +1,50 @@
+name: Rust
+
+on:
+  push:
+    branches: [master, development]
+  pull_request:
+    branches: [master, development]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # - name: Build
+      #   run: cargo build --verbose
+      # - name: Run tests
+      #   run: cargo test --verbose
+      - name: pwd & ls
+        run: pwd && ls -l
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: install youtube-dl
+        run: pip install youtube_dl
+      - name: download videos
+        run: make prepare
+      - name: ffmpeg
+        run: sudo apt install ffmpeg
+      - name: make test
+        run: make test
+  # build-windows:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Build
+  #       run: cargo build --verbose
+  #     - name: Run tests
+  #       run: cargo test --verbose
+  # build-macos:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Build
+  #       run: cargo build --verbose
+  #     - name: Run tests
+  #       run: cargo test --verbose
