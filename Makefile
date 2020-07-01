@@ -63,11 +63,11 @@ test:
 	cd data ;\
 	../target/release/vid_merger . -f mp4
 
-	make build-linux
-	docker build -t vidmerger .
-	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger ;\
+	# make build-linux
+	# docker build -t vidmerger .
+	# docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger ;\
 
-	make build
+	# make build
 
 lint:
 	cargo clippy
