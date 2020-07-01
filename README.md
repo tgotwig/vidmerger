@@ -1,4 +1,4 @@
-# vidmerger
+# vidmergerrr
 
 > A wrapper around ffmpeg which simplifies merging multiple videos 🎞
 
