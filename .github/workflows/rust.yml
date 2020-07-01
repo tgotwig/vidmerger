@@ -20,6 +20,8 @@ jobs:
         run: cargo test --verbose
       - name: pwd & ls
         run: pwd && ls -l
+      - name: ffmpeg
+        run: apt install ffmpeg
       - name: make test
         run: make test
   # build-windows:
