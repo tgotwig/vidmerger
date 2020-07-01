@@ -20,6 +20,14 @@ jobs:
       #   run: cargo test --verbose
       # - name: pwd & ls
       #   run: pwd && ls -l
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: install youtube-dl
+        run: pip install youtube_dl
+      - name: download videos
+        run: make prepare
       - name: ffmpeg
         run: sudo apt install ffmpeg
       - name: make test
