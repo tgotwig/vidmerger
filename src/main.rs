@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::process::Command;
 
-use clap::{load_yaml, App};
+use clap::{load_yaml, App, AppSettings};
 use regex::Regex;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -19,7 +19,9 @@ fn main() -> std::io::Result<()> {
     }
 
     // fetch arguments
-    let matches = App::from(load_yaml!("cli.yaml")).get_matches();
+    let matches = App::from(load_yaml!("cli.yaml"))
+        .setting(AppSettings::ArgRequiredElseHelp)
+        .get_matches();
     let file_format = matches.value_of("format").unwrap();
 
     // i/o paths

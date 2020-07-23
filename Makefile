@@ -58,8 +58,8 @@ build-win:
 
 dockerhub:
 	docker build --no-cache -t vidmerger .
-	docker tag vidmerger tgotwig/vidmerger:0.1.1
-	docker push tgotwig/vidmerger:0.1.1
+	docker tag vidmerger tgotwig/vidmerger:0.1.2
+	docker push tgotwig/vidmerger:0.1.2
 	docker tag vidmerger tgotwig/vidmerger
 	docker push tgotwig/vidmerger
 
