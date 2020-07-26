@@ -38,7 +38,7 @@ jobs:
         run: make prepare
 
       - name: Install ffmpeg
-        run: sudo apt install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Build and run vidmerger
         run: make test

@@ -4,5 +4,5 @@ Cargo.lock
 .DS_Store
 data
 input.txt
-
+vidmerger.exe
 *.mp4

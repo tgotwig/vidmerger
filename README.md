@@ -115,6 +115,7 @@ Take care that the versions in the following files increases:
 - [Cargo.toml](Cargo.toml)
 - [Makefile](Makefile)
 - [src/cli.yaml](src/cli.yaml)
+- [vidmerger.nuspec](vidmerger.nuspec)
 
 ## Versioning
 

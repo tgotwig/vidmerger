@@ -56,6 +56,12 @@ build-win:
 	mkdir -p target/tars
 	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.tar.gz target/tars
 
+publish-choco:
+	choco.exe pack ;\
+	mv *.nupkg vidmerger.nupkg ;\
+	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org/ ;\
+	rm vidmerger.nupkg
+
 dockerhub:
 	docker build --no-cache -t vidmerger .
 	docker tag vidmerger tgotwig/vidmerger:0.1.2

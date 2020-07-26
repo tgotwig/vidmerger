@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>vidmerger</id>
+    <version>0.1.2</version>
+    <title>vidmerger (Install)</title>
+    <authors>Thomas Gotwig</authors>
+    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>
+    <tags>vidmerger video</tags>
+    <summary>A wrapper around ffmpeg which simplifies merging multiple videos 🎞</summary>
+    <description>Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.FORMAT`. It includes a usage help which you can print out by `vidmerger --help` 😃</description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
