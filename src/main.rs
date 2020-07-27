@@ -1,3 +1,4 @@
+#![deny(warnings)]
 use std::env;
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -97,7 +98,7 @@ fn main() -> std::io::Result<()> {
     };
 
     // remove input.txt
-    fs::remove_file(format!("{}", output_list.to_str().unwrap()))?;
+    fs::remove_file(output_list.to_str().unwrap())?;
 
     if output.status.success() {
         println!("Successfully generated 'output.{}'! 😆🎞", file_format);
