@@ -74,6 +74,7 @@ test:
 	cargo run --release --verbose -- data/ -f mp4
 	cd data && \
 		cargo run --release --verbose -- . -f mp4
+	cargo test
 
 lint:
 	cargo clippy

@@ -1,9 +1,7 @@
 #![deny(warnings)]
-use std::env;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::exit;
 use std::process::Command;
 
@@ -13,9 +11,7 @@ use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
 fn main() -> std::io::Result<()> {
-    // look for the prerequisite ffmpeg
-    if find_it("ffmpeg").is_none() && find_it("ffmpeg.exe").is_none() {
-        eprintln!("ffmpeg not found 😬");
+    if !is_ffmpeg_available() {
         exit(1);
     }
 
@@ -110,20 +106,28 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn find_it<P>(exe_name: P) -> Option<PathBuf>
-where
-    P: AsRef<Path>,
-{
-    env::var_os("PATH").and_then(|paths| {
-        env::split_paths(&paths)
-            .filter_map(|input_dir| {
-                let full_path = input_dir.join(&exe_name);
-                if full_path.is_file() {
-                    Some(full_path)
-                } else {
-                    None
-                }
-            })
-            .next()
-    })
+fn is_ffmpeg_available() -> bool {
+    if cfg!(target_os = "windows") {
+        if which::which("ffmpeg.exe").is_err() {
+            eprintln!("ffmpeg.exe not found 😬");
+            false
+        } else {
+            true
+        }
+    } else if which::which("ffmpeg").is_err() {
+        eprintln!("ffmpeg not found 😬");
+        false
+    } else {
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_ffmpeg_available() {
+        assert_eq!(is_ffmpeg_available(), true);
+    }
 }
