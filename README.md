@@ -29,12 +29,14 @@ ffmpeg version 4.2.2 Copyright (c) 2000-2019 the FFmpeg developers
 
 ### 2️⃣ Install vidmerger 🤖
 
-[Homebrew](https://brew.sh) (Mac):
+[Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) (Mac):
 
 ```bash
 brew tap tgotwig/vidmerger
 brew install vidmerger
 ```
+
+if you want to upgrade, then do a `brew update-reset && brew upgrade vidmerger`.
 
 ### 3️⃣ Use vidmerger 🎬
 
