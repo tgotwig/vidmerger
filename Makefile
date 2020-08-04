@@ -31,8 +31,8 @@ build-mac:
 	tar -czf vidmerger-mac.tar.gz vidmerger ;\
 	shasum -a 256 vidmerger-mac.tar.gz ;\
 
-	mkdir -p target/tars
-	mv target/x86_64-apple-darwin/release/vidmerger-mac.tar.gz target/tars
+	mkdir -p target/release-archives
+	mv target/x86_64-apple-darwin/release/vidmerger-mac.tar.gz target/release-archives
 
 build-linux:
 	@echo 'Building for Linux... 🐧'
@@ -42,19 +42,19 @@ build-linux:
 	tar -czf vidmerger-linux.tar.gz vidmerger ;\
 	shasum -a 256 vidmerger-linux.tar.gz ;\
 
-	mkdir -p target/tars
-	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/tars
+	mkdir -p target/release-archives
+	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/release-archives
 
 build-win:
 	@echo 'Building for Windows... 🏳️‍🌈'
 	cross build --release --target x86_64-pc-windows-gnu ;\
 	cd target/x86_64-pc-windows-gnu/release ;\
 	mv vid_merger.exe vidmerger.exe ;\
-	tar -czf vidmerger-win.tar.gz vidmerger.exe ;\
-	shasum -a 256 vidmerger-win.tar.gz ;\
+	rar a vidmerger-win.rar vidmerger.exe ;\
+	shasum -a 256 vidmerger-win.rar ;\
 
-	mkdir -p target/tars
-	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.tar.gz target/tars
+	mkdir -p target/release-archives
+	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.rar target/release-archives
 
 publish-choco:
 	choco.exe pack ;\
