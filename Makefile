@@ -19,47 +19,34 @@ run-docker:
 	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger
 
 build:
-	make build-mac
 	make build-linux
+	make build-mac
 	make build-win
 
-build-mac:
-	@echo 'Building for MacOS... 🍏'
-	cross build --release --target=x86_64-apple-darwin;\
-	cd target/x86_64-apple-darwin/release ;\
-	mv vid_merger vidmerger ;\
-	tar -czf vidmerger-mac.tar.gz vidmerger ;\
-	shasum -a 256 vidmerger-mac.tar.gz ;\
-
-	mkdir -p target/release-archives
-	mv target/x86_64-apple-darwin/release/vidmerger-mac.tar.gz target/release-archives
+	make shasum
 
 build-linux:
 	@echo 'Building for Linux... 🐧'
-	cross build --release --target=x86_64-unknown-linux-musl ;\
-	cd target/x86_64-unknown-linux-musl/release ;\
-	mv vid_merger vidmerger ;\
-	tar -czf vidmerger-linux.tar.gz vidmerger ;\
-	shasum -a 256 vidmerger-linux.tar.gz ;\
+	cross build --release --target=x86_64-unknown-linux-musl
+	mkdir -p target/release-archives && tar -czf target/release-archives/vidmerger-linux.tar.gz target/x86_64-unknown-linux-musl/release/vidmerger 
 
-	mkdir -p target/release-archives
-	mv target/x86_64-unknown-linux-musl/release/vidmerger-linux.tar.gz target/release-archives
+build-mac:
+	@echo 'Building for MacOS... 🍏'
+	cross build --release --target=x86_64-apple-darwin
+	mkdir -p target/release-archives && tar -czf target/release-archives/vidmerger-mac.tar.gz target/x86_64-apple-darwin/release/vidmerger
 
 build-win:
 	@echo 'Building for Windows... 🏳️‍🌈'
-	cross build --release --target x86_64-pc-windows-gnu ;\
-	cd target/x86_64-pc-windows-gnu/release ;\
-	mv vid_merger.exe vidmerger.exe ;\
-	rar a vidmerger-win.rar vidmerger.exe ;\
-	shasum -a 256 vidmerger-win.rar ;\
+	cross build --release --target x86_64-pc-windows-gnu
+	mkdir -p target/release-archives && rar a target/release-archives/vidmerger-win.rar target/x86_64-pc-windows-gnu/release/vidmerger.exe
 
-	mkdir -p target/release-archives
-	mv target/x86_64-pc-windows-gnu/release/vidmerger-win.rar target/release-archives
+shasum:
+	shasum -a 256 target/release-archives/vidmerger-*
 
 publish-choco:
-	choco.exe pack ;\
-	mv *.nupkg vidmerger.nupkg ;\
-	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org/ ;\
+	choco.exe pack
+	mv *.nupkg vidmerger.nupkg
+	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org/
 	rm vidmerger.nupkg
 
 dockerhub:

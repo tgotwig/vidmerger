@@ -1,5 +1,5 @@
 [package]
-name = "vid_merger"
+name = "vidmerger"
 version = "0.1.2"
 authors = ["tgotwig <tgotwig@gmail.com>"]
 edition = "2018"
