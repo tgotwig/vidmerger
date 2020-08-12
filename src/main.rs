@@ -102,22 +102,6 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn is_ffmpeg_available() -> bool {
-    if cfg!(target_os = "windows") {
-        if which::which("ffmpeg.exe").is_err() {
-            eprintln!("ffmpeg.exe not found 😬");
-            false
-        } else {
-            true
-        }
-    } else if which::which("ffmpeg").is_err() {
-        eprintln!("ffmpeg not found 😬");
-        false
-    } else {
-        true
-    }
-}
-
 fn format_path(path_to_vids: &str) -> String {
     let path_to_vids: String = if path_to_vids.starts_with('\\') {
         path_to_vids.replacen("\\", "", 1)
@@ -143,6 +127,22 @@ fn get_sorted_paths(input_dir: &Path) -> Vec<DirEntry> {
     paths
 }
 
+fn is_ffmpeg_available() -> bool {
+    if cfg!(target_os = "windows") {
+        if which::which("ffmpeg.exe").is_err() {
+            eprintln!("ffmpeg.exe not found 😬");
+            false
+        } else {
+            true
+        }
+    } else if which::which("ffmpeg").is_err() {
+        eprintln!("ffmpeg not found 😬");
+        false
+    } else {
+        true
+    }
+}
+
 // --------------------
 // tests
 // --------------------
@@ -150,11 +150,6 @@ fn get_sorted_paths(input_dir: &Path) -> Vec<DirEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_is_ffmpeg_available() {
-        assert_eq!(is_ffmpeg_available(), true);
-    }
 
     #[test]
     fn test_format_path() {
@@ -192,5 +187,10 @@ mod tests {
             );
             fs::remove_dir_all("test").unwrap();
         }
+    }
+
+    #[test]
+    fn test_is_ffmpeg_available() {
+        assert_eq!(is_ffmpeg_available(), true);
     }
 }
