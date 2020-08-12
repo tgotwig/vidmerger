@@ -1,5 +1,5 @@
 #![deny(warnings)]
-use std::fs::{self, File};
+use std::fs::{self, DirEntry, File};
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::exit;
@@ -32,12 +32,7 @@ fn main() -> std::io::Result<()> {
         fs::remove_file(&output_vid)?;
     }
 
-    // get sorted paths
-    let mut paths: Vec<_> = fs::read_dir(input_dir)
-        .unwrap()
-        .map(|r| r.unwrap())
-        .collect();
-    paths.sort_by_key(|input_dir| input_dir.path());
+    let paths: Vec<DirEntry> = get_sorted_paths(&input_dir);
 
     // Generate content for input.txt
     let mut input_txt = String::new();
@@ -139,6 +134,19 @@ fn format_path(path_to_vids: &str) -> String {
     path_to_vids.replace("\\", "/")
 }
 
+fn get_sorted_paths(input_dir: &Path) -> Vec<DirEntry> {
+    let mut paths: Vec<_> = fs::read_dir(input_dir)
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect();
+    paths.sort_by_key(|input_dir| input_dir.path());
+    paths
+}
+
+// --------------------
+// tests
+// --------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,5 +172,25 @@ mod tests {
         );
         assert_eq!(format_path(&String::from("path/to/vids")), "path/to/vids/");
         assert_eq!(format_path(&String::from("path/to/vids/")), "path/to/vids/");
+    }
+
+    #[test]
+    fn test_get_sorted_paths() {
+        if cfg!(target_os = "macos") {
+            fs::create_dir("test").unwrap();
+            File::create("test/4").unwrap();
+            File::create("test/3").unwrap();
+
+            let paths: Vec<_> = fs::read_dir("test").unwrap().map(|r| r.unwrap()).collect();
+            assert_eq!(
+                format!("{:?}", paths),
+                "[DirEntry(\"test/4\"), DirEntry(\"test/3\")]"
+            );
+            assert_eq!(
+                format!("{:?}", get_sorted_paths(Path::new("test"))),
+                "[DirEntry(\"test/3\"), DirEntry(\"test/4\")]"
+            );
+            fs::remove_dir_all("test").unwrap();
+        }
     }
 }
