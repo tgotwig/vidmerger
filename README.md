@@ -38,6 +38,29 @@ brew install vidmerger
 
 if you want to upgrade, then do a `brew update-reset && brew upgrade vidmerger`.
 
+---
+
+Linux 🐧
+
+```bash
+wget https://github.com/TGotwig/vidmerger/releases/download/v0.1.2/vidmerger-linux.tar.gz
+tar xf vidmerger-linux.tar.gz -C /usr/bin/
+rm vidmerger-linux.tar.gz
+```
+
+---
+
+Windows 🏳️‍🌈
+
+The next lines require that you opened `Internet Explorer` for at least one time and having [WinRAR](https://chocolatey.org/packages/winrar) in your PATH
+
+```ps
+Invoke-WebRequest https://github.com/TGotwig/vidmerger/releases/download/v0.1.2/vidmerger-win.rar -OutFile vidmerger-win.rar
+UnRAR.exe x -o- vidmerger-win.rar
+Move-Item vidmerger.exe C:\Windows\System32
+Remove-Item vidmerger-win.rar
+```
+
 ### 3️⃣ Use vidmerger 🎬
 
 First of all lets see what we have:
@@ -118,6 +141,7 @@ Take care that the versions in the following files increases:
 - [Makefile](Makefile)
 - [src/cli.yaml](src/cli.yaml)
 - [vidmerger.nuspec](vidmerger.nuspec)
+- [README.md](README.md)
 
 ## Versioning
 
