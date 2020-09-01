@@ -29,7 +29,7 @@ ffmpeg version 4.2.2 Copyright (c) 2000-2019 the FFmpeg developers
 
 ### 2️⃣ Install vidmerger 🤖
 
-[Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) (Mac):
+[Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) (Mac 🍏):
 
 ```bash
 brew tap tgotwig/vidmerger
@@ -50,15 +50,10 @@ rm vidmerger-linux.tar.gz
 
 ---
 
-Windows 🏳️‍🌈
-
-The next lines require that you opened `Internet Explorer` for at least one time and having [WinRAR](https://chocolatey.org/packages/winrar) in your PATH
+[Chocolatey 🍫](https://chocolatey.org/packages/vidmerger) (Windows 🏳️‍🌈)
 
 ```ps
-Invoke-WebRequest https://github.com/TGotwig/vidmerger/releases/download/v0.1.2/vidmerger-win.rar -OutFile vidmerger-win.rar
-UnRAR.exe x -o- vidmerger-win.rar
-Move-Item vidmerger.exe C:\Windows\System32
-Remove-Item vidmerger-win.rar
+choco install vidmerger
 ```
 
 ### 3️⃣ Use vidmerger 🎬

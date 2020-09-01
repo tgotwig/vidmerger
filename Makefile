@@ -46,7 +46,7 @@ shasum:
 publish-choco:
 	choco.exe pack
 	mv *.nupkg vidmerger.nupkg
-	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org/
+	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org
 	rm vidmerger.nupkg
 
 dockerhub:
