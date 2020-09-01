@@ -4,34 +4,14 @@
 
 Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>`. It includes a usage help which you can print out by `vidmerger --help` 😃
 
-## Installing / Getting started
+## ✨ Installing / Getting started
 
-### 1️⃣ Install prerequisites 🧐
-
-[Homebrew](https://brew.sh) (Mac):
-
-```bash
-brew install ffmpeg
-```
-
-[Chocolatey](https://chocolatey.org/) (Windows):
-
-```bash
-choco install ffmpeg
-```
-
-Ensure that it was installed successfully:
-
-```fish
-↪ ffmpeg -version | head -n 1
-ffmpeg version 4.2.2 Copyright (c) 2000-2019 the FFmpeg developers
-```
-
-### 2️⃣ Install vidmerger 🤖
+You can install it on all the three major operating systems 🤗
 
 [Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) (Mac 🍏):
 
 ```bash
+brew install ffmpeg # prerequisite
 brew tap tgotwig/vidmerger
 brew install vidmerger
 ```
@@ -41,6 +21,8 @@ brew install vidmerger
 [Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) (Linux 🐧):
 
 ```bash
+sudo apt install -y ffmpeg # prerequisite (Debian, like Ubuntu)
+sudo yum install -y ffmpeg # prerequisite (RPM)
 brew tap tgotwig/linux-vidmerger
 brew install vidmerger
 ```
@@ -50,10 +32,13 @@ brew install vidmerger
 [Chocolatey 🍫](https://chocolatey.org/packages/vidmerger) (Windows 🏳️‍🌈)
 
 ```ps
+choco install ffmpeg # prerequisite
 choco install vidmerger
 ```
 
-### 3️⃣ Use vidmerger 🎬
+---
+
+### ⭐️ Using Vidmerger ⭐️
 
 First of all lets see what we have:
 
@@ -91,7 +76,7 @@ Size
 
 There it is! 🎉🎊🥳📺
 
-## Run it without installing / Getting started
+## 🐳 Run it without installing / Getting started
 
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger), you can use it like so:
 
@@ -99,7 +84,7 @@ You can also use Docker to run vidmerger without installing anything except Dock
 docker container run -it --rm -v <PATH-TO-VIDS>:/data -e format=<FORMAT> tgotwig/vidmerger
 ```
 
-## Developing
+## ⚙️ Developing
 
 ### Built With
 
@@ -135,19 +120,19 @@ Take care that the versions in the following files increases:
 - [vidmerger.nuspec](vidmerger.nuspec)
 - [README.md](README.md)
 
-## Versioning
+## 📦 Versioning
 
 We use [SemVer](http://semver.org/) for versioning.
 
-## Tests
+## 🧪 Tests
 
 There are some basic shell-tests, which you can run by `make test`.
 
-## Style guide
+## 🖼 Style guide
 
 We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust-lang/rls-vscode) ✨
 
-## Licensing
+## 📜 Licensing
 
 [MIT License](LICENSE.md)
 
