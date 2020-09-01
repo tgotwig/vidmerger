@@ -36,16 +36,13 @@ brew tap tgotwig/vidmerger
 brew install vidmerger
 ```
 
-if you want to upgrade, then do a `brew update-reset && brew upgrade vidmerger`.
-
 ---
 
-Linux 🐧
+[Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) (Linux 🐧):
 
 ```bash
-wget https://github.com/TGotwig/vidmerger/releases/download/v0.1.2/vidmerger-linux.tar.gz
-tar xf vidmerger-linux.tar.gz -C /usr/bin/
-rm vidmerger-linux.tar.gz
+brew tap tgotwig/linux-vidmerger
+brew install vidmerger
 ```
 
 ---
