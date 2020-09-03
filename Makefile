@@ -44,10 +44,10 @@ shasum:
 	shasum -a 256 target/release-archives/vidmerger-*
 
 publish-choco:
-	choco.exe pack
-	mv *.nupkg vidmerger.nupkg
-	choco.exe push vidmerger.nupkg --source https://push.chocolatey.org
-	rm vidmerger.nupkg
+	cpack
+	Get-ChildItem *.nupkg | ren -NewName vidmerger.nupkg
+	choco push vidmerger.nupkg --source https://push.chocolatey.org
+	Remove-Item vidmerger.nupkg
 
 dockerhub:
 	docker build --no-cache -t vidmerger .
