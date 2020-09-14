@@ -21,8 +21,7 @@ brew install vidmerger
 [Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) (Linux 🐧):
 
 ```bash
-sudo apt install -y ffmpeg # prerequisite (Debian, like Ubuntu)
-sudo yum install -y ffmpeg # prerequisite (RPM)
+sudo snap install ffmpeg --edge # prerequisite
 brew tap tgotwig/linux-vidmerger
 brew install vidmerger
 ```
