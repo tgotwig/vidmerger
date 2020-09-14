@@ -30,7 +30,7 @@ brew install vidmerger
 
 [Chocolatey 🍫](https://chocolatey.org/packages/vidmerger) (Windows 🏳️‍🌈)
 
-```ps
+```powershell
 choco install ffmpeg # prerequisite
 choco install vidmerger
 ```
