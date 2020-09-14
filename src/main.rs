@@ -24,7 +24,7 @@ fn main() -> std::io::Result<()> {
     // i/o paths
     let input_dir = format_path(matches.value_of("DIR").unwrap());
     let input_dir = Path::new(&input_dir);
-    let output_list = input_dir.join("input.txt");
+    let output_list = input_dir.join("list.txt");
     let output_vid = input_dir.join(format!("output.{}", file_format));
 
     // remove merged video from the last run
@@ -34,7 +34,7 @@ fn main() -> std::io::Result<()> {
 
     let paths: Vec<DirEntry> = get_sorted_paths(&input_dir);
 
-    // Generate content for input.txt
+    // Generate content for list.txt
     let mut input_txt = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
     for path in paths {
@@ -56,7 +56,7 @@ fn main() -> std::io::Result<()> {
     println!("\nOrder of merging 👇\n");
     println!("{}\n", BrightBlue.paint(&input_txt));
 
-    // write input.txt
+    // write list.txt
     let mut file = File::create(output_list.to_str().unwrap())?;
     file.write_all(input_txt.as_bytes())?;
 
@@ -89,7 +89,7 @@ fn main() -> std::io::Result<()> {
             .expect("failed to execute process")
     };
 
-    // remove input.txt
+    // remove list.txt
     fs::remove_file(output_list.to_str().unwrap())?;
 
     if output.status.success() {

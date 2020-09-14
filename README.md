@@ -58,7 +58,7 @@ Order of merging 👇
 file '1.mp4'
 file '2.mp4'
 
-Calling: 'ffmpeg -y -f concat -i data/input.txt -c copy data/output.mp4' 🚀
+Calling: 'ffmpeg -y -f concat -i data/list.txt -c copy data/output.mp4' 🚀
 
 Successfully generated 'output.mp4'! 😆🎞
 ```
@@ -97,7 +97,7 @@ Some crates inside of [Cargo.toml](Cargo.toml) under `dependencies`.
 
 ### Setting up Dev
 
-Once you are done with installing the prerequisites, you should run `make` (or  [nmake](https://docs.microsoft.com/en-us/cpp/build/reference/nmake-reference?view=vs-2019) for Windows) to see if everything runs smooth:
+Once you are done with installing the prerequisites, you should run `make` (or [nmake](https://docs.microsoft.com/en-us/cpp/build/reference/nmake-reference?view=vs-2019) for Windows) to see if everything runs smooth:
 
 ```shell
 git clone https://github.com/TGotwig/vidmerger.git
