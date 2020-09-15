@@ -2,8 +2,7 @@
 use std::fs::{self, DirEntry, File};
 use std::io::prelude::*;
 use std::path::Path;
-use std::process::exit;
-use std::process::Command;
+use std::process::{exit, Command, Stdio};
 
 use clap::{load_yaml, App, AppSettings};
 use regex::Regex;
@@ -60,43 +59,56 @@ fn main() -> std::io::Result<()> {
     let mut file = File::create(output_list.to_str().unwrap())?;
     file.write_all(input_txt.as_bytes())?;
 
+    let ffmpeg_args = [
+        "-y",
+        "-f",
+        "concat",
+        "-i",
+        output_list.to_str().unwrap(),
+        "-c",
+        "copy",
+        output_vid.to_str().unwrap(),
+    ];
+
     // generate and write the merged video by ffmpeg
-    let output = if cfg!(target_os = "windows") {
-        let cmd = format!(
-            "ffmpeg.exe -y -f concat -i {format} -c copy {dir}",
-            dir = output_vid.to_str().unwrap(),
-            format = output_list.to_str().unwrap()
-        );
+    let mut child = if cfg!(target_os = "windows") {
+        let cmd = format!("ffmpeg.exe {}", ffmpeg_args.join(" "));
         println!("Calling: '{}' 🚀\n", cmd);
 
-        Command::new("cmd")
-            .arg("/C")
-            .arg(cmd)
-            .output()
-            .expect("failed to execute process")
+        Command::new("ffmpeg.exe")
+            .args(&ffmpeg_args)
+            .stdout(Stdio::piped())
+            .spawn()?
     } else {
-        let cmd = format!(
-            "ffmpeg -y -f concat -i {format} -c copy {dir}",
-            dir = output_vid.to_str().unwrap(),
-            format = output_list.to_str().unwrap()
-        );
+        let cmd = format!("ffmpeg {}", ffmpeg_args.join(" "));
         println!("Calling: '{}' 🚀\n", cmd);
 
-        Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .output()
-            .expect("failed to execute process")
+        // todo: make it work like the code-block below
+        Command::new("ffmpeg")
+            .args(&ffmpeg_args)
+            .stdout(Stdio::piped())
+            .spawn()?
+
+        // Command::new("ping")
+        //     .args(&["-c", "3", "google.com"])
+        //     .stdout(Stdio::piped())
+        //     .spawn()?
     };
 
-    // remove list.txt
-    fs::remove_file(output_list.to_str().unwrap())?;
-
-    if output.status.success() {
-        println!("Successfully generated 'output.{}'! 😆🎞", file_format);
-    } else {
-        println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-        println!("Something went wrong 😖");
+    match child.try_wait() {
+        Ok(Some(status)) => println!("{}", status),
+        Ok(None) => {
+            let res = child.wait_with_output();
+            println!("{:?}\n", res);
+            if res.unwrap().status.success() {
+                println!("Successfully generated 'output.{}'! 😆🎞", file_format)
+            } else {
+                println!("Something went wrong 😖")
+            }
+            // remove list.txt
+            fs::remove_file(output_list.to_str().unwrap())?;
+        }
+        Err(e) => println!("{}", e),
     }
 
     Ok(())

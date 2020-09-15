@@ -60,6 +60,8 @@ file '2.mp4'
 
 Calling: 'ffmpeg -y -f concat -i data/list.txt -c copy data/output.mp4' 🚀
 
+...
+
 Successfully generated 'output.mp4'! 😆🎞
 ```
 

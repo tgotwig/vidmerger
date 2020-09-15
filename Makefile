@@ -11,7 +11,7 @@ prepare:
 	echo Files inside of data: && ls data
 
 run:
-	cargo run -- data/ -f mp4
+	cargo run -- data -f mp4
 
 run-docker:
 	make build-linux
