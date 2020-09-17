@@ -3,6 +3,7 @@ use std::fs::{self, DirEntry, File};
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::{exit, Command, Stdio};
+use std::vec::Vec;
 
 use clap::{load_yaml, App, AppSettings};
 use regex::Regex;
@@ -21,53 +22,37 @@ fn main() -> std::io::Result<()> {
     let file_format = matches.value_of("format").unwrap();
 
     // i/o paths
-    let input_dir = format_path(matches.value_of("DIR").unwrap());
-    let input_dir = Path::new(&input_dir);
-    let output_list = input_dir.join("list.txt");
-    let output_vid = input_dir.join(format!("output.{}", file_format));
+    let input_vids_path = format_path(matches.value_of("DIR").unwrap());
+    let input_vids_path = Path::new(&input_vids_path);
+    let output_list_path = input_vids_path.join("list.txt");
+    let output_vid_path = input_vids_path.join(format!("output.{}", file_format));
 
     // remove merged video from the last run
-    if Path::new(&output_vid).exists() {
-        fs::remove_file(&output_vid)?;
+    if Path::new(&output_vid_path).exists() {
+        fs::remove_file(&output_vid_path)?;
     }
 
-    let paths: Vec<DirEntry> = get_sorted_paths(&input_dir);
+    let paths: Vec<DirEntry> = get_sorted_paths(&input_vids_path);
 
-    // Generate content for list.txt
-    let mut input_txt = String::new();
-    let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
-    for path in paths {
-        let path = path.path();
-        if re.is_match(&format!("{}", path.display())) {
-            if input_txt.chars().count() == 0 {
-                input_txt = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
-            } else {
-                input_txt = format!(
-                    "{}\nfile '{}'",
-                    input_txt,
-                    path.file_name().unwrap().to_str().unwrap()
-                );
-            }
-        }
-    }
+    let list = generate_list_of_vids(file_format, paths);
 
     // print order in blue
     println!("\nOrder of merging 👇\n");
-    println!("{}\n", BrightBlue.paint(&input_txt));
+    println!("{}\n", BrightBlue.paint(&list));
 
     // write list.txt
-    let mut file = File::create(output_list.to_str().unwrap())?;
-    file.write_all(input_txt.as_bytes())?;
+    let mut file = File::create(output_list_path.to_str().unwrap())?;
+    file.write_all(list.as_bytes())?;
 
     let ffmpeg_args = [
         "-y",
         "-f",
         "concat",
         "-i",
-        output_list.to_str().unwrap(),
+        output_list_path.to_str().unwrap(),
         "-c",
         "copy",
-        output_vid.to_str().unwrap(),
+        output_vid_path.to_str().unwrap(),
     ];
 
     // generate and write the merged video by ffmpeg
@@ -106,7 +91,7 @@ fn main() -> std::io::Result<()> {
                 println!("Something went wrong 😖")
             }
             // remove list.txt
-            fs::remove_file(output_list.to_str().unwrap())?;
+            fs::remove_file(output_list_path.to_str().unwrap())?;
         }
         Err(e) => println!("{}", e),
     }
@@ -130,12 +115,32 @@ fn format_path(path_to_vids: &str) -> String {
     path_to_vids.replace("\\", "/")
 }
 
-fn get_sorted_paths(input_dir: &Path) -> Vec<DirEntry> {
-    let mut paths: Vec<_> = fs::read_dir(input_dir)
+fn generate_list_of_vids(file_format: &str, paths: Vec<std::fs::DirEntry>) -> String {
+    let mut list = String::new();
+    let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
+    for path in paths {
+        let path = path.path();
+        if re.is_match(&format!("{}", path.display())) {
+            if list.chars().count() == 0 {
+                list = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
+            } else {
+                list = format!(
+                    "{}\nfile '{}'",
+                    list,
+                    path.file_name().unwrap().to_str().unwrap()
+                );
+            }
+        }
+    }
+    list
+}
+
+fn get_sorted_paths(input_vids_path: &Path) -> Vec<DirEntry> {
+    let mut paths: Vec<_> = fs::read_dir(input_vids_path)
         .unwrap()
         .map(|r| r.unwrap())
         .collect();
-    paths.sort_by_key(|input_dir| input_dir.path());
+    paths.sort_by_key(|input_vids_path| input_vids_path.path());
     paths
 }
 
