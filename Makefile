@@ -28,17 +28,17 @@ build:
 build-linux:
 	@echo 'Building for Linux... 🐧'
 	cross build --release --target=x86_64-unknown-linux-musl
-	mkdir -p target/release-archives && tar -czf target/release-archives/vidmerger-linux.tar.gz target/x86_64-unknown-linux-musl/release/vidmerger 
+	mkdir -p target/release-archives && tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux.tar.gz vidmerger
 
 build-mac:
 	@echo 'Building for MacOS... 🍏'
 	cross build --release --target=x86_64-apple-darwin
-	mkdir -p target/release-archives && tar -czf target/release-archives/vidmerger-mac.tar.gz target/x86_64-apple-darwin/release/vidmerger
+	mkdir -p target/release-archives && tar -C target/x86_64-apple-darwin/release -czf target/release-archives/vidmerger-mac.tar.gz vidmerger
 
 build-win:
 	@echo 'Building for Windows... 🏳️‍🌈'
 	cross build --release --target x86_64-pc-windows-gnu
-	mkdir -p target/release-archives && rar a target/release-archives/vidmerger-win.rar target/x86_64-pc-windows-gnu/release/vidmerger.exe
+	mkdir -p target/release-archives && cd target/x86_64-pc-windows-gnu/release && rar a ../../release-archives/vidmerger-win.rar vidmerger.exe
 
 shasum:
 	shasum -a 256 target/release-archives/vidmerger-*
