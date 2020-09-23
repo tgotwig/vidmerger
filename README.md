@@ -136,8 +136,3 @@ We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust
 ## 📜 Licensing
 
 [MIT License](LICENSE)
-
-[![Linkedin Badge](https://img.shields.io/badge/-Thomas_Gotwig-blue?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/tgotwig)](https://www.linkedin.com/in/tgotwig)
-[![Gmail Badge](https://img.shields.io/badge/-tgotwig@gmail.com-c14438?style=flat-square&logo=Gmail&logoColor=white&link=mailto:tgotwig@gmail.com)](mailto:tgotwig@gmail.com)
-
-![github stats](https://github-readme-stats.vercel.app/api?username=tgotwig&show_icons=true)
