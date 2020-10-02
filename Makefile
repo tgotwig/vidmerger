@@ -38,10 +38,10 @@ build-mac:
 build-win:
 	@echo 'Building for Windows... 🏳️‍🌈'
 	cross build --release --target x86_64-pc-windows-gnu
-	mkdir -p target/release-archives && cd target/x86_64-pc-windows-gnu/release && rar a ../../release-archives/vidmerger-win.rar vidmerger.exe
+	mkdir -p target/release-archives && cd target/x86_64-pc-windows-gnu/release && mv vidmerger.exe ../../release-archives
 
 shasum:
-	shasum -a 256 target/release-archives/vidmerger-*
+	shasum -a 256 target/release-archives/vidmerger*
 
 publish-choco:
 	cpack
@@ -51,8 +51,8 @@ publish-choco:
 
 dockerhub:
 	docker build --no-cache -t vidmerger .
-	docker tag vidmerger tgotwig/vidmerger:0.1.3
-	docker push tgotwig/vidmerger:0.1.3
+	docker tag vidmerger tgotwig/vidmerger:0.1.4
+	docker push tgotwig/vidmerger:0.1.4
 	docker tag vidmerger tgotwig/vidmerger
 	docker push tgotwig/vidmerger
 
