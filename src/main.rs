@@ -52,60 +52,63 @@ fn main() -> std::io::Result<()> {
             println!("\nOrder of merging 👇\n");
             println!("{}\n", BrightBlue.paint(&list));
 
-            // write list.txt
-            let mut file = File::create(output_list_path.to_str().unwrap())?;
-            file.write_all(list.as_bytes())?;
+            // only continue if the preview flag isn't set
+            if !matches.is_present("preview") {
+                // write list.txt
+                let mut file = File::create(output_list_path.to_str().unwrap())?;
+                file.write_all(list.as_bytes())?;
 
-            let ffmpeg_args = [
-                "-y",
-                "-f",
-                "concat",
-                "-i",
-                output_list_path.to_str().unwrap(),
-                "-c",
-                "copy",
-                output_vid_path.to_str().unwrap(),
-            ];
+                let ffmpeg_args = [
+                    "-y",
+                    "-f",
+                    "concat",
+                    "-i",
+                    output_list_path.to_str().unwrap(),
+                    "-c",
+                    "copy",
+                    output_vid_path.to_str().unwrap(),
+                ];
 
-            // generate and write the merged video by ffmpeg
-            let mut child = if cfg!(target_os = "windows") {
-                let cmd = format!("ffmpeg.exe {}", ffmpeg_args.join(" "));
-                println!("Calling: '{}' 🚀\n", cmd);
+                // generate and write the merged video by ffmpeg
+                let mut child = if cfg!(target_os = "windows") {
+                    let cmd = format!("ffmpeg.exe {}", ffmpeg_args.join(" "));
+                    println!("Calling: '{}' 🚀\n", cmd);
 
-                Command::new("ffmpeg.exe")
-                    .args(&ffmpeg_args)
-                    .stdout(Stdio::piped())
-                    .spawn()?
-            } else {
-                let cmd = format!("ffmpeg {}", ffmpeg_args.join(" "));
-                println!("Calling: '{}' 🚀\n", cmd);
+                    Command::new("ffmpeg.exe")
+                        .args(&ffmpeg_args)
+                        .stdout(Stdio::piped())
+                        .spawn()?
+                } else {
+                    let cmd = format!("ffmpeg {}", ffmpeg_args.join(" "));
+                    println!("Calling: '{}' 🚀\n", cmd);
 
-                // todo: make it work like the code-block below
-                Command::new("ffmpeg")
-                    .args(&ffmpeg_args)
-                    .stdout(Stdio::piped())
-                    .spawn()?
+                    // todo: make it work like the code-block below
+                    Command::new("ffmpeg")
+                        .args(&ffmpeg_args)
+                        .stdout(Stdio::piped())
+                        .spawn()?
 
-                // Command::new("ping")
-                //     .args(&["-c", "3", "google.com"])
-                //     .stdout(Stdio::piped())
-                //     .spawn()?
-            };
+                    // Command::new("ping")
+                    //     .args(&["-c", "3", "google.com"])
+                    //     .stdout(Stdio::piped())
+                    //     .spawn()?
+                };
 
-            match child.try_wait() {
-                Ok(Some(status)) => println!("{}", status),
-                Ok(None) => {
-                    let res = child.wait_with_output();
-                    println!("{:?}\n", res);
-                    if res.unwrap().status.success() {
-                        println!("Successfully generated 'output.{}'! 😆🎞", file_format)
-                    } else {
-                        println!("Something went wrong 😖")
+                match child.try_wait() {
+                    Ok(Some(status)) => println!("{}", status),
+                    Ok(None) => {
+                        let res = child.wait_with_output();
+                        println!("{:?}\n", res);
+                        if res.unwrap().status.success() {
+                            println!("Successfully generated 'output.{}'! 😆🎞", file_format)
+                        } else {
+                            println!("Something went wrong 😖")
+                        }
+                        // remove list.txt
+                        fs::remove_file(output_list_path.to_str().unwrap())?;
                     }
-                    // remove list.txt
-                    fs::remove_file(output_list_path.to_str().unwrap())?;
+                    Err(e) => println!("{}", e),
                 }
-                Err(e) => println!("{}", e),
             }
         }
     }

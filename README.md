@@ -13,6 +13,7 @@ ARGS:
 
 FLAGS:
     -h, --help       Prints help information
+    -p, --preview    Prints previews of the merge-orders without merging them
     -V, --version    Prints version information
 
 OPTIONS:
