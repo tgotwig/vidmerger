@@ -2,7 +2,23 @@
 
 > A wrapper around ffmpeg which simplifies merging multiple videos 🎞
 
-Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>`. It includes a usage help which you can print out by `vidmerger --help` 😃
+Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>` It includes a usage help which you can print out by `vidmerger --help`:
+
+```shell
+USAGE:
+    vidmerger [OPTIONS] <DIR>
+
+ARGS:
+    <DIR>    Sets the directory to use
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -f, --format <format>   Specifies which formats should be merged individually,
+                            the default is 👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv
+```
 
 ## ✨ Installing / Getting started
 
@@ -48,10 +64,10 @@ Size
 328k 2.mp4
 ```
 
-We want to merge all videos with the ending `mp4`, so we run it with `-f` for `format`:
+Just run it like that:
 
 ```fish
-↪ vidmerger . -f mp4
+↪ vidmerger .
 
 Order of merging 👇
 
@@ -65,7 +81,7 @@ Calling: 'ffmpeg -y -f concat -i data/list.txt -c copy data/output.mp4' 🚀
 Successfully generated 'output.mp4'! 😆🎞
 ```
 
-It prints us that it has generated `output.mp4` in the order you can see above 😃 It looks for each file with the given ending `mp4` except `output.mp4` and merges it to that. If the format would be `mkv`, the generated file would be named `output.mkv` 😊
+per default it goes through the filename extensions `avchd,avi,flv,mkv,mov,mp4,webm,wmv` and merges all mp4 files to out.mp4, all webm files to out.webm, and so on 😊 When everything went smooth, it should look like this:
 
 ```fish
 ↪ exa -lh | awk '{print $2,$7}'

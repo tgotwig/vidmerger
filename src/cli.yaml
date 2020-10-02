@@ -6,8 +6,7 @@ args:
   - format:
       short: f
       long: format
-      about: Sets a format
-      required: true
+      about: Specifies which formats should be merged individually, the default is 👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv
       takes_value: true
   - DIR:
       about: Sets the input file to use
