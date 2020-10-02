@@ -157,4 +157,4 @@ We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust
 
 ## 📜 Licensing
 
-[MIT License](LICENSE)
+[MIT License with “Commons Clause”](LICENSE)
