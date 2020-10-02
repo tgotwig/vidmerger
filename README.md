@@ -1,8 +1,13 @@
-# vidmerger
+<p align="center"><a href="https://github.com/nastyox/Rando.js#nastyox"><img src="img/fusion.gif" alt="fusion gif" height="128"/></a></p>
 
-> A wrapper around ffmpeg which simplifies merging multiple videos 🎞
+<h1 align="center">Vidmerger</h1>
+<p align="center">A wrapper around ffmpeg which simplifies merging of multiple videos.</p>
+<br>
+<p align="center"><img src="img/demo.gif" alt="fusion gif"/></p>
 
-Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>` It includes a usage help which you can print out by `vidmerger --help`:
+## 🙉 What is this exactly?
+
+Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>`. It also includes a usage help 🤗
 
 ```shell
 USAGE:
