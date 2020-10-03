@@ -22,7 +22,6 @@ build:
 	make build-linux
 	make build-mac
 	make build-win
-
 	make shasum
 
 build-linux:
@@ -43,19 +42,6 @@ build-win:
 shasum:
 	shasum -a 256 target/release-archives/vidmerger*
 
-publish-choco:
-	cpack
-	Get-ChildItem *.nupkg | ren -NewName vidmerger.nupkg
-	choco push vidmerger.nupkg --source https://push.chocolatey.org
-	Remove-Item vidmerger.nupkg
-
-dockerhub:
-	docker build --no-cache -t vidmerger .
-	docker tag vidmerger tgotwig/vidmerger:0.1.4
-	docker push tgotwig/vidmerger:0.1.4
-	docker tag vidmerger tgotwig/vidmerger
-	docker push tgotwig/vidmerger
-
 test:
 	cargo run --release --verbose -- data -f mp4
 	cargo run --release --verbose -- data/ -f mp4
@@ -65,3 +51,16 @@ test:
 
 lint:
 	cargo clippy
+
+publish-choco:
+	cpack
+	Get-ChildItem *.nupkg | ren -NewName vidmerger.nupkg
+	choco push vidmerger.nupkg --source https://push.chocolatey.org
+	Remove-Item vidmerger.nupkg
+
+publish-dockerhub:
+	docker build --no-cache -t vidmerger .
+	docker tag vidmerger tgotwig/vidmerger:0.1.4
+	docker push tgotwig/vidmerger:0.1.4
+	docker tag vidmerger tgotwig/vidmerger
+	docker push tgotwig/vidmerger
