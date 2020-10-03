@@ -37,10 +37,11 @@ build-mac:
 build-win:
 	@echo 'Building for Windows... 🏳️‍🌈'
 	cross build --release --target x86_64-pc-windows-gnu
-	mkdir -p target/release-archives && cd target/x86_64-pc-windows-gnu/release && mv vidmerger.exe ../../release-archives
+	cd target/x86_64-pc-windows-gnu/release && mv vidmerger.exe ../../../tools
 
 shasum:
 	shasum -a 256 target/release-archives/vidmerger*
+	shasum -a 256 tools/vidmerger.exe
 
 test:
 	cargo run --release --verbose -- data -f mp4

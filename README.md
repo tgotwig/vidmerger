@@ -7,7 +7,7 @@
 
 ## 🙉 What is this exactly?
 
-Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.<format>`. It also includes a usage help 🤗
+Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension together into one file called _output.FORMAT_. It also includes a usage help 🤗
 
 ```shell
 USAGE:
@@ -70,7 +70,7 @@ Size
 328k 2.mp4
 ```
 
-Just run it like that:
+now just run the following line:
 
 ```fish
 ↪ vidmerger .
@@ -87,7 +87,7 @@ Calling: 'ffmpeg -y -f concat -i data/list.txt -c copy data/output.mp4' 🚀
 Successfully generated 'output.mp4'! 😆🎞
 ```
 
-per default it goes through the filename extensions `avchd,avi,flv,mkv,mov,mp4,webm,wmv` and merges all mp4 files to out.mp4, all webm files to out.webm, and so on 😊 When everything went smooth, it should look like this:
+per default it goes through the filename extensions **avchd,avi,flv,mkv,mov,mp4,webm,wmv** and tries to merge all mp4 files to out.mp4, all webm files to out.webm, and so on 😊 When everything went smooth, it should look like this:
 
 ```fish
 ↪ exa -lh | awk '{print $2,$7}'
@@ -97,9 +97,9 @@ Size
 664k output.mp4
 ```
 
-There it is! 🎉🎊🥳📺
+There it is! 🎉🎊🥳📺🍿
 
-## 🐳 Run it without installing / Getting started
+## 🐳 Run it without installing
 
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger), you can use it like so:
 
@@ -111,37 +111,39 @@ docker container run -it --rm -v <PATH-TO-VIDS>:/data tgotwig/vidmerger
 
 ### Built With
 
-Some crates inside of [Cargo.toml](Cargo.toml) under `dependencies`.
+Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependencies_.
 
 ### Prerequisites
 
 - [Rust 2018+](https://www.rust-lang.org/tools/install)
-- [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html)
-- [ffmpeg](https://ffmpeg.org/download.html)
+- [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html) (for tests 🧪)
+- [ffmpeg](https://ffmpeg.org/download.html) (for tests 🧪)
 
 ### Setting up Dev
 
-Once you are done with installing the prerequisites, you should run `make` (or [nmake](https://docs.microsoft.com/en-us/cpp/build/reference/nmake-reference?view=vs-2019) for Windows) to see if everything runs smooth:
+Once you are done with installing the prerequisites, you should run `make` (or [nmake](https://superuser.com/a/146580/944649) for Windows) to see if everything runs smooth:
 
 ```shell
-git clone https://github.com/TGotwig/vidmerger.git
+git clone git@github.com:TGotwig/vidmerger.git
 cd vidmerger
 make
+git remote add <your-github-name> git@github.com:<your-github-name>/vidmerger.git
 ```
+
+[Here](https://youtu.be/j_qpzND5yAg) is a little tutorial about working with forks along with [GitKraken](https://www.gitkraken.com) 🐙
 
 ### Building
 
-Run `make build` to build for Mac, Linux and Windows. You can find the compressed files for Github under `target/tars`, and the uncompressed files besides `target/tars`.
+Run `make build` to build for Mac, Linux and Windows. You can find the compressed Mac & Linux .tar.gz-archives for Github under _target/tars_, the .exe file for Windows under _tools_.
 
 ### Deploying / Publishing
 
-Take care that the versions in the following files increases:
+The best is to increase all versions by _find and replace_, then after `make build`:
 
-- [Cargo.toml](Cargo.toml)
-- [Makefile](Makefile)
-- [src/cli.yaml](src/cli.yaml)
-- [vidmerger.nuspec](vidmerger.nuspec)
-- [README.md](README.md)
+- Homebrew (MacOS): Edit the version and the hash [there](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb).
+- Homebrew (Linux): Edit the version and the hash [there](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb).
+- Chocolatey (Windows): Edit the hash inside of _tools/VERIFICATION.txt_ and run `make publish-choco`.
+- Dockerhub: Run `make publish-dockerhub`.
 
 ## 📦 Versioning
 
@@ -149,12 +151,12 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🧪 Tests
 
-There are some basic shell-tests, which you can run by `make test`.
+There are some shell- and cargo-tests, which can be run by `make test`, requires youtube-dl and ffmpeg installed.
 
-## 🖼 Style guide
+## 🌟 Style guide
 
-We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust-lang/rls-vscode) ✨
+We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust-lang/rls-vscode).
 
 ## 📜 Licensing
 
-[MIT License with “Commons Clause”](LICENSE)
+[MIT License with “Commons Clause”](LICENSE).
