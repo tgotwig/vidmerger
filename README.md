@@ -104,7 +104,7 @@ There it is! 🎉🎊🥳📺
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger), you can use it like so:
 
 ```bash
-docker container run -it --rm -v <PATH-TO-VIDS>:/data -e format=<FORMAT> tgotwig/vidmerger
+docker container run -it --rm -v <PATH-TO-VIDS>:/data tgotwig/vidmerger
 ```
 
 ## ⚙️ Developing
