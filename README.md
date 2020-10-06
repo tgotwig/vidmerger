@@ -118,15 +118,21 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 - [Rust 2018+](https://www.rust-lang.org/tools/install)
 - [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html) (for tests 🧪)
 - [ffmpeg](https://ffmpeg.org/download.html) (for tests 🧪)
+- If you are on Windows and want to have the `make` command: [Windows Subsystem for Linux with Ubuntu](https://www.microsoft.com/de-de/p/ubuntu-2004-lts/9n6svws3rx71?activetab=pivot:overviewtab)
 
 ### Setting up Dev
 
-Once you are done with installing the prerequisites, you should run `make` (or [nmake](https://superuser.com/a/146580/944649) for Windows) to see if everything runs smooth:
+Once you are done with installing the prerequisites, you should run `make` to see if everything runs smooth:
 
 ```shell
 git clone git@github.com:TGotwig/vidmerger.git
 cd vidmerger
 make
+```
+
+Also click on _fork_ from the top right corner of this repository and run:
+
+```shell
 git remote add <your-github-name> git@github.com:<your-github-name>/vidmerger.git
 ```
 
