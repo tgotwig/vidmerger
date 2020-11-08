@@ -1,4 +1,4 @@
-<p align="center"><a href="https://github.com/nastyox/Rando.js#nastyox"><img src="img/fusion.gif" alt="fusion gif" height="128"/></a></p>
+<p align="center"><a><img src="http://www.angelfire.com/clone/saiyansforever/images/VegettoFusionHD.gif" alt="fusion gif" height="256"/></a></p>
 
 <h1 align="center">Vidmerger</h1>
 <p align="center">A wrapper around ffmpeg which simplifies merging of multiple videos.</p>
