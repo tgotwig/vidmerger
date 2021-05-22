@@ -3,7 +3,7 @@
 <h1 align="center">Vidmerger</h1>
 <p align="center">A wrapper around ffmpeg which simplifies merging of multiple videos.</p>
 <br>
-<p align="center"><img src="img/demo.gif" alt="fusion gif"/></p>
+<p align="center"><img src="img/demo.svg" alt="fusion gif"/></p>
 
 ## 🙉 What is this exactly?
 
