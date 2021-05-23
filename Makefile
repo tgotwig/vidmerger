@@ -16,7 +16,7 @@ run:
 run-docker:
 	make build-linux
 	docker build -t vidmerger .
-	docker container run -it --rm -v `pwd`/data:/data -e format=mp4 tgotwig/vidmerger
+	docker container run -it --rm -v `pwd`/data:/data tgotwig/vidmerger
 
 build:
 	make build-linux
