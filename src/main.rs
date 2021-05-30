@@ -21,10 +21,8 @@ fn main() -> std::io::Result<()> {
         .get_matches();
 
     // creates a vector with the passed file formats or default ones
-    let format_args: &str = match matches.value_of("format") {
-        Some(x) => x,
-        None => "avchd,avi,flv,mkv,mov,mp4,webm,wmv",
-    };
+    let format_args: &str = matches.value_of("format")
+        .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv");
     let file_formats: Vec<_> = String::from(format_args)
         .lines()
         .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
