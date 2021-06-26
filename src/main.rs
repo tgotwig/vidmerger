@@ -1,17 +1,19 @@
 #![deny(warnings)]
+
 use std::fs::{self, DirEntry, File};
-use std::io::prelude::*;
+use std::io::Write;
 use std::path::Path;
 use std::process::{exit, Command, Stdio};
 use std::vec::Vec;
 
 use clap::{load_yaml, App, AppSettings, ArgMatches};
-use regex::Regex;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
+mod helper;
+
 fn main() -> std::io::Result<()> {
-    if !is_ffmpeg_available() {
+    if !helper::is_ffmpeg_available() {
         exit(1);
     }
 
@@ -21,7 +23,8 @@ fn main() -> std::io::Result<()> {
         .get_matches();
 
     // creates a vector with the passed file formats or default ones
-    let format_args: &str = matches.value_of("format")
+    let format_args: &str = matches
+        .value_of("format")
         .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv");
     let file_formats: Vec<_> = String::from(format_args)
         .lines()
@@ -31,7 +34,7 @@ fn main() -> std::io::Result<()> {
 
     for file_format in file_formats {
         // i/o paths
-        let input_vids_path = format_path(matches.value_of("DIR").unwrap());
+        let input_vids_path = helper::format_path(matches.value_of("DIR").unwrap());
         let input_vids_path = Path::new(&input_vids_path);
         let output_list_path = input_vids_path.join("list.txt");
         let output_vid_path = input_vids_path.join(format!("output.{}", file_format));
@@ -41,9 +44,9 @@ fn main() -> std::io::Result<()> {
             fs::remove_file(&output_vid_path)?;
         }
 
-        let paths: Vec<DirEntry> = get_sorted_paths(&input_vids_path);
+        let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids_path);
 
-        let list = generate_list_of_vids(file_format.as_str(), paths);
+        let list = helper::generate_list_of_vids(file_format.as_str(), paths);
 
         if !list.is_empty() {
             // print order in blue
@@ -112,117 +115,4 @@ fn main() -> std::io::Result<()> {
     }
 
     Ok(())
-}
-
-fn format_path(path_to_vids: &str) -> String {
-    let path_to_vids: String = if path_to_vids.starts_with('\\') {
-        path_to_vids.replacen("\\", "", 1)
-    } else {
-        path_to_vids.into()
-    };
-
-    let path_to_vids: String = if !path_to_vids.ends_with('/') && !path_to_vids.ends_with('\\') {
-        format!("{}/", path_to_vids)
-    } else {
-        path_to_vids
-    };
-
-    path_to_vids.replace("\\", "/")
-}
-
-fn generate_list_of_vids(file_format: &str, paths: Vec<std::fs::DirEntry>) -> String {
-    let mut list = String::new();
-    let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
-    for path in paths {
-        let path = path.path();
-        if re.is_match(&format!("{}", path.display())) {
-            if list.chars().count() == 0 {
-                list = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
-            } else {
-                list = format!(
-                    "{}\nfile '{}'",
-                    list,
-                    path.file_name().unwrap().to_str().unwrap()
-                );
-            }
-        }
-    }
-    list
-}
-
-fn get_sorted_paths(input_vids_path: &Path) -> Vec<DirEntry> {
-    let mut paths: Vec<_> = fs::read_dir(input_vids_path)
-        .unwrap()
-        .map(|r| r.unwrap())
-        .collect();
-    paths.sort_by_key(|input_vids_path| input_vids_path.path());
-    paths
-}
-
-fn is_ffmpeg_available() -> bool {
-    if cfg!(target_os = "windows") {
-        if which::which("ffmpeg.exe").is_err() {
-            eprintln!("ffmpeg.exe not found 😬");
-            false
-        } else {
-            true
-        }
-    } else if which::which("ffmpeg").is_err() {
-        eprintln!("ffmpeg not found 😬");
-        false
-    } else {
-        true
-    }
-}
-
-// --------------------
-// tests
-// --------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_path() {
-        assert_eq!(
-            format_path(&String::from("c:\\path\\to\\vids")),
-            "c:/path/to/vids/"
-        );
-        assert_eq!(
-            format_path(&String::from("\\path\\to\\vids")),
-            "path/to/vids/"
-        );
-        assert_eq!(
-            format_path(&String::from("\\path\\to\\vids\\")),
-            "path/to/vids/"
-        );
-        assert_eq!(format_path(&String::from("path/to/vids")), "path/to/vids/");
-        assert_eq!(format_path(&String::from("path/to/vids/")), "path/to/vids/");
-    }
-
-    #[test]
-    fn test_get_sorted_paths() {
-        if cfg!(target_os = "macos") {
-            fs::create_dir("test").unwrap();
-            File::create("test/4").unwrap();
-            File::create("test/3").unwrap();
-
-            let paths: Vec<_> = fs::read_dir("test").unwrap().map(|r| r.unwrap()).collect();
-            assert_eq!(
-                format!("{:?}", paths),
-                "[DirEntry(\"test/4\"), DirEntry(\"test/3\")]"
-            );
-            assert_eq!(
-                format!("{:?}", get_sorted_paths(Path::new("test"))),
-                "[DirEntry(\"test/3\"), DirEntry(\"test/4\")]"
-            );
-            fs::remove_dir_all("test").unwrap();
-        }
-    }
-
-    #[test]
-    fn test_is_ffmpeg_available() {
-        assert_eq!(is_ffmpeg_available(), true);
-    }
 }
