@@ -6,10 +6,10 @@ use std::path::Path;
 use std::process::{exit, Command, Stdio};
 use std::vec::Vec;
 
-use clap::{load_yaml, App, AppSettings, ArgMatches};
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
+mod args_parser;
 mod helper;
 
 fn main() -> std::io::Result<()> {
@@ -17,16 +17,10 @@ fn main() -> std::io::Result<()> {
         exit(1);
     }
 
-    // fetch arguments
-    let matches: ArgMatches = App::from(load_yaml!("cli.yaml"))
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .get_matches();
+    let (dir, format, preview_enabled) = args_parser::fetch();
 
     // creates a vector with the passed file formats or default ones
-    let format_args: &str = matches
-        .value_of("format")
-        .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv");
-    let file_formats: Vec<_> = String::from(format_args)
+    let file_formats: Vec<_> = format
         .lines()
         .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
         .collect::<Vec<_>>();
@@ -34,7 +28,7 @@ fn main() -> std::io::Result<()> {
 
     for file_format in file_formats {
         // i/o paths
-        let input_vids_path = helper::format_path(matches.value_of("DIR").unwrap());
+        let input_vids_path = helper::format_path(dir.clone());
         let input_vids_path = Path::new(&input_vids_path);
         let output_list_path = input_vids_path.join("list.txt");
         let output_vid_path = input_vids_path.join(format!("output.{}", file_format));
@@ -54,7 +48,7 @@ fn main() -> std::io::Result<()> {
             println!("{}\n", BrightBlue.paint(&list));
 
             // only continue if the preview flag isn't set
-            if !matches.is_present("preview") {
+            if !preview_enabled {
                 // write list.txt
                 let mut file = File::create(output_list_path.to_str().unwrap())?;
                 file.write_all(list.as_bytes())?;
