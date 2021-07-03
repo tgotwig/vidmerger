@@ -16,16 +16,9 @@ mod remote_args_factory;
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
 
-    let (dir, format, preview_enabled) = local_args_parser::fetch();
+    let (dir, formats, preview_enabled) = local_args_parser::fetch();
 
-    // creates a vector with the passed file formats or default ones
-    let file_formats: Vec<_> = format
-        .lines()
-        .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
-        .collect::<Vec<_>>();
-    let file_formats: Vec<String> = file_formats[0].clone();
-
-    for file_format in file_formats {
+    for file_format in helper::string_to_vec(formats) {
         // i/o paths
         let input_vids_path = helper::format_path(dir.clone());
         let input_vids_path = Path::new(&input_vids_path);

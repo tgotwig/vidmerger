@@ -49,6 +49,14 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Vec<DirEntry> {
     paths
 }
 
+pub fn string_to_vec(string: String) -> Vec<String> {
+    let file_formats: Vec<_> = string
+        .lines()
+        .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    file_formats[0].clone()
+}
+
 pub fn exit_when_ffmpg_not_available() {
     if !is_ffmpeg_available() {
         exit(1);
