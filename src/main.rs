@@ -3,13 +3,13 @@
 use std::fs::{self, DirEntry, File};
 use std::io::Write;
 use std::path::Path;
-use std::process::{Command, Stdio};
 use std::vec::Vec;
 
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
 mod args_parser;
+mod cmd;
 mod helper;
 
 fn main() -> std::io::Result<()> {
@@ -62,46 +62,21 @@ fn main() -> std::io::Result<()> {
                     output_vid_path.to_str().unwrap(),
                 ];
 
-                // generate and write the merged video by ffmpeg
-                let mut child = if cfg!(target_os = "windows") {
-                    let cmd = format!("ffmpeg.exe {}", ffmpeg_args.join(" "));
-                    println!("Calling: '{}' 🚀\n", cmd);
-
-                    Command::new("ffmpeg.exe")
-                        .args(&ffmpeg_args)
-                        .stdout(Stdio::piped())
-                        .spawn()?
+                let child = if cfg!(target_os = "windows") {
+                    cmd::merge(true, ffmpeg_args)
                 } else {
-                    let cmd = format!("ffmpeg {}", ffmpeg_args.join(" "));
-                    println!("Calling: '{}' 🚀\n", cmd);
-
-                    // todo: make it work like the code-block below
-                    Command::new("ffmpeg")
-                        .args(&ffmpeg_args)
-                        .stdout(Stdio::piped())
-                        .spawn()?
-
-                    // Command::new("ping")
-                    //     .args(&["-c", "3", "google.com"])
-                    //     .stdout(Stdio::piped())
-                    //     .spawn()?
+                    cmd::merge(false, ffmpeg_args)
                 };
 
-                match child.try_wait() {
-                    Ok(Some(status)) => println!("{}", status),
-                    Ok(None) => {
-                        let res = child.wait_with_output();
-                        println!("{:?}\n", res);
-                        if res.unwrap().status.success() {
-                            println!("Successfully generated 'output.{}'! 😆🎞", file_format)
-                        } else {
-                            println!("Something went wrong 😖")
-                        }
-                        // remove list.txt
-                        fs::remove_file(output_list_path.to_str().unwrap())?;
-                    }
-                    Err(e) => println!("{}", e),
+                let res = child.unwrap().wait_with_output();
+
+                println!("{:?}\n", res);
+                if res.unwrap().status.success() {
+                    println!("Successfully generated 'output.{}'! 😆🎞", file_format)
+                } else {
+                    println!("Something went wrong 😖")
                 }
+                fs::remove_file(output_list_path.to_str().unwrap())?; // remove list.txt
             }
         }
     }
