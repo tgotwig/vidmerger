@@ -4,7 +4,7 @@ use std::process::exit;
 
 use regex::Regex;
 
-pub fn format_path(path_to_vids: &str) -> String {
+pub fn format_path(path_to_vids: &str) -> &'static str {
     let path_to_vids: String = if path_to_vids.starts_with('\\') {
         path_to_vids.replacen("\\", "", 1)
     } else {
@@ -17,7 +17,7 @@ pub fn format_path(path_to_vids: &str) -> String {
         path_to_vids
     };
 
-    path_to_vids.replace("\\", "/")
+    Box::leak(path_to_vids.replace("\\", "/").into_boxed_str())
 }
 
 pub fn generate_list_of_vids(file_format: &str, paths: Vec<std::fs::DirEntry>) -> String {

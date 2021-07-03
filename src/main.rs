@@ -20,8 +20,7 @@ fn main() -> std::io::Result<()> {
     let (dir, formats, preview_enabled) = local_args_parser::fetch();
 
     for file_format in helper::string_to_vec(formats) {
-        let input_vids = helper::format_path(&dir);
-        let input_vids = Path::new(&input_vids);
+        let input_vids = Path::new(helper::format_path(&*dir));
         let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
 
