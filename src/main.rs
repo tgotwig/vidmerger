@@ -19,7 +19,7 @@ mod remote_args_factory;
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
 
-    let (dir, formats, preview_enabled) = local_args::get();
+    let (dir, formats, preview_enabled, scale) = local_args::get();
 
     for file_format in helper::string_to_vec(formats) {
         let input_vids = Path::new(helper::format_path(&*dir));
@@ -29,9 +29,13 @@ fn main() -> std::io::Result<()> {
         remove_previously_generated_video(&output_vid);
 
         let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids);
-        let list = helper::generate_list_of_vids(file_format.as_str(), paths);
+        let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
 
         if !list.is_empty() {
+            if scale.is_some() {
+                create_dir("scaled_vids");
+            }
+
             print_preview(&list);
 
             if !preview_enabled {
@@ -71,4 +75,11 @@ fn print_preview(preview: &str) {
     println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&preview));
     println!("Starts after 3 seconds... ⏳\n");
     thread::sleep(time::Duration::from_secs(3));
+}
+
+fn create_dir(name: &'static str) {
+    if Path::new(name).exists() {
+        fs::remove_dir_all(name).unwrap()
+    }
+    fs::create_dir(name).unwrap()
 }

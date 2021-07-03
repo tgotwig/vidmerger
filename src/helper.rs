@@ -20,7 +20,7 @@ pub fn format_path(path_to_vids: &str) -> &'static str {
     Box::leak(path_to_vids.replace("\\", "/").into_boxed_str())
 }
 
-pub fn generate_list_of_vids(file_format: &str, paths: Vec<std::fs::DirEntry>) -> String {
+pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
     for path in paths {
