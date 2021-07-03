@@ -11,6 +11,7 @@ use term_painter::ToStyle;
 mod cmd;
 mod helper;
 mod local_args_parser;
+mod logger;
 mod remote_args_factory;
 
 fn main() -> std::io::Result<()> {
@@ -47,14 +48,7 @@ fn main() -> std::io::Result<()> {
                     cmd::merge(false, ffmpeg_args)
                 };
 
-                let res = child.unwrap().wait_with_output();
-
-                println!("{:?}\n", res);
-                if res.unwrap().status.success() {
-                    println!("Successfully generated 'output.{}'! 😆🎞", file_format)
-                } else {
-                    println!("Something went wrong 😖")
-                }
+                logger::print_end_status(child, file_format);
                 fs::remove_file(output_list_path.to_str().unwrap())?; // list.txt
             }
         }
