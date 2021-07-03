@@ -19,7 +19,6 @@ fn main() -> std::io::Result<()> {
     let (dir, formats, preview_enabled) = local_args_parser::fetch();
 
     for file_format in helper::string_to_vec(formats) {
-        // i/o paths
         let input_vids_path = helper::format_path(dir.clone());
         let input_vids_path = Path::new(&input_vids_path);
         let output_list_path = input_vids_path.join("list.txt");
@@ -32,11 +31,8 @@ fn main() -> std::io::Result<()> {
         let list = helper::generate_list_of_vids(file_format.as_str(), paths);
 
         if !list.is_empty() {
-            // print order in blue
-            println!("\nOrder of merging 👇\n");
-            println!("{}\n", BrightBlue.paint(&list));
+            println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&list));
 
-            // only continue if the preview flag isn't set
             if !preview_enabled {
                 write_list_txt(&output_list_path, list); // list.txt
 
@@ -59,7 +55,7 @@ fn main() -> std::io::Result<()> {
                 } else {
                     println!("Something went wrong 😖")
                 }
-                fs::remove_file(output_list_path.to_str().unwrap())?; // remove list.txt
+                fs::remove_file(output_list_path.to_str().unwrap())?; // list.txt
             }
         }
     }
