@@ -25,10 +25,7 @@ fn main() -> std::io::Result<()> {
         let output_list_path = input_vids_path.join("list.txt");
         let output_vid_path = input_vids_path.join(format!("output.{}", file_format));
 
-        // remove merged video from the last run
-        if Path::new(&output_vid_path).exists() {
-            fs::remove_file(&output_vid_path)?;
-        }
+        remove_previously_generated_video(&output_vid_path);
 
         let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids_path);
 
@@ -70,4 +67,10 @@ fn main() -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+fn remove_previously_generated_video(output_vid_path: &Path) {
+    if Path::new(output_vid_path).exists() {
+        fs::remove_file(output_vid_path).unwrap();
+    }
 }
