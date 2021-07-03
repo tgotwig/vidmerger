@@ -1,8 +1,10 @@
 #![deny(warnings)]
 
+use core::time;
 use std::fs::{self, DirEntry, File};
 use std::io::Write;
 use std::path::Path;
+use std::thread;
 use std::vec::Vec;
 
 use term_painter::Color::BrightBlue;
@@ -31,7 +33,7 @@ fn main() -> std::io::Result<()> {
         let list = helper::generate_list_of_vids(file_format.as_str(), paths);
 
         if !list.is_empty() {
-            println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&list));
+            print_preview(&list);
 
             if !preview_enabled {
                 write_list_txt(&output_list, list); // list.txt
@@ -65,4 +67,10 @@ fn remove_previously_generated_video(output_vid: &Path) {
 fn write_list_txt(output_list: &Path, list: String) {
     let mut file = File::create(output_list.to_str().unwrap()).unwrap();
     file.write_all(list.as_bytes()).unwrap();
+}
+
+fn print_preview(preview: &str) {
+    println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&preview));
+    println!("Starts after 3 seconds... ⏳\n");
+    thread::sleep(time::Duration::from_secs(3));
 }
