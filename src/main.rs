@@ -3,7 +3,7 @@
 use std::fs::{self, DirEntry, File};
 use std::io::Write;
 use std::path::Path;
-use std::process::{exit, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::vec::Vec;
 
 use term_painter::Color::BrightBlue;
@@ -13,9 +13,7 @@ mod args_parser;
 mod helper;
 
 fn main() -> std::io::Result<()> {
-    if !helper::is_ffmpeg_available() {
-        exit(1);
-    }
+    helper::exit_when_ffmpg_not_available();
 
     let (dir, format, preview_enabled) = args_parser::fetch();
 

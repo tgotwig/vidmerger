@@ -1,5 +1,6 @@
 use std::fs::{self, DirEntry};
 use std::path::Path;
+use std::process::exit;
 
 use regex::Regex;
 
@@ -48,7 +49,13 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Vec<DirEntry> {
     paths
 }
 
-pub fn is_ffmpeg_available() -> bool {
+pub fn exit_when_ffmpg_not_available() {
+    if !is_ffmpeg_available() {
+        exit(1);
+    }
+}
+
+fn is_ffmpeg_available() -> bool {
     if cfg!(target_os = "windows") {
         if which::which("ffmpeg.exe").is_err() {
             eprintln!("ffmpeg.exe not found 😬");
