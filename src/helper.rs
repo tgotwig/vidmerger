@@ -4,11 +4,11 @@ use std::process::exit;
 
 use regex::Regex;
 
-pub fn format_path(path_to_vids: String) -> String {
+pub fn format_path(path_to_vids: &str) -> String {
     let path_to_vids: String = if path_to_vids.starts_with('\\') {
         path_to_vids.replacen("\\", "", 1)
     } else {
-        path_to_vids
+        path_to_vids.into()
     };
 
     let path_to_vids: String = if !path_to_vids.ends_with('/') && !path_to_vids.ends_with('\\') {
@@ -88,19 +88,19 @@ mod tests {
     #[test]
     fn test_format_path() {
         assert_eq!(
-            format_path(String::from("c:\\path\\to\\vids")),
+            format_path(&String::from("c:\\path\\to\\vids")),
             "c:/path/to/vids/"
         );
         assert_eq!(
-            format_path(String::from("\\path\\to\\vids")),
+            format_path(&String::from("\\path\\to\\vids")),
             "path/to/vids/"
         );
         assert_eq!(
-            format_path(String::from("\\path\\to\\vids\\")),
+            format_path(&String::from("\\path\\to\\vids\\")),
             "path/to/vids/"
         );
-        assert_eq!(format_path(String::from("path/to/vids")), "path/to/vids/");
-        assert_eq!(format_path(String::from("path/to/vids/")), "path/to/vids/");
+        assert_eq!(format_path(&String::from("path/to/vids")), "path/to/vids/");
+        assert_eq!(format_path(&String::from("path/to/vids/")), "path/to/vids/");
     }
 
     #[test]
