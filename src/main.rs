@@ -20,14 +20,14 @@ fn main() -> std::io::Result<()> {
     let (dir, formats, preview_enabled) = local_args_parser::fetch();
 
     for file_format in helper::string_to_vec(formats) {
-        let input_vids_path = helper::format_path(dir.clone());
-        let input_vids_path = Path::new(&input_vids_path);
-        let output_list_path = input_vids_path.join("list.txt");
-        let output_vid_path = input_vids_path.join(format!("output.{}", file_format));
+        let input_vids = helper::format_path(dir.clone());
+        let input_vids = Path::new(&input_vids);
+        let output_list = input_vids.join("list.txt");
+        let output_vid = input_vids.join(format!("output.{}", file_format));
 
-        remove_previously_generated_video(&output_vid_path);
+        remove_previously_generated_video(&output_vid);
 
-        let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids_path);
+        let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids);
 
         let list = helper::generate_list_of_vids(file_format.as_str(), paths);
 
@@ -35,11 +35,11 @@ fn main() -> std::io::Result<()> {
             println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&list));
 
             if !preview_enabled {
-                write_list_txt(&output_list_path, list); // list.txt
+                write_list_txt(&output_list, list); // list.txt
 
                 let ffmpeg_args = remote_args_factory::make(
-                    &output_list_path.to_str().unwrap(),
-                    output_vid_path.to_str().unwrap().to_string(),
+                    &output_list.to_str().unwrap(),
+                    output_vid.to_str().unwrap().to_string(),
                 );
 
                 let child = if cfg!(target_os = "windows") {
@@ -49,7 +49,7 @@ fn main() -> std::io::Result<()> {
                 };
 
                 logger::print_end_status(child, file_format);
-                fs::remove_file(output_list_path.to_str().unwrap())?; // list.txt
+                fs::remove_file(output_list.to_str().unwrap())?; // list.txt
             }
         }
     }
@@ -57,13 +57,13 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn remove_previously_generated_video(output_vid_path: &Path) {
-    if Path::new(output_vid_path).exists() {
-        fs::remove_file(output_vid_path).unwrap();
+fn remove_previously_generated_video(output_vid: &Path) {
+    if Path::new(output_vid).exists() {
+        fs::remove_file(output_vid).unwrap();
     }
 }
 
-fn write_list_txt(output_list_path: &Path, list: String) {
-    let mut file = File::create(output_list_path.to_str().unwrap()).unwrap();
+fn write_list_txt(output_list: &Path, list: String) {
+    let mut file = File::create(output_list.to_str().unwrap()).unwrap();
     file.write_all(list.as_bytes()).unwrap();
 }
