@@ -11,6 +11,7 @@ use term_painter::ToStyle;
 mod args_parser;
 mod cmd;
 mod helper;
+mod remote_args_factory;
 
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
@@ -51,16 +52,10 @@ fn main() -> std::io::Result<()> {
                 let mut file = File::create(output_list_path.to_str().unwrap())?;
                 file.write_all(list.as_bytes())?;
 
-                let ffmpeg_args = [
-                    "-y",
-                    "-f",
-                    "concat",
-                    "-i",
-                    output_list_path.to_str().unwrap(),
-                    "-c",
-                    "copy",
-                    output_vid_path.to_str().unwrap(),
-                ];
+                let ffmpeg_args = remote_args_factory::make(
+                    &output_list_path.to_str().unwrap(),
+                    output_vid_path.to_str().unwrap().to_string(),
+                );
 
                 let child = if cfg!(target_os = "windows") {
                     cmd::merge(true, ffmpeg_args)
