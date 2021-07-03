@@ -8,15 +8,15 @@ use std::vec::Vec;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
-mod args_parser;
 mod cmd;
 mod helper;
+mod local_args_parser;
 mod remote_args_factory;
 
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
 
-    let (dir, format, preview_enabled) = args_parser::fetch();
+    let (dir, format, preview_enabled) = local_args_parser::fetch();
 
     // creates a vector with the passed file formats or default ones
     let file_formats: Vec<_> = format
