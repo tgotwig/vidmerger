@@ -38,9 +38,7 @@ fn main() -> std::io::Result<()> {
 
             // only continue if the preview flag isn't set
             if !preview_enabled {
-                // write list.txt
-                let mut file = File::create(output_list_path.to_str().unwrap())?;
-                file.write_all(list.as_bytes())?;
+                write_list_txt(&output_list_path, list); // list.txt
 
                 let ffmpeg_args = remote_args_factory::make(
                     &output_list_path.to_str().unwrap(),
@@ -73,4 +71,9 @@ fn remove_previously_generated_video(output_vid_path: &Path) {
     if Path::new(output_vid_path).exists() {
         fs::remove_file(output_vid_path).unwrap();
     }
+}
+
+fn write_list_txt(output_list_path: &Path, list: String) {
+    let mut file = File::create(output_list_path.to_str().unwrap()).unwrap();
+    file.write_all(list.as_bytes()).unwrap();
 }
