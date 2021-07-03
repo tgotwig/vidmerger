@@ -29,7 +29,6 @@ fn main() -> std::io::Result<()> {
         remove_previously_generated_video(&output_vid);
 
         let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids);
-
         let list = helper::generate_list_of_vids(file_format.as_str(), paths);
 
         if !list.is_empty() {
@@ -54,7 +53,6 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
-
     Ok(())
 }
 
