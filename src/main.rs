@@ -12,14 +12,14 @@ use term_painter::ToStyle;
 
 mod cmd;
 mod helper;
-mod local_args_parser;
+mod local_args;
 mod logger;
 mod remote_args_factory;
 
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
 
-    let (dir, formats, preview_enabled) = local_args_parser::fetch();
+    let (dir, formats, preview_enabled) = local_args::get();
 
     for file_format in helper::string_to_vec(formats) {
         let input_vids = Path::new(helper::format_path(&*dir));
