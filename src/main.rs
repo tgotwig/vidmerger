@@ -68,8 +68,8 @@ fn write_list_txt(output_list: &Path, list: String) {
 }
 
 fn print_preview(preview: &str) {
-    println!("\nOrder of merging 👇\n\n{}\n", BrightBlue.paint(&preview));
-    println!("Starts after 3 seconds... ⏳\n");
+    println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
+    println!("⏳ Starts after 3 seconds...\n");
     thread::sleep(time::Duration::from_secs(3));
 }
 
