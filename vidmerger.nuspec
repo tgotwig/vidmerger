@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>vidmerger</id>
-    <version>0.1.4</version>
+    <version>0.1.5</version>
     <title>vidmerger</title>
     <authors>Thomas Gotwig</authors>
     <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>
