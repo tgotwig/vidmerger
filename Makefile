@@ -11,7 +11,7 @@ prepare:
 	echo Files inside of data: && ls data
 
 run:
-	cargo run -- data -s 320:240
+	cargo run -- data -s 640:480
 
 run-docker:
 	make build-linux

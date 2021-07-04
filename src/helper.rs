@@ -4,6 +4,8 @@ use std::process::exit;
 
 use regex::Regex;
 
+use crate::local_args;
+
 pub fn format_path(path_to_vids: &str) -> &'static str {
     let path_to_vids: String = if path_to_vids.starts_with('\\') {
         path_to_vids.replacen("\\", "", 1)
@@ -24,17 +26,34 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> 
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
 
+    let (_, _, _, scale) = local_args::get();
+
     for path in paths {
         let path = path.path();
         if re.is_match(&format!("{}", path.display())) {
-            if list.chars().count() == 0 {
-                list = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
-            } else {
-                list = format!(
-                    "{}\nfile '{}'",
-                    list,
-                    path.file_name().unwrap().to_str().unwrap()
-                );
+            if scale.is_none() {
+                if list.chars().count() == 0 {
+                    list = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
+                } else {
+                    list = format!(
+                        "{}\nfile '{}'",
+                        list,
+                        path.file_name().unwrap().to_str().unwrap()
+                    );
+                }
+            } else if scale.is_some() {
+                if list.chars().count() == 0 {
+                    list = format!(
+                        "file 'scaled_vids/{}'",
+                        path.file_name().unwrap().to_str().unwrap()
+                    );
+                } else {
+                    list = format!(
+                        "{}\nfile 'scaled_vids/{}'",
+                        list,
+                        path.file_name().unwrap().to_str().unwrap()
+                    );
+                }
             }
         }
     }
