@@ -13,9 +13,19 @@ lazy_static! {
 pub fn merge(args: [String; 8]) -> Result<Child, std::io::Error> {
     let cmd = format!("{} {}", *FFMPEG_BINARY_NAME, args.join(" "));
 
-    println!("Calling: '{}' 🚀\n", cmd);
+    println!("🚀 Calling: '{}'\n", cmd);
     Command::new(*FFMPEG_BINARY_NAME)
         .args(&args)
         .stdout(Stdio::piped())
         .spawn()
+}
+
+pub fn scale(args: [String; 5]) {
+    let cmd = format!("{} {}", *FFMPEG_BINARY_NAME, args.join(" "));
+    println!("🚀 Calling: '{}'", cmd);
+
+    Command::new(*FFMPEG_BINARY_NAME)
+        .args(&args)
+        .output()
+        .unwrap();
 }

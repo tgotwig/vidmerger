@@ -15,6 +15,7 @@ mod helper;
 mod local_args;
 mod logger;
 mod remote_args_factory;
+mod scaler;
 
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
@@ -33,7 +34,8 @@ fn main() -> std::io::Result<()> {
 
         if !list.is_empty() {
             if scale.is_some() {
-                create_dir("scaled_vids");
+                create_dir(&Path::new(&dir).join("scaled_vids").to_str().unwrap());
+                scaler::execute(&file_format, paths);
             }
 
             print_preview(&list);
@@ -41,7 +43,7 @@ fn main() -> std::io::Result<()> {
             if !preview_enabled {
                 write_list_txt(&output_list, list); // list.txt
 
-                let ffmpeg_args = remote_args_factory::make(
+                let ffmpeg_args = remote_args_factory::make_merge_args(
                     &output_list.to_str().unwrap(),
                     output_vid.to_str().unwrap().to_string(),
                 );
@@ -73,7 +75,7 @@ fn print_preview(preview: &str) {
     thread::sleep(time::Duration::from_secs(3));
 }
 
-fn create_dir(name: &'static str) {
+fn create_dir(name: &str) {
     if Path::new(name).exists() {
         fs::remove_dir_all(name).unwrap()
     }
