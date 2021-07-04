@@ -46,11 +46,7 @@ fn main() -> std::io::Result<()> {
                     output_vid.to_str().unwrap().to_string(),
                 );
 
-                let child = if cfg!(target_os = "windows") {
-                    cmd::merge(true, ffmpeg_args)
-                } else {
-                    cmd::merge(false, ffmpeg_args)
-                };
+                let child = cmd::merge(ffmpeg_args);
 
                 logger::print_end_status(child, file_format);
                 fs::remove_file(output_list.to_str().unwrap())?; // list.txt
