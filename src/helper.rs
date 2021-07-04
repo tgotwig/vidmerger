@@ -23,6 +23,7 @@ pub fn format_path(path_to_vids: &str) -> &'static str {
 pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
+
     for path in paths {
         let path = path.path();
         if re.is_match(&format!("{}", path.display())) {
