@@ -17,7 +17,6 @@ mod commanders;
 mod helper;
 mod local_args;
 mod remote_args_factory;
-mod scaler;
 
 fn main() -> std::io::Result<()> {
     helper::exit_when_ffmpg_not_available();
@@ -37,7 +36,7 @@ fn main() -> std::io::Result<()> {
         if !list.is_empty() {
             if scale.is_some() {
                 create_dir(&Path::new(&dir).join("scaled_vids").to_str().unwrap());
-                scaler::execute(&file_format, paths);
+                commanders::scaler::execute(&file_format, paths);
             }
 
             print_preview(&list);
