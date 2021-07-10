@@ -6,22 +6,6 @@ use regex::Regex;
 
 use crate::local_args;
 
-pub fn format_path(path_to_vids: &str) -> &'static str {
-    let path_to_vids: String = if path_to_vids.starts_with('\\') {
-        path_to_vids.replacen("\\", "", 1)
-    } else {
-        path_to_vids.into()
-    };
-
-    let path_to_vids: String = if !path_to_vids.ends_with('/') && !path_to_vids.ends_with('\\') {
-        format!("{}/", path_to_vids)
-    } else {
-        path_to_vids
-    };
-
-    Box::leak(path_to_vids.replace("\\", "/").into_boxed_str())
-}
-
 pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
@@ -104,24 +88,6 @@ mod tests {
     use std::fs::File;
 
     use super::*;
-
-    #[test]
-    fn test_format_path() {
-        assert_eq!(
-            format_path(&String::from("c:\\path\\to\\vids")),
-            "c:/path/to/vids/"
-        );
-        assert_eq!(
-            format_path(&String::from("\\path\\to\\vids")),
-            "path/to/vids/"
-        );
-        assert_eq!(
-            format_path(&String::from("\\path\\to\\vids\\")),
-            "path/to/vids/"
-        );
-        assert_eq!(format_path(&String::from("path/to/vids")), "path/to/vids/");
-        assert_eq!(format_path(&String::from("path/to/vids/")), "path/to/vids/");
-    }
 
     #[test]
     fn test_get_sorted_paths() {

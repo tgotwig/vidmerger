@@ -10,6 +10,8 @@ use std::vec::Vec;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
+use path_slash::PathExt;
+
 mod cmd;
 mod helper;
 mod local_args;
@@ -23,7 +25,7 @@ fn main() -> std::io::Result<()> {
     let (dir, formats, preview_enabled, scale) = local_args::get();
 
     for file_format in helper::string_to_vec(formats) {
-        let input_vids = Path::new(helper::format_path(&*dir));
+        let input_vids = Path::new(dir.as_str());
         let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
 
@@ -44,8 +46,8 @@ fn main() -> std::io::Result<()> {
                 write_list_txt(&output_list, list); // list.txt
 
                 let ffmpeg_args = remote_args_factory::make_merge_args(
-                    &output_list.to_str().unwrap(),
-                    output_vid.to_str().unwrap().to_string(),
+                    &output_list.to_slash().unwrap(),
+                    output_vid.to_slash().unwrap().to_string(),
                 );
 
                 let child = cmd::merge(ffmpeg_args);
@@ -65,7 +67,7 @@ fn remove_previously_generated_video(output_vid: &Path) {
 }
 
 fn write_list_txt(output_list: &Path, list: String) {
-    let mut file = File::create(output_list.to_str().unwrap()).unwrap();
+    let mut file = File::create(output_list.to_slash().unwrap()).unwrap();
     file.write_all(list.as_bytes()).unwrap();
 }
 
