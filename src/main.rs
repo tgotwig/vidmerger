@@ -13,9 +13,9 @@ use term_painter::ToStyle;
 use path_slash::PathExt;
 
 mod cmd;
+mod commanders;
 mod helper;
 mod local_args;
-mod merger;
 mod remote_args_factory;
 mod scaler;
 
@@ -50,7 +50,7 @@ fn main() -> std::io::Result<()> {
                     output_vid.to_slash().unwrap().to_string(),
                 );
 
-                merger::merge(ffmpeg_args, file_format);
+                commanders::merger::merge(ffmpeg_args, file_format);
                 fs::remove_file(output_list.to_str().unwrap())?; // list.txt
             }
         }
