@@ -15,7 +15,7 @@ use path_slash::PathExt;
 mod cmd;
 mod helper;
 mod local_args;
-mod logger;
+mod merger;
 mod remote_args_factory;
 mod scaler;
 
@@ -50,9 +50,7 @@ fn main() -> std::io::Result<()> {
                     output_vid.to_slash().unwrap().to_string(),
                 );
 
-                let child = cmd::merge(ffmpeg_args);
-
-                logger::print_end_status(child, file_format);
+                merger::merge(ffmpeg_args, file_format);
                 fs::remove_file(output_list.to_str().unwrap())?; // list.txt
             }
         }
