@@ -1,8 +1,8 @@
 #![deny(warnings)]
 
 use core::time;
-use std::fs::{self, File};
-use std::io::{Result, Write};
+use std::fs::{self};
+use std::io::{Result};
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::vec::Vec;
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
             print_preview(&list);
 
             if !preview_enabled {
-                write_list_txt(&output_list, list); // list.txt
+                helper::write_list_txt(&output_list, list); // list.txt
 
                 let ffmpeg_args = remote_args_factory::make_merge_args(
                     &output_list.to_slash().unwrap(),
@@ -54,11 +54,6 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn write_list_txt(output_list: &Path, list: String) {
-    let mut file = File::create(output_list.to_slash().unwrap()).unwrap();
-    file.write_all(list.as_bytes()).unwrap();
 }
 
 fn print_preview(preview: &str) {

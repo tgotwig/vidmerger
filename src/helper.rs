@@ -1,8 +1,9 @@
-use std::fs::{self};
-use std::io::Result;
+use std::fs::{self, File};
+use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
+use path_slash::PathExt;
 use regex::Regex;
 
 use crate::local_args;
@@ -66,6 +67,11 @@ pub fn remove_previously_generated_video(output_vid: &Path) -> Result<()> {
         fs::remove_file(output_vid)?;
     }
     Ok(())
+}
+
+pub fn write_list_txt(output_list: &Path, list: String) {
+    let mut file = File::create(output_list.to_slash().unwrap()).unwrap();
+    file.write_all(list.as_bytes()).unwrap();
 }
 
 pub fn exit_when_ffmpg_not_available() {
