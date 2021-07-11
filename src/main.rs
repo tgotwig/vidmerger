@@ -17,7 +17,7 @@ mod helper;
 mod local_args;
 mod remote_args_factory;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<()> {
     helper::exit_when_ffmpg_not_available();
 
     let (dir, formats, preview_enabled, scale) = local_args::get();

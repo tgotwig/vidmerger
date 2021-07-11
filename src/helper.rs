@@ -1,5 +1,5 @@
 use std::fs::{self};
-use std::io;
+use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -44,10 +44,10 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     list
 }
 
-pub fn get_sorted_paths(input_vids_path: &Path) -> io::Result<Vec<PathBuf>> {
+pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     let mut paths = fs::read_dir(input_vids_path)?
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()?;
+        .collect::<Result<Vec<_>>>()?;
     paths.sort();
     Ok(paths)
 }

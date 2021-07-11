@@ -1,4 +1,4 @@
-use std::process::{Child, Command, Stdio};
+use std::{io::Error, process::{Child, Command, Stdio}};
 
 use clap::lazy_static::lazy_static;
 
@@ -10,7 +10,7 @@ lazy_static! {
     };
 }
 
-pub fn merge(args: [String; 8]) -> Result<Child, std::io::Error> {
+pub fn merge(args: [String; 8]) -> Result<Child, Error> {
     let cmd = format!("{} {}", *FFMPEG_BINARY_NAME, args.join(" "));
 
     println!("🚀 Calling: '{}'\n", cmd);
