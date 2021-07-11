@@ -2,7 +2,7 @@
 
 use core::time;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::vec::Vec;
@@ -27,7 +27,7 @@ fn main() -> std::io::Result<()> {
         let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
 
-        remove_previously_generated_video(&output_vid);
+        remove_previously_generated_video(&output_vid)?;
 
         let paths: Vec<PathBuf> = helper::get_sorted_paths(&input_vids)?;
         let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
@@ -56,10 +56,12 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn remove_previously_generated_video(output_vid: &Path) {
+fn remove_previously_generated_video(output_vid: &Path) -> Result<()> {
     if Path::new(output_vid).exists() {
-        fs::remove_file(output_vid).unwrap();
+        println!("🔥 Removing {}", output_vid.display());
+        fs::remove_file(output_vid)?;
     }
+    Ok(())
 }
 
 fn write_list_txt(output_list: &Path, list: String) {
