@@ -12,7 +12,6 @@ use term_painter::ToStyle;
 
 use path_slash::PathExt;
 
-mod cmd;
 mod commanders;
 mod helper;
 mod local_args;

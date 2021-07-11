@@ -2,7 +2,7 @@ use std::fs::DirEntry;
 
 use regex::Regex;
 
-use crate::{cmd, remote_args_factory};
+use crate::{commanders::_cmd, remote_args_factory};
 
 pub fn execute(file_format: &str, paths: Vec<DirEntry>) {
     println!("👷 Start rescaling videos...\n");
@@ -14,7 +14,7 @@ pub fn execute(file_format: &str, paths: Vec<DirEntry>) {
             let file = path.file_name().unwrap().to_str().unwrap();
 
             let args = remote_args_factory::make_scale_args(file);
-            cmd::scale(args);
+            _cmd::scale(args);
         }
     }
     println!("\n🙌 Scaled!");
