@@ -1,19 +1,19 @@
-use std::fs::{self, DirEntry};
-use std::path::Path;
+use std::fs::{self};
+use std::io;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use regex::Regex;
 
 use crate::local_args;
 
-pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> String {
+pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
 
     let (_, _, _, scale) = local_args::get();
 
     for path in paths {
-        let path = path.path();
         if re.is_match(&format!("{}", path.display())) {
             if scale.is_none() {
                 if list.chars().count() == 0 {
@@ -44,13 +44,12 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[std::fs::DirEntry]) -> 
     list
 }
 
-pub fn get_sorted_paths(input_vids_path: &Path) -> Vec<DirEntry> {
-    let mut paths: Vec<_> = fs::read_dir(input_vids_path)
-        .unwrap()
-        .map(|r| r.unwrap())
-        .collect();
-    paths.sort_by_key(|input_vids_path| input_vids_path.path());
-    paths
+pub fn get_sorted_paths(input_vids_path: &Path) -> io::Result<Vec<PathBuf>> {
+    let mut paths = fs::read_dir(input_vids_path)?
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()?;
+    paths.sort();
+    Ok(paths)
 }
 
 pub fn string_to_vec(string: String) -> Vec<String> {
@@ -85,29 +84,8 @@ fn is_ffmpeg_available() -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
 
     use super::*;
-
-    #[test]
-    fn test_get_sorted_paths() {
-        if cfg!(target_os = "macos") {
-            fs::create_dir("test").unwrap();
-            File::create("test/4").unwrap();
-            File::create("test/3").unwrap();
-
-            let paths: Vec<_> = fs::read_dir("test").unwrap().map(|r| r.unwrap()).collect();
-            assert_eq!(
-                format!("{:?}", paths),
-                "[DirEntry(\"test/4\"), DirEntry(\"test/3\")]"
-            );
-            assert_eq!(
-                format!("{:?}", get_sorted_paths(Path::new("test"))),
-                "[DirEntry(\"test/3\"), DirEntry(\"test/4\")]"
-            );
-            fs::remove_dir_all("test").unwrap();
-        }
-    }
 
     #[test]
     fn test_is_ffmpeg_available() {

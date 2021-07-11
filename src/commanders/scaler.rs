@@ -1,15 +1,14 @@
-use std::fs::DirEntry;
+use std::path::PathBuf;
 
 use regex::Regex;
 
 use crate::{commanders::_cmd, remote_args_factory};
 
-pub fn execute(file_format: &str, paths: Vec<DirEntry>) {
+pub fn execute(file_format: &str, paths: Vec<PathBuf>) {
     println!("👷 Start rescaling videos...\n");
     let regex_str = format!(r"\.{}$", regex::escape(&file_format.to_string()));
     let re = Regex::new(regex_str.as_str()).unwrap();
     for path in paths {
-        let path = path.path();
         if re.is_match(&format!("{}", path.display())) {
             let file = path.file_name().unwrap().to_str().unwrap();
 

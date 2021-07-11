@@ -1,9 +1,9 @@
 #![deny(warnings)]
 
 use core::time;
-use std::fs::{self, DirEntry, File};
+use std::fs::{self, File};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::thread;
 use std::vec::Vec;
 
@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
 
         remove_previously_generated_video(&output_vid);
 
-        let paths: Vec<DirEntry> = helper::get_sorted_paths(&input_vids);
+        let paths: Vec<PathBuf> = helper::get_sorted_paths(&input_vids)?;
         let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
 
         if !list.is_empty() {
