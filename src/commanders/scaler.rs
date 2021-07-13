@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use regex::Regex;
 
-use crate::{commanders::_cmd, remote_args_factory};
+use crate::{commanders::_cmd, ffmpeg_args_factory};
 
 pub fn execute(file_format: &str, paths: Vec<PathBuf>) {
     println!("👷 Start rescaling videos...\n");
@@ -12,7 +12,7 @@ pub fn execute(file_format: &str, paths: Vec<PathBuf>) {
         if re.is_match(&format!("{}", path.display())) {
             let file = path.file_name().unwrap().to_str().unwrap();
 
-            let args = remote_args_factory::make_scale_args(file);
+            let args = ffmpeg_args_factory::make_scale_args(file);
             _cmd::scale(args);
         }
     }

@@ -15,7 +15,7 @@ use path_slash::PathExt;
 mod commanders;
 mod helper;
 mod config;
-mod remote_args_factory;
+mod ffmpeg_args_factory;
 
 fn main() -> Result<()> {
     helper::exit_when_ffmpg_not_available();
@@ -43,7 +43,7 @@ fn main() -> Result<()> {
             if !preview_enabled {
                 helper::write_list_txt(&output_list, list); // list.txt
 
-                let ffmpeg_args = remote_args_factory::make_merge_args(
+                let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
                     &output_list.to_slash().unwrap(),
                     output_vid.to_slash().unwrap().to_string(),
                 );
