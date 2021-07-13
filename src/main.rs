@@ -29,7 +29,7 @@ fn main() -> Result<()> {
 
         if !list.is_empty() {
             if scale.is_some() {
-                create_dir(&Path::new(&dir).join("scaled_vids").to_str().unwrap());
+                helper::create_dir(&Path::new(&dir).join("scaled_vids").to_str().unwrap());
                 commanders::scaler::execute(&file_format, paths);
             }
 
@@ -49,11 +49,4 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn create_dir(name: &str) {
-    if Path::new(name).exists() {
-        fs::remove_dir_all(name).unwrap()
-    }
-    fs::create_dir(name).unwrap()
 }

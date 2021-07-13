@@ -86,6 +86,13 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     list
 }
 
+pub fn create_dir(name: &str) {
+    if Path::new(name).exists() {
+        fs::remove_dir_all(name).unwrap()
+    }
+    fs::create_dir(name).unwrap()
+}
+
 pub fn print_preview(preview: &str) {
     println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
     println!("⏳ Starts after 3 seconds...\n");
