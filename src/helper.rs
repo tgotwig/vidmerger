@@ -8,6 +8,42 @@ use regex::Regex;
 
 use crate::config;
 
+pub fn exit_when_ffmpeg_not_available() {
+    if cfg!(target_os = "windows") {
+        if which::which("ffmpeg.exe").is_err() {
+            eprintln!("ffmpeg.exe not found 😬");
+            exit(1);
+        }
+    } else if which::which("ffmpeg").is_err() {
+        eprintln!("ffmpeg not found 😬");
+        exit(1);
+    }
+}
+
+pub fn split(string: String) -> Vec<String> {
+    let file_formats: Vec<_> = string
+        .lines()
+        .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+    file_formats[0].clone()
+}
+
+pub fn remove_file(path: &Path) -> Result<()> {
+    if Path::new(path).exists() {
+        println!("🔥 Removing {}", path.display());
+        fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
+pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
+    let mut paths = fs::read_dir(input_vids_path)?
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>>>()?;
+    paths.sort();
+    Ok(paths)
+}
+
 pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
@@ -45,43 +81,7 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     list
 }
 
-pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
-    let mut paths = fs::read_dir(input_vids_path)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>>>()?;
-    paths.sort();
-    Ok(paths)
-}
-
-pub fn split(string: String) -> Vec<String> {
-    let file_formats: Vec<_> = string
-        .lines()
-        .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
-        .collect::<Vec<_>>();
-    file_formats[0].clone()
-}
-
-pub fn remove_file(path: &Path) -> Result<()> {
-    if Path::new(path).exists() {
-        println!("🔥 Removing {}", path.display());
-        fs::remove_file(path)?;
-    }
-    Ok(())
-}
-
 pub fn write(path: &Path, string: String) {
     let mut file = File::create(path.to_slash().unwrap()).unwrap();
     file.write_all(string.as_bytes()).unwrap();
-}
-
-pub fn exit_when_ffmpeg_not_available() {
-    if cfg!(target_os = "windows") {
-        if which::which("ffmpeg.exe").is_err() {
-            eprintln!("ffmpeg.exe not found 😬");
-            exit(1);
-        }
-    } else if which::which("ffmpeg").is_err() {
-        eprintln!("ffmpeg not found 😬");
-        exit(1);
-    }
 }
