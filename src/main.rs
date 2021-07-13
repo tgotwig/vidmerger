@@ -14,13 +14,13 @@ use path_slash::PathExt;
 
 mod commanders;
 mod helper;
-mod local_args;
+mod config;
 mod remote_args_factory;
 
 fn main() -> Result<()> {
     helper::exit_when_ffmpg_not_available();
 
-    let (dir, formats, preview_enabled, scale) = local_args::get();
+    let (dir, formats, preview_enabled, scale) = config::get();
 
     for file_format in helper::string_to_vec(formats) {
         let input_vids = Path::new(dir.as_str());

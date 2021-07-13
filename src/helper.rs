@@ -6,13 +6,13 @@ use std::process::exit;
 use path_slash::PathExt;
 use regex::Regex;
 
-use crate::local_args;
+use crate::config;
 
 pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
 
-    let (_, _, _, scale) = local_args::get();
+    let (_, _, _, scale) = config::get();
 
     for path in paths {
         if re.is_match(&format!("{}", path.display())) {

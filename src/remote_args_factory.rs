@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::local_args;
+use crate::config;
 
 pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [String; 8] {
     [
@@ -16,7 +16,7 @@ pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [Stri
 }
 
 pub fn make_scale_args(file: &str) -> [String; 5] {
-    let (dir, _, _, scale) = local_args::get();
+    let (dir, _, _, scale) = config::get();
     let scale = scale.unwrap();
 
     let src_vid = format!("{}", Path::new(&dir).join(file).display());
