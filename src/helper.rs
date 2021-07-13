@@ -69,9 +69,9 @@ pub fn remove_file(path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn write_list_txt(output_list: &Path, list: String) {
-    let mut file = File::create(output_list.to_slash().unwrap()).unwrap();
-    file.write_all(list.as_bytes()).unwrap();
+pub fn write(path: &Path, string: String) {
+    let mut file = File::create(path.to_slash().unwrap()).unwrap();
+    file.write_all(string.as_bytes()).unwrap();
 }
 
 pub fn exit_when_ffmpeg_not_available() {

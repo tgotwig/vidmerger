@@ -41,7 +41,7 @@ fn main() -> Result<()> {
             print_preview(&list);
 
             if !preview_enabled {
-                helper::write_list_txt(&output_list, list); // list.txt
+                helper::write(&output_list, list); // list.txt
 
                 let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
                     &output_list.to_slash().unwrap(),
