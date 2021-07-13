@@ -61,10 +61,10 @@ pub fn string_to_vec(string: String) -> Vec<String> {
     file_formats[0].clone()
 }
 
-pub fn remove_previously_generated_video(output_vid: &Path) -> Result<()> {
-    if Path::new(output_vid).exists() {
-        println!("🔥 Removing {}", output_vid.display());
-        fs::remove_file(output_vid)?;
+pub fn remove_file(path: &Path) -> Result<()> {
+    if Path::new(path).exists() {
+        println!("🔥 Removing {}", path.display());
+        fs::remove_file(path)?;
     }
     Ok(())
 }

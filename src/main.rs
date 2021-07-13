@@ -27,7 +27,7 @@ fn main() -> Result<()> {
         let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
 
-        helper::remove_previously_generated_video(&output_vid)?;
+        helper::remove_file(&output_vid)?;
 
         let paths: Vec<PathBuf> = helper::get_sorted_paths(&input_vids)?;
         let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
