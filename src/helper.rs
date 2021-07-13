@@ -75,34 +75,13 @@ pub fn write(path: &Path, string: String) {
 }
 
 pub fn exit_when_ffmpeg_not_available() {
-    if !is_ffmpeg_available() {
-        exit(1);
-    }
-}
-
-fn is_ffmpeg_available() -> bool {
     if cfg!(target_os = "windows") {
         if which::which("ffmpeg.exe").is_err() {
             eprintln!("ffmpeg.exe not found 😬");
-            false
-        } else {
-            true
+            exit(1);
         }
     } else if which::which("ffmpeg").is_err() {
         eprintln!("ffmpeg not found 😬");
-        false
-    } else {
-        true
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-
-    #[test]
-    fn test_is_ffmpeg_available() {
-        assert_eq!(is_ffmpeg_available(), true);
+        exit(1);
     }
 }
