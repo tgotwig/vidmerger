@@ -1,14 +1,9 @@
 #![deny(warnings)]
 
-use core::time;
 use std::fs::{self};
 use std::io::{Result};
 use std::path::{Path, PathBuf};
-use std::thread;
 use std::vec::Vec;
-
-use term_painter::Color::BrightBlue;
-use term_painter::ToStyle;
 
 use path_slash::PathExt;
 
@@ -38,7 +33,7 @@ fn main() -> Result<()> {
                 commanders::scaler::execute(&file_format, paths);
             }
 
-            print_preview(&list);
+            helper::print_preview(&list);
 
             if !preview_enabled {
                 helper::write(&output_list, list); // list.txt
@@ -54,12 +49,6 @@ fn main() -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn print_preview(preview: &str) {
-    println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
-    println!("⏳ Starts after 3 seconds...\n");
-    thread::sleep(time::Duration::from_secs(3));
 }
 
 fn create_dir(name: &str) {

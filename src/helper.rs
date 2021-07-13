@@ -1,10 +1,15 @@
+use core::time;
 use std::fs::{self, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
+use std::thread;
 
 use path_slash::PathExt;
 use regex::Regex;
+
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
 use crate::config;
 
@@ -79,6 +84,12 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
         }
     }
     list
+}
+
+pub fn print_preview(preview: &str) {
+    println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
+    println!("⏳ Starts after 3 seconds...\n");
+    thread::sleep(time::Duration::from_secs(3));
 }
 
 pub fn write(path: &Path, string: String) {
