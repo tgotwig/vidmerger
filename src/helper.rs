@@ -53,7 +53,7 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
-pub fn string_to_vec(string: String) -> Vec<String> {
+pub fn split(string: String) -> Vec<String> {
     let file_formats: Vec<_> = string
         .lines()
         .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())

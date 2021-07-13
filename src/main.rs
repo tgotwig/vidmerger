@@ -22,7 +22,7 @@ fn main() -> Result<()> {
 
     let (dir, formats, preview_enabled, scale) = config::get();
 
-    for file_format in helper::string_to_vec(formats) {
+    for file_format in helper::split(formats) {
         let input_vids = Path::new(dir.as_str());
         let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
