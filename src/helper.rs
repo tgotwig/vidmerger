@@ -74,7 +74,7 @@ pub fn write_list_txt(output_list: &Path, list: String) {
     file.write_all(list.as_bytes()).unwrap();
 }
 
-pub fn exit_when_ffmpg_not_available() {
+pub fn exit_when_ffmpeg_not_available() {
     if !is_ffmpeg_available() {
         exit(1);
     }

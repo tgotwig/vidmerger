@@ -18,7 +18,7 @@ mod config;
 mod ffmpeg_args_factory;
 
 fn main() -> Result<()> {
-    helper::exit_when_ffmpg_not_available();
+    helper::exit_when_ffmpeg_not_available();
 
     let (dir, formats, preview_enabled, scale) = config::get();
 
