@@ -17,20 +17,11 @@ pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [Stri
 
 pub fn make_scale_args(file: &str) -> [String; 5] {
     let (dir, _, _, scale) = config::get();
-    let scale = scale.unwrap();
-
-    let src_vid = format!("{}", Path::new(&dir).join(file).display());
-    let tar_scale = format!("{}{}", "scale=", scale);
-    let tar_vid = format!(
-        "{}",
-        Path::new(&dir).join("scaled_vids").join(file).display()
-    );
-
     [
         String::from("-i"),
-        src_vid,
+        format!("{}", Path::new(&dir).join(file).display()),
         String::from("-vf"),
-        tar_scale,
-        tar_vid,
+        format!("scale={}", scale.unwrap()),
+        format!("{}", Path::new(&dir).join("scaled_vids").join(file).display()),
     ]
 }
