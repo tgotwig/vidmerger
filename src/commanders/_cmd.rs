@@ -1,4 +1,7 @@
-use std::{io::Error, process::{Child, Command, Stdio}};
+use std::{
+    io::Error,
+    process::{Child, Command, Stdio},
+};
 
 use clap::lazy_static::lazy_static;
 

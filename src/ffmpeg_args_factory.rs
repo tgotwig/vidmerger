@@ -22,6 +22,9 @@ pub fn make_scale_args(file: &str) -> [String; 5] {
         format!("{}", Path::new(&dir).join(file).display()),
         String::from("-vf"),
         format!("scale={}", scale.unwrap()),
-        format!("{}", Path::new(&dir).join("scaled_vids").join(file).display()),
+        format!(
+            "{}",
+            Path::new(&dir).join("scaled_vids").join(file).display()
+        ),
     ]
 }

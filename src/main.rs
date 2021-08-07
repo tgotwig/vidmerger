@@ -1,16 +1,16 @@
 #![deny(warnings)]
 
 use std::fs::{self};
-use std::io::{Result};
+use std::io::Result;
 use std::path::{Path, PathBuf};
 use std::vec::Vec;
 
 use path_slash::PathExt;
 
 mod commanders;
-mod helper;
 mod config;
 mod ffmpeg_args_factory;
+mod helper;
 
 fn main() -> Result<()> {
     helper::exit_when_ffmpeg_not_available();
