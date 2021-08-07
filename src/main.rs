@@ -24,12 +24,12 @@ fn main() -> Result<()> {
 
         helper::remove_file(&output_vid)?;
 
-        let paths: Vec<PathBuf> = helper::get_sorted_paths(&input_vids)?;
+        let paths: Vec<PathBuf> = helper::get_sorted_paths(input_vids)?;
         let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
 
         if !list.is_empty() {
             if scale.is_some() {
-                helper::create_dir(&Path::new(&dir).join("scaled_vids").to_str().unwrap());
+                helper::create_dir(Path::new(&dir).join("scaled_vids").to_str().unwrap());
                 commanders::scaler::execute(&file_format, paths);
             }
 
