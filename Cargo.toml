@@ -7,6 +7,7 @@ version = "0.1.5"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+assert_cmd = "2.0.0"
 clap = {version = "3.0.0-beta.1", features = ["yaml"]}
 path-slash = "0.1.4"
 regex = "1"
