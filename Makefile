@@ -44,10 +44,6 @@ shasum:
 	shasum -a 256 tools/vidmerger.exe
 
 test:
-	cargo run --release --verbose -- data -f mp4
-	cargo run --release --verbose -- data/ -f mp4
-	cd data && \
-		cargo run --release --verbose -- . -f mp4
 	cargo test
 
 lint:
