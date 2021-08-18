@@ -22,4 +22,11 @@ mod integration {
                 .stderr("ffmpeg not found 😬\n");
         }
     }
+
+    #[test]
+    fn calling_vidmerger_in_preview_mode() {
+        // todo: don't remove file in preview mode
+        let mut cmd = Command::cargo_bin(BIN).unwrap();
+        cmd.arg("data").arg("--preview").assert().success();
+    }
 }

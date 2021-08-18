@@ -94,9 +94,12 @@ pub fn create_dir(name: &str) {
 }
 
 pub fn print_preview(preview: &str) {
+    let (_, _, preview_enabled, _) = config::get();
     println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
-    println!("⏳ Starts after 3 seconds...\n");
-    thread::sleep(time::Duration::from_secs(3));
+    if !preview_enabled {
+        println!("⏳ Starts after 3 seconds...\n");
+        thread::sleep(time::Duration::from_secs(3));
+    }
 }
 
 pub fn write(path: &Path, string: String) {
