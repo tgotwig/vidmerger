@@ -29,4 +29,13 @@ mod integration {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data").arg("--preview").assert().success();
     }
+
+    #[test]
+    fn calling_vidmerger_against_mp4() {
+        let mut cmd = Command::cargo_bin(BIN).unwrap();
+        cmd.arg("data")
+            .args(&["--format", "mp4"])
+            .assert()
+            .success();
+    }
 }
