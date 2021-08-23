@@ -21,3 +21,6 @@ args:
       long: scale
       about: Scales all videos up before merging, a valid value would be "320:240"
       takes_value: true
+  - shutdown:
+      long: shutdown
+      about: For doing a shutdown at the end (needs sudo)

@@ -6,7 +6,7 @@ lazy_static! {
         .get_matches();
 }
 
-pub fn get() -> (String, String, bool, Option<&'static str>) {
+pub fn get() -> (String, String, bool, Option<&'static str>, bool) {
     return (
         ARGS.value_of("DIR").unwrap().to_string(),
         ARGS.value_of("format")
@@ -14,5 +14,6 @@ pub fn get() -> (String, String, bool, Option<&'static str>) {
             .to_string(),
         ARGS.is_present("preview"),
         ARGS.value_of("scale"),
+        ARGS.is_present("shutdown"),
     );
 }

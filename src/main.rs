@@ -1,7 +1,7 @@
 #![deny(warnings)]
 
-use std::fs::{self};
-use std::io::Result;
+use std::fs::remove_file;
+use std::io::Error;
 use std::path::{Path, PathBuf};
 use std::vec::Vec;
 
@@ -12,10 +12,12 @@ mod config;
 mod ffmpeg_args_factory;
 mod helper;
 
-fn main() -> Result<()> {
+use system_shutdown::shutdown;
+
+fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
 
-    let (dir, formats, preview_enabled, scale) = config::get();
+    let (dir, formats, preview_enabled, scale, should_shutdown) = config::get();
 
     for file_format in helper::split(formats) {
         let input_vids = Path::new(dir.as_str());
@@ -44,9 +46,17 @@ fn main() -> Result<()> {
                 );
 
                 commanders::merger::merge(ffmpeg_args, file_format);
-                fs::remove_file(output_list.to_str().unwrap())?; // list.txt
+                remove_file(output_list.to_str().unwrap())?; // list.txt
             }
         }
     }
-    Ok(())
+
+    if should_shutdown {
+        match shutdown() {
+            Ok(_) => Ok(()),
+            Err(error) => Err(error),
+        }
+    } else {
+        Ok(())
+    }
 }

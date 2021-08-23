@@ -11,5 +11,6 @@ assert_cmd = "2.0.0"
 clap = {version = "3.0.0-beta.1", features = ["yaml"]}
 path-slash = "0.1.4"
 regex = "1"
+system_shutdown = "3.0.0"
 term-painter = "0.2.4"
 which = "4.0.2"

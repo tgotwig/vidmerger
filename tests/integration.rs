@@ -31,6 +31,15 @@ mod integration {
     }
 
     #[test]
+    fn calling_vidmerger_with_shutdown_without_sudo() {
+        if cfg!(target_os = "windows") {
+        } else {
+            let mut cmd = Command::cargo_bin(BIN).unwrap();
+            cmd.arg("data").arg("--shutdown").assert().failure();
+        }
+    }
+
+    #[test]
     fn calling_vidmerger_against_mp4() {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data")
