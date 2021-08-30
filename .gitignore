@@ -1,9 +1,9 @@
+**/*.rs.bk
+*.mp4
+.DS_Store
+.vscode
 /target/
 Cargo.lock
-**/*.rs.bk
-.DS_Store
 data
 list.txt
 vidmerger.exe
-*.mp4
-.vscode
