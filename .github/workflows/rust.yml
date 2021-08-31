@@ -7,64 +7,71 @@ env:
 
 jobs:
   MacOS:
+    name: 🍎 MacOS
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v2
+        uses: actions/checkout@v2
 
-      - name: Test linting
+      - name: 🕵️ Run linter
         run: rustup component add clippy && cargo clippy
 
-      - name: Install youtube-dl
+      - name: ⬇ Install youtube-dl
         run: brew install youtube-dl
-      - name: Download videos
+      - name: ⬇️ Download videos
         run: make prepare
 
-      - name: Install ffmpeg
+      - name: ⬇️ Install ffmpeg
         run: brew install ffmpeg
 
-      - name: Build and run vidmerger
+      - name: 🕵️ Run tests
         run: make test
   Ubuntu:
     runs-on: ubuntu-latest
+    name: 🐧 Ubuntu
     steps:
-      - uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v2
+        uses: actions/checkout@v2
 
-      - name: Test linting
+      - name: 🕵️ Run linter
         run: rustup component add clippy && cargo clippy
 
-      - name: Install youtube-dl
+      - name: ⬇️ Install youtube-dl
         run: |
           sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
           sudo chmod a+rx /usr/local/bin/youtube-dl
-      - name: Download videos
+      - name: ⬇️ Download videos
         run: make prepare
 
-      - name: Install ffmpeg
+      - name: ⬇️ Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Build and run vidmerger
+      - name: 🕵️ Run tests
         run: make test
   Windows:
     runs-on: windows-latest
+    name: 🏳️‍🌈 Windows
     steps:
-      - uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v2
+        uses: actions/checkout@v2
 
-      - name: Test linting
+      - name: 🕵️ Run linter
         run: rustup component add clippy && cargo clippy
 
-      - name: Install chocolatey
+      - name: ⬇️ Install chocolatey
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: -h
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: ⬇️ Install nmake
+        uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install youtube-dl
+      - name: ⬇️ Install youtube-dl
         run: choco install youtube-dl
-      - name: Download videos
+      - name: ⬇️ Download videos
         run: nmake prepare
 
-      - name: Install ffmpeg
+      - name: ⬇️ Install ffmpeg
         run: choco install ffmpeg
 
-      - name: Build and run vidmerger
+      - name: 🕵️ Run tests
         run: nmake test
