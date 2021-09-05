@@ -11,19 +11,20 @@ Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-f
 
 ```shell
 USAGE:
-    vidmerger [OPTIONS] <DIR>
+    vidmerger [FLAGS] [OPTIONS] <DIR>
 
 ARGS:
-    <DIR>    Sets the directory to use
+    <DIR>    Sets the input file to use
 
 FLAGS:
-    -h, --help       Prints help information
-    -p, --preview    Prints previews of the merge-orders without merging them
-    -V, --version    Prints version information
+    -h, --help        Prints help information
+    -p, --preview     Prints previews of the merge-orders without merging them
+        --shutdown    For doing a shutdown at the end (needs sudo)
+    -V, --version     Prints version information
 
 OPTIONS:
-    -f, --format <format>   Specifies which formats should be merged individually,
-                            the default is 👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv
+    -f, --format <format>    Specifies which formats should be merged individually, the default is
+                             👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv
     -s, --scale <scale>      Scales all videos up before merging, a valid value would be "320:240"
 ```
 
