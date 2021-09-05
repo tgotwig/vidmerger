@@ -1,5 +1,5 @@
 name: vidmerger
-version: "0.1.5"
+version: "0.1.6"
 author: Thomas Gotwig <tgotwig@gmail.com>
 about: A wrapper around ffmpeg which simlifies merging multiple videos 🎞
 args:
