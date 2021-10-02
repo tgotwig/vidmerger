@@ -7,7 +7,6 @@ install:
 
 prepare:
 	youtube-dl -o data/1.mp4 -f 22 https://www.youtube.com/watch?v=zGDzdps75ns && cd data && cp 1.mp4 2.mp4
-	youtube-dl -o data/1.webm -f 302 https://www.youtube.com/watch?v=zGDzdps75ns && cd data && cp 1.webm 2.webm
 	echo Files inside of data: && ls data
 
 run:
