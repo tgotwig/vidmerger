@@ -52,6 +52,14 @@ brew install vidmerger
 
 ---
 
+Wget on Linux 🐧
+
+```bash
+sudo wget -c https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux.tar.gz -O - | sudo tar -xz -C /usr/local/bin
+```
+
+---
+
 [Chocolatey 🍫](https://chocolatey.org/packages/vidmerger) on Windows 🏳️‍🌈
 
 ```powershell
