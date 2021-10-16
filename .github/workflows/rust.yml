@@ -16,8 +16,11 @@ jobs:
       - name: 🕵️ Run linter
         run: rustup component add clippy && cargo clippy
 
-      - name: ⬇ Install youtube-dl
-        run: brew install youtube-dl
+      - name: ⬇ Install yt-dlp
+        run: |
+          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
+          chmod a+rx yt-dlp
+          echo "$(pwd)" >> $GITHUB_PATH
       - name: ⬇️ Download videos
         run: make prepare
 
@@ -36,10 +39,11 @@ jobs:
       - name: 🕵️ Run linter
         run: rustup component add clippy && cargo clippy
 
-      - name: ⬇️ Install youtube-dl
+      - name: ⬇️ Install yt-dlp
         run: |
-          sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
-          sudo chmod a+rx /usr/local/bin/youtube-dl
+          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
+          chmod a+rx yt-dlp
+          echo "$(pwd)" >> $GITHUB_PATH
       - name: ⬇️ Download videos
         run: make prepare
 
@@ -65,8 +69,8 @@ jobs:
       - name: ⬇️ Install nmake
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: ⬇️ Install youtube-dl
-        run: choco install youtube-dl
+      - name: ⬇️ Install yt-dlp
+        run: choco install yt-dlp
       - name: ⬇️ Download videos
         run: nmake prepare
 

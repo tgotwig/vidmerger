@@ -113,7 +113,6 @@ There it is! 🎉🎊🥳📺🍿
 
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger).
 
-
 ```bash
 docker container run -v <ABSOLUTE-PATH-TO-YOUR-VIDEOS>:/data tgotwig/vidmerger
 ```
@@ -133,8 +132,8 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 ### Prerequisites
 
 - [Rust 2018+](https://www.rust-lang.org/tools/install)
-- [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html) (for tests 🧪)
-- [ffmpeg](https://ffmpeg.org/download.html) (for tests 🧪)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) or [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html)
+- [ffmpeg](https://ffmpeg.org/download.html)
 - If you are on Windows and want to have the `make` command: [Windows Subsystem for Linux with Ubuntu](https://www.microsoft.com/de-de/p/ubuntu-2004-lts/9n6svws3rx71?activetab=pivot:overviewtab)
 
 ### Setting up Dev
@@ -174,7 +173,8 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🧪 Tests
 
-There are some shell- and cargo-tests, which can be run by `make test`, requires youtube-dl and ffmpeg installed.
+- For major tests: `make test` (requires `yt-dlp` / `youtube-dl` and `ffmpeg` to be installed)
+- For linting tests: `make lint`
 
 ## 🌟 Style guide
 
