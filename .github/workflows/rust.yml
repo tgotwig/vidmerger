@@ -6,15 +6,20 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  Linter:
+    runs-on: ubuntu-latest
+    name: 🧹 Linter
+    steps:
+      - name: 🚀 actions/checkout@v2
+        uses: actions/checkout@v2
+      - name: 🕵️ Run linter
+        run: cargo clippy
   MacOS:
     name: 🍎 MacOS
     runs-on: macos-latest
     steps:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
-
-      - name: 🕵️ Run linter
-        run: cargo clippy
 
       - name: ⬇ Install yt-dlp
         run: |
@@ -38,9 +43,6 @@ jobs:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
 
-      - name: 🕵️ Run linter
-        run: rustup component add clippy && cargo clippy
-
       - name: ⬇️ Install yt-dlp
         run: |
           wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
@@ -60,9 +62,6 @@ jobs:
     steps:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
-
-      - name: 🕵️ Run linter
-        run: rustup component add clippy && cargo clippy
 
       - name: ⬇️ Install chocolatey
         uses: crazy-max/ghaction-chocolatey@v1
