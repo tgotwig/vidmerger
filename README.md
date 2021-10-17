@@ -7,7 +7,7 @@
 
 ## 🙉 What is this exactly?
 
-Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension together into one file, for example running `vidmerger .` on mp4 files would create a merged video called `output.mp4` 🐣
+Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension into one file, for example running `vidmerger .` on mp4 files would create a merged video called `output.mp4` 🐣
 
 Here is the usage help of vidmerger 🤗
 
