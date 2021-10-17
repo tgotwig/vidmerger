@@ -7,7 +7,9 @@
 
 ## 🙉 What is this exactly?
 
-Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension together into one file called _output.FORMAT_. It also includes a usage help 🤗
+Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension together into one file, for example running `vidmerger .` on mp4 files would create a merged video called `output.mp4` 🐣
+
+Here is the usage help of vidmerger 🤗
 
 ```shell
 USAGE:
@@ -66,48 +68,6 @@ sudo wget -c https://github.com/TGotwig/vidmerger/releases/latest/download/vidme
 choco install ffmpeg # prerequisite
 choco install vidmerger
 ```
-
----
-
-### ⭐️ Using Vidmerger ⭐️
-
-First of all lets see what we have:
-
-```fish
-↪ exa -lh | awk '{print $2,$7}'
-Size
-328k 1.mp4
-328k 2.mp4
-```
-
-now just run the following line:
-
-```fish
-↪ vidmerger .
-
-Order of merging 👇
-
-file '1.mp4'
-file '2.mp4'
-
-Calling: 'ffmpeg -y -f concat -i data/list.txt -c copy data/output.mp4' 🚀
-
-...
-
-Successfully generated 'output.mp4'! 😆🎞
-```
-
-per default it goes through the filename extensions **avchd,avi,flv,mkv,mov,mp4,webm,wmv** and tries to merge all mp4 files to out.mp4, all webm files to out.webm, and so on 😊 When everything went smooth, it should look like this:
-
-```fish
-↪ exa -lh | awk '{print $2,$7}'
-Size
-328k 1.mp4
-328k 2.mp4
-664k output.mp4
-```
-
-There it is! 🎉🎊🥳📺🍿
 
 ## 🐳 Run it without installing
 
