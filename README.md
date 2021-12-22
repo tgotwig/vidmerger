@@ -37,7 +37,6 @@ You can install it on all the three major operating systems 🤗
 [Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) on MacOS 🍏
 
 ```bash
-brew install ffmpeg # prerequisite
 brew tap tgotwig/vidmerger
 brew install vidmerger
 ```
@@ -47,7 +46,6 @@ brew install vidmerger
 [Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) on Linux 🐧
 
 ```bash
-sudo snap install ffmpeg --edge # prerequisite
 brew tap tgotwig/linux-vidmerger
 brew install vidmerger
 ```
