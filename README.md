@@ -34,7 +34,7 @@ OPTIONS:
 
 You can install it on all the three major operating systems 🤗
 
-[Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) on MacOS 🍏
+🍎 MacOS with [Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb)
 
 ```bash
 brew tap tgotwig/vidmerger
@@ -43,16 +43,14 @@ brew install vidmerger
 
 ---
 
-[Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) on Linux 🐧
+🐧 Linux with [Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb)
 
 ```bash
 brew tap tgotwig/linux-vidmerger
 brew install vidmerger
 ```
 
----
-
-Wget on Linux 🐧
+🐧 Linux with Wget 📟
 
 ```bash
 sudo wget -c https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux.tar.gz -O - | sudo tar -xz -C /usr/local/bin
@@ -60,7 +58,7 @@ sudo wget -c https://github.com/TGotwig/vidmerger/releases/latest/download/vidme
 
 ---
 
-[Chocolatey 🍫](https://chocolatey.org/packages/vidmerger) on Windows 🏳️‍🌈
+🏳️‍🌈 Windows with [Chocolatey 🍫](https://chocolatey.org/packages/vidmerger)
 
 ```powershell
 choco install ffmpeg # prerequisite
