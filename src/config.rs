@@ -1,7 +1,36 @@
-use clap::{lazy_static::lazy_static, load_yaml, App, AppSettings, ArgMatches};
+use clap::{lazy_static::lazy_static, App, AppSettings, Arg, ArgMatches};
 
 lazy_static! {
-    static ref ARGS: ArgMatches = App::from(load_yaml!("cli.yaml"))
+    static ref ARGS: ArgMatches = App::new("vidmerger")
+        .version("0.1.6")
+        .author("Thomas Gotwig")
+        .about("A wrapper around ffmpeg which simlifies merging multiple videos 🎞")
+        .arg(Arg::new("DIR")
+            .about("Sets the input file to use")
+            .required(true)
+            .index(1)
+        )
+        .arg(Arg::new("format")
+            .short('f')
+            .long("format")
+            .about("Specifies which formats should be merged individually, the default is 👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv")
+            .takes_value(true)
+        )
+        .arg(Arg::new("preview")
+            .short('p')
+            .long("preview")
+            .about("Prints previews of the merge-orders without merging them")
+        )
+        .arg(Arg::new("scale")
+            .short('s')
+            .long("scale")
+            .about("Scales all videos up before merging, a valid value would be \"320:240\"")
+            .takes_value(true)
+        )
+        .arg(Arg::new("shutdown")
+            .long("shutdown")
+            .about("For doing a shutdown at the end (needs sudo)")
+        )
         .setting(AppSettings::ArgRequiredElseHelp)
         .get_matches();
 }
