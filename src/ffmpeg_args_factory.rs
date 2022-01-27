@@ -16,7 +16,7 @@ pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [Stri
 }
 
 pub fn make_scale_args(file: &str) -> [String; 5] {
-    let (dir, _, _, scale, _) = config::get();
+    let (dir, scale) = (config::get_dir(), config::get_scale());
     [
         String::from("-i"),
         format!("{}", Path::new(&dir).join(file).display()),

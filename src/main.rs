@@ -17,7 +17,13 @@ use system_shutdown::shutdown;
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
 
-    let (dir, formats, preview_enabled, scale, should_shutdown) = config::get();
+    let (dir, formats, preview_enabled, scale, should_shutdown) = (
+        config::get_dir(),
+        config::get_format(),
+        config::get_preview(),
+        config::get_scale(),
+        config::get_shutdown(),
+    );
 
     for file_format in helper::split(formats) {
         let input_vids = Path::new(dir.as_str());

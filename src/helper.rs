@@ -53,7 +53,7 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
 
-    let (_, _, _, scale, _) = config::get();
+    let scale = config::get_scale();
 
     for path in paths {
         if re.is_match(&format!("{}", path.display())) {
@@ -94,7 +94,7 @@ pub fn create_dir(name: &str) {
 }
 
 pub fn print_preview(preview: &str) {
-    let (_, _, preview_enabled, _, _) = config::get();
+    let preview_enabled = config::get_preview();
     println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
     if !preview_enabled {
         println!("⏳ Starts after 3 seconds...\n");
