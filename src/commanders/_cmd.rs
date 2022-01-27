@@ -13,7 +13,7 @@ lazy_static! {
     };
 }
 
-pub fn merge(args: [String; 8]) -> Result<Child, Error> {
+pub fn merge(args: [String; 10]) -> Result<Child, Error> {
     let cmd = format!("{} {}", *FFMPEG_BINARY_NAME, args.join(" "));
 
     println!("🚀 Calling: '{}'\n", cmd);
