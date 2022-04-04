@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::config;
 
@@ -17,7 +17,7 @@ pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [Stri
     ]
 }
 
-pub fn make_scale_args(file: &str, tmp_dir: &PathBuf) -> [String; 5] {
+pub fn make_scale_args(file: &str, tmp_dir: &Path) -> [String; 5] {
     let (dir, scale) = (config::get_dir(), config::get_scale());
     [
         String::from("-i"),
