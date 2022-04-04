@@ -45,7 +45,7 @@ shasum:
 	shasum -a 256 tools/vidmerger.exe
 
 test:
-	cargo test -q -- --test-threads 1
+	cargo test -q
 
 lint:
 	cargo clippy
