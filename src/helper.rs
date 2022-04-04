@@ -107,9 +107,13 @@ pub fn print_preview(preview: &str) {
     }
 }
 
-pub fn create_list_txt(string: String) -> PathBuf {
-    let mut dir = temp_dir().join(nanoid!(8));
+pub fn create_tmp_dir() -> PathBuf {
+    let dir = temp_dir().join(nanoid!(8));
     fs::create_dir(&dir).unwrap();
+    dir
+}
+
+pub fn create_list_txt(string: String, mut dir: PathBuf) -> PathBuf {
     dir.push("list.txt");
     File::create(&dir)
         .unwrap()

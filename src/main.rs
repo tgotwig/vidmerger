@@ -34,15 +34,17 @@ fn main() -> Result<(), Error> {
         let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
 
         if !list.is_empty() {
+            let tmp_dir = helper::create_tmp_dir();
+
             if scale.is_some() {
-                helper::create_dir(Path::new(&dir).join("scaled_vids").to_str().unwrap());
-                commanders::scaler::execute(&file_format, paths);
+                helper::create_dir(tmp_dir.join("scaled_vids").to_str().unwrap());
+                commanders::scaler::execute(&file_format, paths, &tmp_dir);
             }
 
             helper::print_preview(&list);
 
             if !preview_enabled {
-                let list_txt = helper::create_list_txt(list);
+                let list_txt = helper::create_list_txt(list, tmp_dir);
 
                 let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
                     &list_txt.to_slash().unwrap(),
