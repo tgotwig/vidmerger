@@ -1,12 +1,14 @@
 use core::time;
+use std::env::temp_dir;
 use std::fs::{self, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::thread;
 
-use path_slash::PathExt;
 use regex::Regex;
+
+use nanoid::nanoid;
 
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -59,12 +61,15 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
         if re.is_match(&format!("{}", path.display())) {
             if scale.is_none() {
                 if list.chars().count() == 0 {
-                    list = format!("file '{}'", path.file_name().unwrap().to_str().unwrap());
+                    list = format!(
+                        "file '{}'",
+                        fs::canonicalize(path).unwrap().to_str().unwrap()
+                    );
                 } else {
                     list = format!(
                         "{}\nfile '{}'",
                         list,
-                        path.file_name().unwrap().to_str().unwrap()
+                        fs::canonicalize(path).unwrap().to_str().unwrap()
                     );
                 }
             } else if scale.is_some() {
@@ -102,7 +107,13 @@ pub fn print_preview(preview: &str) {
     }
 }
 
-pub fn write(path: &Path, string: String) {
-    let mut file = File::create(path.to_slash().unwrap()).unwrap();
-    file.write_all(string.as_bytes()).unwrap();
+pub fn create_list_txt(string: String) -> PathBuf {
+    let mut dir = temp_dir().join(nanoid!(8));
+    fs::create_dir(&dir).unwrap();
+    dir.push("list.txt");
+    File::create(&dir)
+        .unwrap()
+        .write_all(string.as_bytes())
+        .unwrap();
+    dir
 }

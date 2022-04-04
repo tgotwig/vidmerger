@@ -1,6 +1,5 @@
 #![deny(warnings)]
 
-use std::fs::remove_file;
 use std::io::Error;
 use std::path::{Path, PathBuf};
 use std::vec::Vec;
@@ -27,7 +26,6 @@ fn main() -> Result<(), Error> {
 
     for file_format in helper::split(formats) {
         let input_vids = Path::new(dir.as_str());
-        let output_list = input_vids.join("list.txt");
         let output_vid = input_vids.join(format!("output.{}", file_format));
 
         helper::remove_file(&output_vid)?;
@@ -44,15 +42,14 @@ fn main() -> Result<(), Error> {
             helper::print_preview(&list);
 
             if !preview_enabled {
-                helper::write(&output_list, list); // list.txt
+                let list_txt = helper::create_list_txt(list);
 
                 let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
-                    &output_list.to_slash().unwrap(),
+                    &list_txt.to_slash().unwrap(),
                     output_vid.to_slash().unwrap().to_string(),
                 );
 
                 commanders::merger::merge(ffmpeg_args, file_format);
-                remove_file(output_list.to_str().unwrap())?; // list.txt
             }
         }
     }
