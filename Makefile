@@ -7,7 +7,7 @@ install:
 
 prepare:
 	yt-dlp -o data/1.mp4 -f 22 https://www.youtube.com/watch?v=zGDzdps75ns || youtube-dl -o data/1.mp4 -f 22 https://www.youtube.com/watch?v=zGDzdps75ns
-	cd data && cp 1.mp4 2.mp4	
+	cd data && cp 1.mp4 2.mp4 && touch .3.mp4
 	@echo ────────────────────────────
 	@echo Files inside of data: && ls data
 

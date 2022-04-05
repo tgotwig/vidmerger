@@ -54,11 +54,11 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
 pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
-
     let scale = config::get_scale();
 
     for path in paths {
-        if re.is_match(&format!("{}", path.display())) {
+        let display = path.display();
+        if !display.to_string().contains("/.") && re.is_match(&format!("{}", display)) {
             if scale.is_none() {
                 if list.chars().count() == 0 {
                     list = format!(
