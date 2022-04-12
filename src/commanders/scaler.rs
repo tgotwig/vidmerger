@@ -6,7 +6,7 @@ use crate::{commanders::_cmd, ffmpeg_args_factory};
 
 pub fn execute(file_format: &str, paths: Vec<PathBuf>, tmp_dir: &Path) {
     println!("👷 Start rescaling videos...\n");
-    let regex_str = format!(r"\.{}$", regex::escape(&file_format.to_string()));
+    let regex_str = format!(r"\.{}$", regex::escape(file_format));
     let re = Regex::new(regex_str.as_str()).unwrap();
     for path in paths {
         let display = path.display();
