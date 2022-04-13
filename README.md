@@ -103,6 +103,7 @@ The best is to increase all versions by _find and replace_, then after `make bui
 - Homebrew (Linux): Edit the version and the hash [there](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb).
 - Chocolatey (Windows): Edit the hash inside of _tools/VERIFICATION.txt_ and run `make publish-choco`.
 - Dockerhub: Run `make publish-dockerhub`.
+- Edit [CHANGELOG.md](CHANGELOG.md)
 
 ## 📦 Versioning
 
