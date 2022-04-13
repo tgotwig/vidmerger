@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Linux: `/tmp/<8-RAND-CHARS>`
   - Windows: `~/AppData/Local/Temp/<8-RAND-CHARS>`
 - Video files starting with a `.` will be ignored (can be the case when dealing with network volumes).
+- Append the following message to the success message: `(it can still be broken 🙈)`.
 
 ### Fixed
 
