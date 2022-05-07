@@ -58,7 +58,9 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
 
     for path in paths {
         let display = path.display();
-        if !display.to_string().contains("/.") && re.is_match(&format!("{}", display)) {
+        let display_str = display.to_string();
+        let file_starts_with_dot = display_str.contains("/.") || display_str.contains("\\.");
+        if !file_starts_with_dot && re.is_match(&format!("{}", display)) {
             if scale.is_none() {
                 if list.chars().count() == 0 {
                     list = format!(

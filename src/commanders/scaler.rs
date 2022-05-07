@@ -10,7 +10,9 @@ pub fn execute(file_format: &str, paths: Vec<PathBuf>, tmp_dir: &Path) {
     let re = Regex::new(regex_str.as_str()).unwrap();
     for path in paths {
         let display = path.display();
-        if !display.to_string().contains("/.") && re.is_match(&format!("{}", display)) {
+        let display_str = display.to_string();
+        let file_starts_with_dot = display_str.contains("/.") || display_str.contains("\\.");
+        if !file_starts_with_dot && re.is_match(&format!("{}", display)) {
             let file = path.file_name().unwrap().to_str().unwrap();
 
             let args = ffmpeg_args_factory::make_scale_args(file, tmp_dir);
