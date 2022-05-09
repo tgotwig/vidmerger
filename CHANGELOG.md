@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Set `-safe 0` to get rid of `[concat @ 0x55c6fb1e7600] Unsafe file name`.
 
-## 🎉 [0.1.6] - 2021-09-05
+## 🎉 [0.2.0] - 2021-09-05
 
 ### Added
 

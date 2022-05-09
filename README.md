@@ -35,7 +35,7 @@ OPTIONS:
 You can install it on all the three major operating systems 🤗
 
 | Platform       | Packager                                                                                    | Command                                                        |
-| -------------- |:------------------------------------------------------------------------------------------- |:-------------------------------------------------------------- |
+|:-------------- |:------------------------------------------------------------------------------------------- |:-------------------------------------------------------------- |
 | 🍎 MacOS       | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb)       | brew tap tgotwig/vidmerger<br>brew install vidmerger           |
 | 🐧 Linux       | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) | brew tap tgotwig/linux-vidmerger<br>brew install vidmerger     |
 | 🏳️‍🌈 Windows | 🍫 [Chocolatey](https://community.chocolatey.org/packages/vidmerger)                        | choco install ffmpeg # prerequisite<br>choco install vidmerger |

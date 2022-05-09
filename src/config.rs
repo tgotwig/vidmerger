@@ -2,7 +2,7 @@ use clap::{lazy_static::lazy_static, Arg, ArgMatches, Command};
 
 lazy_static! {
     static ref ARGS: ArgMatches = Command::new("vidmerger")
-        .version("0.1.6")
+        .version("0.2.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simlifies merging multiple videos 🎞")
         .arg(Arg::new("DIR")

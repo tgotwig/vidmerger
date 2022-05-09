@@ -2,7 +2,7 @@
 authors = ["tgotwig <thomas@tgotwig.dev>"]
 edition = "2021"
 name = "vidmerger"
-version = "0.1.6"
+version = "0.2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
