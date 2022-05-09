@@ -20,10 +20,10 @@ run-docker:
 	docker container run -it --rm -v `pwd`/data:/data vidmerger
 
 zip-mac:	
-	tar -C target/release -czf target/release/vidmerger-mac.tar.gz continuous-deployment
+	tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
 
 zip-linux:	
-	tar -C target/release -czf target/release/vidmerger-linux.tar.gz continuous-deployment
+	tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
 
 build:
 	make build-linux
