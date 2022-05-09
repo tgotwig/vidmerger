@@ -57,7 +57,7 @@ lint:
 	cargo clippy
 
 publish-choco:
-	cpack
+	choco pack
 	Get-ChildItem *.nupkg | ren -NewName vidmerger.nupkg
 	choco push vidmerger.nupkg --source https://push.chocolatey.org
 	Remove-Item vidmerger.nupkg
