@@ -34,35 +34,16 @@ OPTIONS:
 
 You can install it on all the three major operating systems 🤗
 
-🍎 MacOS with [Homebrew 🍺](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb)
+| Platform       | Packager                                                                                    | Command                                                        |
+| -------------- |:------------------------------------------------------------------------------------------- |:-------------------------------------------------------------- |
+| 🍎 MacOS       | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb)       | brew tap tgotwig/vidmerger<br>brew install vidmerger           |
+| 🐧 Linux       | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb) | brew tap tgotwig/linux-vidmerger<br>brew install vidmerger     |
+| 🏳️‍🌈 Windows | 🍫 [Chocolatey](https://community.chocolatey.org/packages/vidmerger)                        | choco install ffmpeg # prerequisite<br>choco install vidmerger |
 
-```bash
-brew tap tgotwig/vidmerger
-brew install vidmerger
-```
-
----
-
-🐧 Linux with [Homebrew 🍺](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb)
-
-```bash
-brew tap tgotwig/linux-vidmerger
-brew install vidmerger
-```
-
-🐧 Linux with Wget 📟
+Alternatively you can install it over Wget on Linux:
 
 ```bash
 sudo wget -c https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux.tar.gz -O - | sudo tar -xz -C /usr/local/bin
-```
-
----
-
-🏳️‍🌈 Windows with [Chocolatey 🍫](https://chocolatey.org/packages/vidmerger)
-
-```powershell
-choco install ffmpeg # prerequisite
-choco install vidmerger
 ```
 
 ## 🐳 Run it without installing
