@@ -1,3 +1,5 @@
+<!-- https://github.com/elsewhencode/project-guidelines/blob/master/README.sample.md -->
+
 <p align="center"><a><img src="http://www.angelfire.com/clone/saiyansforever/images/VegettoFusionHD.gif" alt="fusion gif" height="256"/></a></p>
 
 <h1 align="center">Vidmerger</h1>
