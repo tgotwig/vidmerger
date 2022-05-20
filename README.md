@@ -99,13 +99,16 @@ Run `make build` to build for Mac, Linux and Windows. You can find the compresse
 
 ### Deploying / Publishing
 
-The best is to increase all versions by _find and replace_, then after `make build`:
+#### Automated steps
 
-- Homebrew (MacOS): Edit the version and the hash [there](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb).
-- Homebrew (Linux): Edit the version and the hash [there](https://github.com/TGotwig/homebrew-linux-vidmerger/blob/master/vidmerger.rb).
+- Homebrew (MacOS & Linux): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
+
+#### Manual steps
+
+Increasing all versions by _find and replace_, then after `make build`:
+
 - Chocolatey (Windows): Edit the hash inside of _tools/VERIFICATION.txt_ and run `make publish-choco`.
 - Dockerhub: Run `make publish-dockerhub`.
-- Edit [CHANGELOG.md](CHANGELOG.md)
 
 ## 📦 Versioning
 
