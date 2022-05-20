@@ -70,7 +70,7 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 
 ### Prerequisites
 
-- [Rust 2018+](https://www.rust-lang.org/tools/install)
+- [Rust 2021](https://www.rust-lang.org/tools/install)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) or [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html)
 - [ffmpeg](https://ffmpeg.org/download.html)
 - If you are on Windows and want to have the `make` command: [Windows Subsystem for Linux with Ubuntu](https://www.microsoft.com/de-de/p/ubuntu-2004-lts/9n6svws3rx71?activetab=pivot:overviewtab)
