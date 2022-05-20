@@ -121,7 +121,9 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🌟 Style guide
 
-We are using [rust-clippy](rust-clippy) and [rls-vscode](https://github.com/rust-lang/rls-vscode).
+- [rust-clippy](rust-clippy)
+- [rls-vscode](https://github.com/rust-lang/rls-vscode)
+- [conventionalcommits](https://www.conventionalcommits.org/en/v1.0.0)
 
 ## 📜 Licensing
 
