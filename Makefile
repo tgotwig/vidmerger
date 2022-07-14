@@ -25,11 +25,15 @@ run-docker:
 	docker build -t vidmerger .
 	docker container run -it --rm -v `pwd`/data:/data vidmerger
 
-zip-mac:	
-	tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
+# ----------------------------------------------------------------
 
-zip-linux:	
-	tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
+test:
+	cargo test -q
+
+lint:
+	cargo clippy
+
+# ----------------------------------------------------------------
 
 build:
 	make build-linux
@@ -56,11 +60,13 @@ shasum:
 	shasum -a 256 target/release-archives/vidmerger*
 	shasum -a 256 tools/vidmerger.exe
 
-test:
-	cargo test -q
+zip-mac:
+	tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
 
-lint:
-	cargo clippy
+zip-linux:
+	tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
+
+# ----------------------------------------------------------------
 
 publish-choco:
 	choco pack
