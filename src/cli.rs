@@ -1,7 +1,12 @@
-use clap::{lazy_static::lazy_static, Arg, ArgMatches, Command};
+use clap::{Arg, ArgMatches, Command};
 
-lazy_static! {
-    static ref ARGS: ArgMatches = Command::new("vidmerger")
+pub struct Cli {
+    matches: ArgMatches,
+}
+
+impl Cli {
+    pub fn init() -> Self {
+        let matches = Command::new("vidmerger")
         .version("0.2.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simlifies merging multiple videos 🎞")
@@ -33,26 +38,11 @@ lazy_static! {
         )
         .arg_required_else_help(true)
         .get_matches();
-}
 
-pub fn get_dir() -> String {
-    ARGS.value_of("DIR").unwrap().to_string()
-}
+        Cli { matches }
+    }
 
-pub fn get_format() -> String {
-    ARGS.value_of("format")
-        .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
-        .to_string()
-}
-
-pub fn get_preview() -> bool {
-    ARGS.is_present("preview")
-}
-
-pub fn get_scale() -> Option<&'static str> {
-    ARGS.value_of("scale")
-}
-
-pub fn get_shutdown() -> bool {
-    ARGS.is_present("shutdown")
+    pub fn get_matches(self) -> ArgMatches {
+        self.matches
+    }
 }

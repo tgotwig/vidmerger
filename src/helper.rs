@@ -1,19 +1,12 @@
-use core::time;
 use std::env::temp_dir;
 use std::fs::{self, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use std::thread;
 
 use regex::Regex;
 
 use nanoid::nanoid;
-
-use term_painter::Color::BrightBlue;
-use term_painter::ToStyle;
-
-use crate::config;
 
 pub fn exit_when_ffmpeg_not_available() {
     if cfg!(target_os = "windows") {
@@ -51,10 +44,9 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
-pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
+pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf], scale: Option<&str>) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
-    let scale = config::get_scale();
 
     for path in paths {
         let display = path.display();
@@ -98,15 +90,6 @@ pub fn create_dir(name: &str) {
         fs::remove_dir_all(name).unwrap()
     }
     fs::create_dir(name).unwrap()
-}
-
-pub fn print_preview(preview: &str) {
-    let preview_enabled = config::get_preview();
-    println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&preview));
-    if !preview_enabled {
-        println!("⏳ Starts after 3 seconds...\n");
-        thread::sleep(time::Duration::from_secs(3));
-    }
 }
 
 pub fn create_tmp_dir() -> PathBuf {
