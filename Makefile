@@ -12,6 +12,12 @@ prepare:
 	@echo Files inside of data: && ls data
 
 run:
+	cargo run -- data
+
+run-with-preview:
+	cargo run -- data -p
+
+run-with-scaler:
 	cargo run -- data -s 640:480
 
 run-docker:
