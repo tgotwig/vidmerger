@@ -36,15 +36,21 @@ lint:
 # ----------------------------------------------------------------
 
 build:
-	make build-linux
+	make build-linux-amd64
+	make build-linux-arm64
 	make build-mac
 	make build-win
 	make shasum
 
-build-linux:
-	@echo 'Building for Linux... 🐧'
+build-linux-amd64:
+	@echo 'Building for Linux AMD64... 🐧'
 	cross build --release --target=x86_64-unknown-linux-musl
-	mkdir -p target/release-archives && tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux.tar.gz vidmerger
+	mkdir -p target/release-archives && tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux-amd64.tar.gz vidmerger
+
+build-linux-arm64:
+	@echo 'Building for Linux ARM64... 🐧'
+	cargo build --release
+	mkdir -p target/release-archives && tar -C target/release -czf target/release-archives/vidmerger-linux-arm64.tar.gz vidmerger
 
 build-mac:
 	@echo 'Building for MacOS... 🍏'
