@@ -3,6 +3,31 @@ mod integration {
 
     static BIN: &'static str = "vidmerger";
 
+    #[cfg(test)]
+    #[ctor::ctor]
+    fn prepare() {
+        use std::fs::{self, File};
+
+        println!("👷 Doing preparations...");
+
+        fs::remove_dir_all("data").unwrap_or_default();
+        let yt = check_for_yt_dlp_or_youtube_dl();
+
+        Command::new(yt)
+            .args(&[
+                "-o",
+                "data/1.mp4",
+                "-f",
+                "22",
+                "https://www.youtube.com/watch?v=zGDzdps75ns",
+            ])
+            .unwrap();
+        fs::copy("data/1.mp4", "data/2.mp4").unwrap();
+        File::create("data/.3.mp4").unwrap();
+
+        println!("✅ Preparations done!");
+    }
+
     #[test]
     fn calling_vidmerger() {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
@@ -47,5 +72,15 @@ mod integration {
             .args(&["--scale", "320:240"])
             .assert()
             .success();
+    }
+
+    fn check_for_yt_dlp_or_youtube_dl() -> &'static str {
+        if which::which("yt-dlp").is_ok() {
+            "yt-dlp"
+        } else if which::which("youtube-dl").is_ok() {
+            "youtube-dl"
+        } else {
+            panic!("Neither yt-dlp nor youtube-dl was found 😬")
+        }
     }
 }

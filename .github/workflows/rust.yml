@@ -26,8 +26,6 @@ jobs:
           wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
           chmod a+rx yt-dlp
           echo "$(pwd)" >> $GITHUB_PATH
-      - name: ⬇️ Download videos
-        run: make prepare
 
       - name: ⬇️ Install ffmpeg
         run: |
@@ -48,8 +46,6 @@ jobs:
           wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
           chmod a+rx yt-dlp
           echo "$(pwd)" >> $GITHUB_PATH
-      - name: ⬇️ Download videos
-        run: make prepare
 
       - name: ⬇️ Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -72,8 +68,6 @@ jobs:
 
       - name: ⬇️ Install yt-dlp
         run: choco install yt-dlp
-      - name: ⬇️ Download videos
-        run: nmake prepare
 
       - name: ⬇️ Install ffmpeg
         run: choco install ffmpeg
