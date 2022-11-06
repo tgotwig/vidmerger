@@ -12,7 +12,6 @@ pub fn merge(ffmpeg_args: [String; 10], file_format: String) {
             file_format
         )
     } else {
-        println!("❌ Something went wrong 😖");
-        println!("{:?}\n", res.unwrap_err())
+        panic!("❌ Something went wrong 😖\n{}", res.unwrap_err());
     }
 }
