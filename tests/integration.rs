@@ -100,6 +100,16 @@ mod integration {
             .success();
     }
 
+    #[test]
+    fn check_for_binaries() {
+        if which::which("youtube-dl").is_err() {
+            panic!("❌ youtube-dl wasn't found");
+        }
+        if which::which("ffmpeg").is_err() {
+            panic!("❌ ffmpeg wasn't found");
+        }
+    }
+
     // ----------------------------------------------------------------
 
     fn prep(fun_name: &str) {
