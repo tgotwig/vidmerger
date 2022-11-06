@@ -12,10 +12,3 @@ pub fn merge(args: [String; 10]) -> Result<Child, Error> {
         .stdout(Stdio::piped())
         .spawn()
 }
-
-pub fn scale(args: [String; 5]) {
-    let cmd = format!("ffmpeg {}", args.join(" "));
-    println!("🚀 Calling: '{}'", cmd);
-
-    Command::new("ffmpeg").args(&args).output().unwrap();
-}

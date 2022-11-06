@@ -11,9 +11,6 @@ run:
 run-with-preview:
 	cargo run -- data -p
 
-run-with-scaler:
-	cargo run -- data -s 640:480
-
 run-docker:
 	make build-linux
 	docker build -t vidmerger .

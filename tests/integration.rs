@@ -107,16 +107,6 @@ mod integration {
     }
 
     #[test]
-    fn call_merger_against_mp4_with_scaling() {
-        let mut cmd = Command::cargo_bin(BIN).unwrap();
-        cmd.arg("data")
-            .args(&["--format", "mp4"])
-            .args(&["--scale", "320:240"])
-            .assert()
-            .success();
-    }
-
-    #[test]
     fn check_for_binaries() {
         if which::which("youtube-dl").is_err() {
             panic!("❌ youtube-dl wasn't found");

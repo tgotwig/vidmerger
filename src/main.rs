@@ -9,8 +9,8 @@ use std::vec::Vec;
 use cli::Cli;
 use path_slash::PathExt;
 
-mod commanders;
 mod cli;
+mod commanders;
 mod ffmpeg_args_factory;
 mod helper;
 
@@ -22,14 +22,13 @@ use term_painter::ToStyle;
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
-    let (dir, formats, preview_enabled, scale, should_shutdown) = (
+    let (dir, formats, preview_enabled, should_shutdown) = (
         matches.value_of("DIR").unwrap().to_string(),
         matches
             .value_of("format")
             .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
             .to_string(),
         matches.is_present("preview"),
-        matches.value_of("scale"),
         matches.is_present("shutdown"),
     );
 
@@ -40,15 +39,10 @@ fn main() -> Result<(), Error> {
         helper::remove_file(&output_vid)?;
 
         let paths: Vec<PathBuf> = helper::get_sorted_paths(input_vids)?;
-        let list = helper::generate_list_of_vids(file_format.as_str(), &paths, scale);
+        let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
 
         if !list.is_empty() {
             let tmp_dir = helper::create_tmp_dir();
-
-            if scale.is_some() {
-                helper::create_dir(tmp_dir.join("scaled_vids").to_str().unwrap());
-                commanders::scaler::execute(&file_format, paths, &tmp_dir, &matches);
-            }
 
             println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&list));
             if !preview_enabled {

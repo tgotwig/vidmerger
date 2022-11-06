@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Remove `--scale`
 - Panic with error message from ffmpeg if something goes wrong.
 
 ## 🎉 [0.2.0] - 2022-05-09

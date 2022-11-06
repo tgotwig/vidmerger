@@ -39,7 +39,7 @@ pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
-pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf], scale: Option<&str>) -> String {
+pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
     let mut list = String::new();
     let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
 
@@ -48,43 +48,21 @@ pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf], scale: Option
         let display_str = display.to_string();
         let file_starts_with_dot = display_str.contains("/.") || display_str.contains("\\.");
         if !file_starts_with_dot && re.is_match(&format!("{}", display)) {
-            if scale.is_none() {
-                if list.chars().count() == 0 {
-                    list = format!(
-                        "file '{}'",
-                        fs::canonicalize(path).unwrap().to_str().unwrap()
-                    );
-                } else {
-                    list = format!(
-                        "{}\nfile '{}'",
-                        list,
-                        fs::canonicalize(path).unwrap().to_str().unwrap()
-                    );
-                }
-            } else if scale.is_some() {
-                if list.chars().count() == 0 {
-                    list = format!(
-                        "file 'scaled_vids/{}'",
-                        path.file_name().unwrap().to_str().unwrap()
-                    );
-                } else {
-                    list = format!(
-                        "{}\nfile 'scaled_vids/{}'",
-                        list,
-                        path.file_name().unwrap().to_str().unwrap()
-                    );
-                }
+            if list.chars().count() == 0 {
+                list = format!(
+                    "file '{}'",
+                    fs::canonicalize(path).unwrap().to_str().unwrap()
+                );
+            } else {
+                list = format!(
+                    "{}\nfile '{}'",
+                    list,
+                    fs::canonicalize(path).unwrap().to_str().unwrap()
+                );
             }
         }
     }
     list
-}
-
-pub fn create_dir(name: &str) {
-    if Path::new(name).exists() {
-        fs::remove_dir_all(name).unwrap()
-    }
-    fs::create_dir(name).unwrap()
 }
 
 pub fn create_tmp_dir() -> PathBuf {

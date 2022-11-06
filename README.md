@@ -37,7 +37,6 @@ FLAGS:
 OPTIONS:
     -f, --format <format>    Specifies which formats should be merged individually, the default is
                              👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv
-    -s, --scale <scale>      Scales all videos up before merging, a valid value would be "320:240"
 ```
 
 ## ✨ Installing / Getting started
