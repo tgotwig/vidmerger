@@ -21,10 +21,10 @@ jobs:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
 
-      - name: ⬇ Install yt-dlp
+      - name: ⬇ Install youtube-dl
         run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
+          wget https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl -O youtube-dl
+          chmod a+rx youtube-dl
           echo "$(pwd)" >> $GITHUB_PATH
 
       - name: ⬇️ Install ffmpeg
@@ -41,10 +41,10 @@ jobs:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
 
-      - name: ⬇️ Install yt-dlp
+      - name: ⬇️ Install youtube-dl
         run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
+          wget https://github.com/ytdl-org/youtube-dl/releases/latest/download/youtube-dl -O youtube-dl
+          chmod a+rx youtube-dl
           echo "$(pwd)" >> $GITHUB_PATH
 
       - name: ⬇️ Install ffmpeg
@@ -67,8 +67,8 @@ jobs:
   #     - name: ⬇️ Install nmake
   #       uses: ilammy/msvc-dev-cmd@v1
 
-  #     - name: ⬇️ Install yt-dlp
-  #       run: choco install yt-dlp
+  #     - name: ⬇️ Install youtube-dl
+  #       run: choco install youtube-dl
 
   #     - name: ⬇️ Install ffmpeg
   #       run: choco install ffmpeg

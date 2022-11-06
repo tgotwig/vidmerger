@@ -126,12 +126,10 @@ mod integration {
     }
 
     fn check_for_yt_dlp_or_youtube_dl() -> &'static str {
-        if which::which("yt-dlp").is_ok() {
-            "yt-dlp"
-        } else if which::which("youtube-dl").is_ok() {
+        if which::which("youtube-dl").is_ok() {
             "youtube-dl"
         } else {
-            panic!("Neither yt-dlp nor youtube-dl was found 😬")
+            panic!("No youtube-dl was found 😬")
         }
     }
 
