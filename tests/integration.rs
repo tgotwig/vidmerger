@@ -70,16 +70,13 @@ mod integration {
 
     #[test]
     fn call_merger_without_ffmpeg() {
-        // todo: 🐛 fix for windows
-        if cfg!(target_os = "windows") {
-        } else {
-            let mut cmd = Command::cargo_bin(BIN).unwrap();
-            cmd.arg("data")
-                .env_clear()
-                .assert()
-                .failure()
-                .stderr("ffmpeg not found 😬\n");
-        }
+        Command::cargo_bin(BIN)
+            .unwrap()
+            .arg("data")
+            .env_clear()
+            .assert()
+            .failure()
+            .stderr(format!("ffmpeg not found 😬\n"));
     }
 
     #[test]

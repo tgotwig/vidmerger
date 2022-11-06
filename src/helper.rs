@@ -9,12 +9,7 @@ use regex::Regex;
 use nanoid::nanoid;
 
 pub fn exit_when_ffmpeg_not_available() {
-    if cfg!(target_os = "windows") {
-        if which::which("ffmpeg.exe").is_err() {
-            eprintln!("ffmpeg.exe not found 😬");
-            exit(1);
-        }
-    } else if which::which("ffmpeg").is_err() {
+    if which::which("ffmpeg").is_err() {
         eprintln!("ffmpeg not found 😬");
         exit(1);
     }
