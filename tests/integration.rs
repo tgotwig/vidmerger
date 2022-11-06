@@ -29,30 +29,30 @@ mod integration {
 
     #[test]
     fn call_merger() {
-        let fun_name = function_name!().split("::").last().unwrap();
-        prep(fun_name);
+        let test_name = function_name!().split("::").last().unwrap();
+        prep(test_name);
 
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg(format!("data/{}", fun_name))
+                .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
         );
 
         assert!(res.contains("✅ Successfully generated"));
-        check_for_merged_file(fun_name);
+        check_for_merged_file(test_name);
     }
 
     #[test]
     fn call_merger_and_skip_hidden_vids() {
-        let fun_name = function_name!().split("::").last().unwrap();
-        prep_with_hidden_file(fun_name);
+        let test_name = function_name!().split("::").last().unwrap();
+        prep_with_hidden_file(test_name);
 
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg(format!("data/{}", fun_name))
+                .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
         );
@@ -60,7 +60,7 @@ mod integration {
         assert!(res.contains("✅ Successfully generated"));
         assert!(res.contains("1.mp4"));
         assert!(!res.contains(".3.mp4"));
-        check_for_merged_file(fun_name);
+        check_for_merged_file(test_name);
     }
 
     #[test]
@@ -112,19 +112,19 @@ mod integration {
 
     // ----------------------------------------------------------------
 
-    fn prep(fun_name: &str) {
-        fs::create_dir(format!("data/{}", fun_name)).unwrap_or_default();
-        fs::copy("data/1.mp4", format!("data/{}/1.mp4", fun_name)).unwrap();
-        fs::copy("data/2.mp4", format!("data/{}/2.mp4", fun_name)).unwrap();
+    fn prep(test_name: &str) {
+        fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
+        fs::copy("data/1.mp4", format!("data/{}/1.mp4", test_name)).unwrap();
+        fs::copy("data/2.mp4", format!("data/{}/2.mp4", test_name)).unwrap();
     }
 
-    fn prep_with_hidden_file(fun_name: &str) {
-        prep(fun_name);
-        std::fs::File::create(format!("data/{}/.3.mp4", fun_name)).unwrap();
+    fn prep_with_hidden_file(test_name: &str) {
+        prep(test_name);
+        std::fs::File::create(format!("data/{}/.3.mp4", test_name)).unwrap();
     }
 
-    fn check_for_merged_file(fun_name: &str) {
-        let len = fs::metadata(format!("data/{}/output.mp4", fun_name))
+    fn check_for_merged_file(test_name: &str) {
+        let len = fs::metadata(format!("data/{}/output.mp4", test_name))
             .unwrap()
             .len();
         assert_greater_than!(len, 9000);
