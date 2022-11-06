@@ -24,6 +24,9 @@ run-docker:
 test:
 	cargo test -q
 
+test-happy-path:
+	cargo test --test integration -- --exact --nocapture integration::call_merger
+
 lint:
 	cargo clippy
 
