@@ -50,6 +50,25 @@ mod integration {
     }
 
     #[test]
+    fn call_merger_and_skip_hidden_vids() {
+        let fun_name = function_name!().split("::").last().unwrap();
+        prep_with_hidden_file(fun_name);
+
+        let res = get_output(
+            Command::cargo_bin(BIN)
+                .unwrap()
+                .arg(format!("data/{}", fun_name))
+                .assert()
+                .success(),
+        );
+
+        assert!(res.contains("✅ Successfully generated"));
+        assert!(res.contains("1.mp4"));
+        assert!(!res.contains(".3.mp4"));
+        check_for_merged_file(fun_name);
+    }
+
+    #[test]
     fn call_merger_without_ffmpeg() {
         // todo: 🐛 fix for windows
         if cfg!(target_os = "windows") {
@@ -95,6 +114,11 @@ mod integration {
         fs::create_dir(format!("data/{}", fun_name)).unwrap_or_default();
         fs::copy("data/1.mp4", format!("data/{}/1.mp4", fun_name)).unwrap();
         fs::copy("data/2.mp4", format!("data/{}/2.mp4", fun_name)).unwrap();
+    }
+
+    fn prep_with_hidden_file(fun_name: &str) {
+        prep(fun_name);
+        std::fs::File::create(format!("data/{}/.3.mp4", fun_name)).unwrap();
     }
 
     fn check_for_merged_file(fun_name: &str) {
