@@ -1,5 +1,9 @@
 mod integration {
-    use assert_cmd::Command;
+    use std::fs;
+
+    use assert_cmd::{assert::Assert, Command};
+    use k9::assert_greater_than;
+    use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";
 
@@ -30,8 +34,19 @@ mod integration {
 
     #[test]
     fn calling_vidmerger() {
-        let mut cmd = Command::cargo_bin(BIN).unwrap();
-        cmd.arg("data").assert().success();
+        let fun_name = function_name!().split("::").last().unwrap();
+        prep(fun_name);
+
+        let res = get_output(
+            Command::cargo_bin(BIN)
+                .unwrap()
+                .arg(format!("data/{}", fun_name))
+                .assert()
+                .success(),
+        );
+
+        assert!(res.contains("✅ Successfully generated"));
+        check_for_merged_file(fun_name);
     }
 
     #[test]
@@ -74,6 +89,21 @@ mod integration {
             .success();
     }
 
+    // ----------------------------------------------------------------
+
+    fn prep(fun_name: &str) {
+        fs::create_dir(format!("data/{}", fun_name)).unwrap_or_default();
+        fs::copy("data/1.mp4", format!("data/{}/1.mp4", fun_name)).unwrap();
+        fs::copy("data/2.mp4", format!("data/{}/2.mp4", fun_name)).unwrap();
+    }
+
+    fn check_for_merged_file(fun_name: &str) {
+        let len = fs::metadata(format!("data/{}/output.mp4", fun_name))
+            .unwrap()
+            .len();
+        assert_greater_than!(len, 9000);
+    }
+
     fn check_for_yt_dlp_or_youtube_dl() -> &'static str {
         if which::which("yt-dlp").is_ok() {
             "yt-dlp"
@@ -82,5 +112,9 @@ mod integration {
         } else {
             panic!("Neither yt-dlp nor youtube-dl was found 😬")
         }
+    }
+
+    fn get_output(assert: Assert) -> String {
+        String::from_utf8(assert.get_output().to_owned().stdout).unwrap()
     }
 }
