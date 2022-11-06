@@ -91,13 +91,6 @@ mod integration {
     }
 
     #[test]
-    fn call_merger_in_preview_mode() {
-        // todo: don't remove file in preview mode
-        let mut cmd = Command::cargo_bin(BIN).unwrap();
-        cmd.arg("data").arg("--preview").assert().success();
-    }
-
-    #[test]
     fn call_merger_against_mp4() {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data")

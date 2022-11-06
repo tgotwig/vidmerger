@@ -8,9 +8,6 @@ install:
 run:
 	cargo run -- data
 
-run-with-preview:
-	cargo run -- data -p
-
 run-docker:
 	make build-linux
 	docker build -t vidmerger .

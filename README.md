@@ -30,7 +30,6 @@ ARGS:
 
 FLAGS:
     -h, --help        Prints help information
-    -p, --preview     Prints previews of the merge-orders without merging them
         --shutdown    For doing a shutdown at the end (needs sudo)
     -V, --version     Prints version information
 

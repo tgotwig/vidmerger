@@ -22,13 +22,12 @@ use term_painter::ToStyle;
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
-    let (dir, formats, preview_enabled, should_shutdown) = (
+    let (dir, formats, should_shutdown) = (
         matches.value_of("DIR").unwrap().to_string(),
         matches
             .value_of("format")
             .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
             .to_string(),
-        matches.is_present("preview"),
         matches.is_present("shutdown"),
     );
 
@@ -45,21 +44,17 @@ fn main() -> Result<(), Error> {
             let tmp_dir = helper::create_tmp_dir();
 
             println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&list));
-            if !preview_enabled {
-                println!("⏳ Starts after 3 seconds...\n");
-                thread::sleep(time::Duration::from_secs(3));
-            }
+            println!("⏳ Starts after 3 seconds...\n");
+            thread::sleep(time::Duration::from_secs(3));
 
-            if !preview_enabled {
-                let list_txt = helper::create_list_txt(list, tmp_dir);
+            let list_txt = helper::create_list_txt(list, tmp_dir);
 
-                let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
-                    &list_txt.to_slash().unwrap(),
-                    output_vid.to_slash().unwrap().to_string(),
-                );
+            let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
+                &list_txt.to_slash().unwrap(),
+                output_vid.to_slash().unwrap().to_string(),
+            );
 
-                commanders::merger::merge(ffmpeg_args, file_format);
-            }
+            commanders::merger::merge(ffmpeg_args, file_format);
         }
     }
 
