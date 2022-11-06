@@ -15,17 +15,12 @@ mod integration {
         println!("👷 Doing preparations...");
 
         fs::remove_dir_all("data").unwrap_or_default();
-        let yt = check_for_yt_dlp_or_youtube_dl();
 
-        Command::new(yt)
-            .args(&[
-                "-o",
-                "data/1.mp4",
-                "-f",
-                "22",
-                "https://www.youtube.com/watch?v=zGDzdps75ns",
-            ])
-            .unwrap();
+        download(
+            "https://www.youtube.com/watch?v=zGDzdps75ns",
+            "22",
+            "data/1.mp4",
+        );
         fs::copy("data/1.mp4", "data/2.mp4").unwrap();
         File::create("data/.3.mp4").unwrap();
 
@@ -125,15 +120,13 @@ mod integration {
         assert_greater_than!(len, 9000);
     }
 
-    fn check_for_yt_dlp_or_youtube_dl() -> &'static str {
-        if which::which("youtube-dl").is_ok() {
-            "youtube-dl"
-        } else {
-            panic!("No youtube-dl was found 😬")
-        }
-    }
-
     fn get_output(assert: Assert) -> String {
         String::from_utf8(assert.get_output().to_owned().stdout).unwrap()
+    }
+
+    fn download(url: &str, format: &str, out: &str) {
+        Command::new("youtube-dl")
+            .args(&["-o", out, "-f", format, url])
+            .unwrap();
     }
 }
