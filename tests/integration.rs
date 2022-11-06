@@ -45,6 +45,22 @@ mod integration {
     }
 
     #[test]
+    fn call_merger_and_fail_due_to_not_existing_directory() {
+        let res = get_output_err(
+            Command::cargo_bin(BIN)
+                .unwrap()
+                .arg(format!("data/nothing"))
+                .assert()
+                .failure(),
+        );
+
+        assert!(
+            res.contains("No such file or directory")
+                || res.contains("The system cannot find the path specified")
+        );
+    }
+
+    #[test]
     fn call_merger_and_skip_hidden_vids() {
         let test_name = function_name!().split("::").last().unwrap();
         prep_with_hidden_file(test_name);
@@ -132,6 +148,10 @@ mod integration {
 
     fn get_output(assert: Assert) -> String {
         String::from_utf8(assert.get_output().to_owned().stdout).unwrap()
+    }
+
+    fn get_output_err(assert: Assert) -> String {
+        String::from_utf8(assert.get_output().to_owned().stderr).unwrap()
     }
 
     fn download(url: &str, format: &str, out: &str) {
