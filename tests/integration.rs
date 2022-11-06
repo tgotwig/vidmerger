@@ -33,7 +33,7 @@ mod integration {
     }
 
     #[test]
-    fn calling_vidmerger() {
+    fn call_merger() {
         let fun_name = function_name!().split("::").last().unwrap();
         prep(fun_name);
 
@@ -50,7 +50,7 @@ mod integration {
     }
 
     #[test]
-    fn calling_vidmerger_without_ffmpeg() {
+    fn call_merger_without_ffmpeg() {
         // todo: 🐛 fix for windows
         if cfg!(target_os = "windows") {
         } else {
@@ -64,14 +64,14 @@ mod integration {
     }
 
     #[test]
-    fn calling_vidmerger_in_preview_mode() {
+    fn call_merger_in_preview_mode() {
         // todo: don't remove file in preview mode
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data").arg("--preview").assert().success();
     }
 
     #[test]
-    fn calling_vidmerger_against_mp4() {
+    fn call_merger_against_mp4() {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data")
             .args(&["--format", "mp4"])
@@ -80,7 +80,7 @@ mod integration {
     }
 
     #[test]
-    fn calling_vidmerger_against_mp4_with_scaling() {
+    fn call_merger_against_mp4_with_scaling() {
         let mut cmd = Command::cargo_bin(BIN).unwrap();
         cmd.arg("data")
             .args(&["--format", "mp4"])
