@@ -22,7 +22,7 @@ run-docker:
 # ----------------------------------------------------------------
 
 test:
-	cargo test -q
+	cargo test --test integration -- --exact --nocapture
 
 test-happy-path:
 	cargo test --test integration -- --exact --nocapture integration::call_merger
