@@ -41,10 +41,10 @@ fn main() -> Result<(), Error> {
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 
-            let list_txt = helper::create_list_txt(ffmpeg_input_content, tmp_dir);
+            let ffmpeg_input_file = helper::gen_ffmpeg_input_file(ffmpeg_input_content, tmp_dir);
 
             let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
-                &list_txt.to_slash().unwrap(),
+                &ffmpeg_input_file.to_slash().unwrap(),
                 output_vid.to_slash().unwrap().to_string(),
             );
 

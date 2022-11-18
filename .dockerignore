@@ -4,6 +4,6 @@ Cargo.lock
 **/*.rs.bk
 .DS_Store
 data
-list.txt
+ffmpeg_input_file.txt
 
 *.mp4

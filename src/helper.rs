@@ -83,8 +83,8 @@ pub fn create_tmp_dir() -> PathBuf {
     dir
 }
 
-pub fn create_list_txt(string: String, mut dir: PathBuf) -> PathBuf {
-    dir.push("list.txt");
+pub fn gen_ffmpeg_input_file(string: String, mut dir: PathBuf) -> PathBuf {
+    dir.push("ffmpeg_input_file.txt");
     File::create(&dir)
         .unwrap()
         .write_all(string.as_bytes())

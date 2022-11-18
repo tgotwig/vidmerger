@@ -5,5 +5,5 @@
 /target/
 Cargo.lock
 data
-list.txt
+ffmpeg_input_file.txt
 vidmerger.exe
