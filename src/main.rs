@@ -27,9 +27,9 @@ fn main() -> Result<(), Error> {
     let should_shutdown = matches.is_present("shutdown");
 
     for file_format in helper::split(formats) {
-        let output_vid = target_dir.join(format!("output.{}", file_format));
+        let ffmpeg_output_file = target_dir.join(format!("output.{}", file_format));
 
-        helper::remove_file(&output_vid)?;
+        helper::remove_file(&ffmpeg_output_file)?;
 
         let ffmpeg_input_content =
             helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
@@ -45,7 +45,7 @@ fn main() -> Result<(), Error> {
 
             let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
                 &ffmpeg_input_file.to_slash().unwrap(),
-                output_vid.to_slash().unwrap().to_string(),
+                ffmpeg_output_file.to_slash().unwrap().to_string(),
             );
 
             commanders::merger::merge(ffmpeg_args, file_format);
