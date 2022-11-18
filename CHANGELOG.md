@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Works with folder names which starts with a dot
 - Remove `--preview`
 - Remove `--scale`
 - Panic with error message from ffmpeg if something goes wrong.

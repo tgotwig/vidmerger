@@ -1,5 +1,5 @@
 use std::env::temp_dir;
-use std::fs::{self, File};
+use std::fs::{self, canonicalize, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
@@ -31,38 +31,36 @@ pub fn remove_file(path: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
+pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
+    let possible_files_to_merge: Vec<PathBuf> = get_sorted_paths(target_dir).unwrap();
+    let re = Regex::new(format!(r"[\\/][^.]*\.{}$", regex::escape(file_format)).as_str()).unwrap();
+    let mut ffmpeg_input_content = String::new();
+
+    for possible_file_to_merge in possible_files_to_merge {
+        if re.is_match(&format!("{}", possible_file_to_merge.display())) {
+            ffmpeg_input_content = if ffmpeg_input_content.chars().count() == 0 {
+                format!(
+                    "file '{}'",
+                    canonicalize(possible_file_to_merge).unwrap().display()
+                )
+            } else {
+                format!(
+                    "{}\nfile '{}'",
+                    ffmpeg_input_content,
+                    canonicalize(possible_file_to_merge).unwrap().display()
+                )
+            }
+        }
+    }
+    ffmpeg_input_content
+}
+
+fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     let mut paths = fs::read_dir(input_vids_path)?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>>>()?;
     paths.sort();
     Ok(paths)
-}
-
-pub fn generate_list_of_vids(file_format: &str, paths: &[PathBuf]) -> String {
-    let mut list = String::new();
-    let re = Regex::new(format!(r"\.{}$", regex::escape(file_format)).as_str()).unwrap();
-
-    for path in paths {
-        let display = path.display();
-        let display_str = display.to_string();
-        let file_starts_with_dot = display_str.contains("/.") || display_str.contains("\\.");
-        if !file_starts_with_dot && re.is_match(&format!("{}", display)) {
-            if list.chars().count() == 0 {
-                list = format!(
-                    "file '{}'",
-                    fs::canonicalize(path).unwrap().to_str().unwrap()
-                );
-            } else {
-                list = format!(
-                    "{}\nfile '{}'",
-                    list,
-                    fs::canonicalize(path).unwrap().to_str().unwrap()
-                );
-            }
-        }
-    }
-    list
 }
 
 pub fn create_tmp_dir() -> PathBuf {

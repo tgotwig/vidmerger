@@ -2,9 +2,8 @@
 
 use core::time;
 use std::io::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::thread;
-use std::vec::Vec;
 
 use cli::Cli;
 use path_slash::PathExt;
@@ -37,17 +36,20 @@ fn main() -> Result<(), Error> {
 
         helper::remove_file(&output_vid)?;
 
-        let paths: Vec<PathBuf> = helper::get_sorted_paths(input_vids)?;
-        let list = helper::generate_list_of_vids(file_format.as_str(), &paths);
+        let ffmpeg_input_content =
+            helper::gen_ffmpeg_input_content(input_vids, file_format.as_str());
 
-        if !list.is_empty() {
+        if !ffmpeg_input_content.is_empty() {
             let tmp_dir = helper::create_tmp_dir();
 
-            println!("\n👇 Order of merging:\n\n{}\n", BrightBlue.paint(&list));
+            println!(
+                "\n👇 Order of merging:\n\n{}\n",
+                BrightBlue.paint(&ffmpeg_input_content)
+            );
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 
-            let list_txt = helper::create_list_txt(list, tmp_dir);
+            let list_txt = helper::create_list_txt(ffmpeg_input_content, tmp_dir);
 
             let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
                 &list_txt.to_slash().unwrap(),
