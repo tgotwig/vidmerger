@@ -15,9 +15,6 @@ mod helper;
 
 use system_shutdown::shutdown;
 
-use term_painter::Color::BrightBlue;
-use term_painter::ToStyle;
-
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
@@ -40,10 +37,7 @@ fn main() -> Result<(), Error> {
         if !ffmpeg_input_content.is_empty() {
             let tmp_dir = helper::create_tmp_dir();
 
-            println!(
-                "\n👇 Order of merging:\n\n{}\n",
-                BrightBlue.paint(&ffmpeg_input_content)
-            );
+            helper::print_order_of_merging(&ffmpeg_input_content);
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 

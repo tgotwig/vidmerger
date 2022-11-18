@@ -8,6 +8,9 @@ use regex::Regex;
 
 use nanoid::nanoid;
 
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
+
 pub fn exit_when_ffmpeg_not_available() {
     if which::which("ffmpeg").is_err() {
         eprintln!("ffmpeg not found 😬");
@@ -61,6 +64,17 @@ fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
         .collect::<Result<Vec<_>>>()?;
     paths.sort();
     Ok(paths)
+}
+
+pub fn print_order_of_merging(ffmpeg_input_content: &str) {
+    println!("\n👇 Order of merging:\n\n");
+    for line in ffmpeg_input_content.lines() {
+        println!(
+            "📄 {}",
+            BrightBlue.paint(line.split(['/', '\\']).last().unwrap().replace('\'', ""))
+        );
+    }
+    println!();
 }
 
 pub fn create_tmp_dir() -> PathBuf {
