@@ -21,14 +21,12 @@ use term_painter::ToStyle;
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
-    let (target_dir, formats, should_shutdown) = (
-        matches.value_of("TARGET_DIR").unwrap().to_string(),
-        matches
-            .value_of("format")
-            .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
-            .to_string(),
-        matches.is_present("shutdown"),
-    );
+    let target_dir = matches.value_of("TARGET_DIR").unwrap().to_string();
+    let formats = matches
+        .value_of("format")
+        .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
+        .to_string();
+    let should_shutdown = matches.is_present("shutdown");
 
     for file_format in helper::split(formats) {
         let input_vids = Path::new(&target_dir);
