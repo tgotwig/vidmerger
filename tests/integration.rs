@@ -136,7 +136,8 @@ mod integration {
         let len = fs::metadata(format!("data/{}/output.mp4", test_name))
             .unwrap()
             .len();
-        assert_equal!(len, 665057);
+        assert_greater_than(len, 600000);
+        assert_lesser_than(len, 700000);
     }
 
     fn get_output(assert: Assert) -> String {
