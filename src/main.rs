@@ -43,12 +43,12 @@ fn main() -> Result<(), Error> {
 
             let ffmpeg_input_file = helper::gen_ffmpeg_input_file(ffmpeg_input_content, tmp_dir);
 
-            let ffmpeg_args = ffmpeg_args_factory::make_merge_args(
+            let ffmpeg_merge_args = ffmpeg_args_factory::make_ffmpeg_merge_args(
                 &ffmpeg_input_file.to_slash().unwrap(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
             );
 
-            commanders::merger::merge(ffmpeg_args, file_format);
+            commanders::merger::merge(ffmpeg_merge_args, file_format);
         }
     }
 

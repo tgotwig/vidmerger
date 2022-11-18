@@ -1,4 +1,4 @@
-pub fn make_merge_args(output_list_path: &str, output_vid_path: String) -> [String; 10] {
+pub fn make_ffmpeg_merge_args(output_list_path: &str, output_vid_path: String) -> [String; 10] {
     [
         String::from("-y"),
         String::from("-f"),
