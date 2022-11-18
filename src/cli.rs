@@ -10,7 +10,7 @@ impl Cli {
         .version("0.2.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simlifies merging multiple videos 🎞")
-        .arg(Arg::new("DIR")
+        .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
             .required(true)
             .index(1)
