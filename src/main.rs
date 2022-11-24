@@ -21,7 +21,8 @@ use term_painter::ToStyle;
 fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
-    let target_dir = matches.value_of("TARGET_DIR").unwrap().to_string();
+    let target_dir = Path::new(matches.value_of("TARGET_DIR").unwrap());
+
     let formats = matches
         .value_of("format")
         .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
@@ -29,13 +30,12 @@ fn main() -> Result<(), Error> {
     let should_shutdown = matches.is_present("shutdown");
 
     for file_format in helper::split(formats) {
-        let input_vids = Path::new(&target_dir);
-        let output_vid = input_vids.join(format!("output.{}", file_format));
+        let output_vid = target_dir.join(format!("output.{}", file_format));
 
         helper::remove_file(&output_vid)?;
 
         let ffmpeg_input_content =
-            helper::gen_ffmpeg_input_content(input_vids, file_format.as_str());
+            helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
 
         if !ffmpeg_input_content.is_empty() {
             let tmp_dir = helper::create_tmp_dir();
