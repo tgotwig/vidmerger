@@ -2,7 +2,8 @@ mod integration {
     use std::fs;
 
     use assert_cmd::{assert::Assert, Command};
-    use k9::assert_greater_than;
+    use k9::assertions::{greater_than::assert_greater_than, lesser_than::assert_lesser_than};
+    use regex::Regex;
     use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";
@@ -42,6 +43,15 @@ mod integration {
 
         assert!(res.contains("✅ Successfully generated"));
         check_for_merged_file(test_name);
+    }
+
+    #[test]
+    fn call_merger_without_args() {
+        let res = get_output_err(Command::cargo_bin(BIN).unwrap().assert().failure());
+
+        assert!(Regex::new(r"vidmerger(\.exe)? \[OPTIONS] <TARGET_DIR>")
+            .unwrap()
+            .is_match(&res));
     }
 
     #[test]
