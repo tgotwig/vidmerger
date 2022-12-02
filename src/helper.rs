@@ -13,7 +13,7 @@ use term_painter::ToStyle;
 
 pub fn exit_when_ffmpeg_not_available() {
     if which::which("ffmpeg").is_err() {
-        eprintln!("ffmpeg not found 😬");
+        eprintln!("❌ ffmpeg is not available. Please install it first.");
         exit(1);
     }
 }

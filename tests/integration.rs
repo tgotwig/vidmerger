@@ -97,7 +97,9 @@ mod integration {
             .env_clear()
             .assert()
             .failure()
-            .stderr(format!("ffmpeg not found 😬\n"));
+            .stderr(format!(
+                "❌ ffmpeg is not available. Please install it first.\n"
+            ));
     }
 
     #[test]
