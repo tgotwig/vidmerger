@@ -18,7 +18,7 @@ impl Cli {
         .arg(Arg::new("format")
             .short('f')
             .long("format")
-            .help("Specifies which formats should be merged individually, the default is 👉 avchd,avi,flv,mkv,mov,mp4,webm,wmv")
+            .help("Specifies which formats should be merged individually, the default is 👉 3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv")
             .takes_value(true)
         )
         .arg(Arg::new("shutdown")

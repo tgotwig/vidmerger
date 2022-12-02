@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Set all `ffmpeg` supported video and audio formats as default.
 - Make binaries tiny: [johnthagen/min-sized-rust](https://github.com/johnthagen/min-sized-rust)
 - Print only file names of files which should be merged before the merge.
 - Works with folder names which starts with a dot.

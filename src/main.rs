@@ -22,7 +22,7 @@ fn main() -> Result<(), Error> {
 
     let formats = matches
         .value_of("format")
-        .unwrap_or("avchd,avi,flv,mkv,mov,mp4,webm,wmv")
+        .unwrap_or("3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv")
         .to_string();
     let should_shutdown = matches.is_present("shutdown");
 
