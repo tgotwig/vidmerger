@@ -19,11 +19,7 @@ pub fn exit_when_ffmpeg_not_available() {
 }
 
 pub fn split(string: String) -> Vec<String> {
-    let file_formats: Vec<_> = string
-        .lines()
-        .map(|s| s.trim().split(',').map(String::from).collect::<Vec<_>>())
-        .collect::<Vec<_>>();
-    file_formats[0].clone()
+    string.split(',').map(|s| s.to_string()).collect()
 }
 
 pub fn remove_file(path: &Path) -> Result<()> {
@@ -90,4 +86,30 @@ pub fn gen_ffmpeg_input_file(string: String, mut dir: PathBuf) -> PathBuf {
         .write_all(string.as_bytes())
         .unwrap();
     dir
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split() {
+        let string = String::from("mp4,mkv,avi");
+        let file_formats = split(string);
+        assert_eq!(file_formats, vec!["mp4", "mkv", "avi"]);
+    }
+
+    #[test]
+    fn test_split_with_space() {
+        let string = String::from("mp4,mkv, avi");
+        let file_formats = split(string);
+        assert_eq!(file_formats, vec!["mp4", "mkv", " avi"]);
+    }
+
+    #[test]
+    fn test_split_with_empty_input() {
+        let string = String::from("");
+        let file_formats = split(string);
+        assert_eq!(file_formats, vec![""]);
+    }
 }

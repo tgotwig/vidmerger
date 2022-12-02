@@ -16,7 +16,10 @@ run-docker:
 # ----------------------------------------------------------------
 
 test:
-	cargo test --test integration -- --exact --nocapture $(name)
+	cargo test -- --exact --nocapture $(name)
+
+test-units:
+	cargo test --bins -- --exact --nocapture $(name)
 
 lint:
 	cargo clippy
