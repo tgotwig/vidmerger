@@ -31,35 +31,35 @@ pub fn remove_file(path: &Path) -> Result<()> {
 }
 
 pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
-    let possible_files_to_merge: Vec<PathBuf> = get_sorted_paths(target_dir).unwrap();
-    let re = Regex::new(format!(r"[\\/][^.]*\.{}$", regex::escape(file_format)).as_str()).unwrap();
+    let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
+    let files_to_merge = filter_files(all_files_on_target_dir, file_format);
     let mut ffmpeg_input_content = String::new();
 
-    for possible_file_to_merge in possible_files_to_merge {
-        if re.is_match(&format!("{}", possible_file_to_merge.display())) {
-            ffmpeg_input_content = if ffmpeg_input_content.chars().count() == 0 {
-                format!(
-                    "file '{}'",
-                    canonicalize(possible_file_to_merge).unwrap().display()
-                )
-            } else {
-                format!(
-                    "{}\nfile '{}'",
-                    ffmpeg_input_content,
-                    canonicalize(possible_file_to_merge).unwrap().display()
-                )
-            }
-        }
+    for file_to_merge in files_to_merge {
+        ffmpeg_input_content.push_str(&format!(
+            "file '{}'\n",
+            canonicalize(file_to_merge).unwrap().display()
+        ));
     }
     ffmpeg_input_content
 }
 
-fn get_sorted_paths(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
-    let mut paths = fs::read_dir(input_vids_path)?
+fn read_dir(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
+    fs::read_dir(input_vids_path)?
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>>>()?;
-    paths.sort();
-    Ok(paths)
+        .collect::<Result<Vec<_>>>()
+}
+
+fn filter_files(all_files: Vec<PathBuf>, file_format: &str) -> Vec<PathBuf> {
+    let re = Regex::new(format!(r"[\\/][^.]*\.{}$", regex::escape(file_format)).as_str()).unwrap();
+    let mut filtered_files = Vec::new();
+
+    for possible_file_to_merge in all_files {
+        if re.is_match(&format!("{}", possible_file_to_merge.display())) {
+            filtered_files.push(possible_file_to_merge);
+        }
+    }
+    filtered_files
 }
 
 pub fn print_order_of_merging(ffmpeg_input_content: &str) {
