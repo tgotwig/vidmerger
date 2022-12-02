@@ -62,15 +62,20 @@ fn filter_files(all_files: Vec<PathBuf>, file_format: &str) -> Vec<PathBuf> {
     filtered_files
 }
 
-pub fn print_order_of_merging(ffmpeg_input_content: &str) {
-    println!("\n👇 Order of merging:\n\n");
-    for line in ffmpeg_input_content.lines() {
-        println!(
-            "📄 {}",
-            BrightBlue.paint(line.split(['/', '\\']).last().unwrap().replace('\'', ""))
-        );
-    }
-    println!();
+pub fn print_order_of_merging(ffmpeg_input_content: &str) -> String {
+    println!("\n👇 Order of merging:\n");
+    let file_names_to_be_merged = ffmpeg_input_content
+        .lines()
+        .map(|line| {
+            format!(
+                "📄 {}",
+                BrightBlue.paint(line.split(['/', '\\']).last().unwrap().replace('\'', ""))
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+    println!("{}\n", file_names_to_be_merged); // todo: mock this for unit tests
+    file_names_to_be_merged
 }
 
 pub fn create_tmp_dir() -> PathBuf {
@@ -111,5 +116,21 @@ mod tests {
         let string = String::from("");
         let file_formats = split(string);
         assert_eq!(file_formats, vec![""]);
+    }
+
+    #[test]
+    fn test_print_order_of_merging_with_slashes() {
+        assert_eq!(
+            print_order_of_merging("/target_dir/1.mp4\n/target_dir/2.mp4"),
+            "📄 1.mp4\n📄 2.mp4"
+        );
+    }
+
+    #[test]
+    fn test_print_order_of_merging_with_backslashes() {
+        assert_eq!(
+            print_order_of_merging("C:\\target_dir\\1.mp4\nC:\\target_dir\\2.mp4"),
+            "📄 1.mp4\n📄 2.mp4"
+        );
     }
 }
