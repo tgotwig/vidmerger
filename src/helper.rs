@@ -12,14 +12,6 @@ use nanoid::nanoid;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
-pub fn remove_file(path: &Path) -> Result<()> {
-    if Path::new(path).exists() {
-        println!("🔥 Removing {}", path.display());
-        fs::remove_file(path)?;
-    }
-    Ok(())
-}
-
 pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
     let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
     let files_to_merge = filter_files(all_files_on_target_dir, file_format);

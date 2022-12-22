@@ -15,6 +15,7 @@ mod helper;
 mod helpers;
 
 use helpers::io_helper::exit_when_ffmpeg_not_available;
+use helpers::io_helper::remove_file;
 use helpers::str_helper::split;
 use system_shutdown::shutdown;
 
@@ -31,7 +32,7 @@ fn main() -> Result<(), Error> {
     for file_format in split(formats) {
         let ffmpeg_output_file = target_dir.join(format!("output.{}", file_format));
 
-        helper::remove_file(&ffmpeg_output_file)?;
+        remove_file(&ffmpeg_output_file)?;
 
         let ffmpeg_input_content =
             helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
