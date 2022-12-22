@@ -14,11 +14,12 @@ mod ffmpeg_args_factory;
 mod helper;
 mod helpers;
 
+use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::str_helper::split;
 use system_shutdown::shutdown;
 
 fn main() -> Result<(), Error> {
-    helper::exit_when_ffmpeg_not_available();
+    exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
     let target_dir = Path::new(matches.value_of("TARGET_DIR").unwrap());
     let formats = matches

@@ -4,7 +4,6 @@ use std::fmt::Write as FmtWrite;
 use std::fs::{self, canonicalize, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
-use std::process::exit;
 
 use regex::Regex;
 
@@ -12,13 +11,6 @@ use nanoid::nanoid;
 
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
-
-pub fn exit_when_ffmpeg_not_available() {
-    if which::which("ffmpeg").is_err() {
-        eprintln!("❌ ffmpeg is not available. Please install it first.");
-        exit(1);
-    }
-}
 
 pub fn remove_file(path: &Path) -> Result<()> {
     if Path::new(path).exists() {
