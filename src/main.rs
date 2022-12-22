@@ -19,7 +19,6 @@ fn main() -> Result<(), Error> {
     helper::exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
     let target_dir = Path::new(matches.value_of("TARGET_DIR").unwrap());
-
     let formats = matches
         .value_of("format")
         .unwrap_or("3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv")
