@@ -10,11 +10,14 @@ mod commanders;
 mod ffmpeg_args_factory;
 mod helper;
 mod helpers;
+mod logger;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
 use helpers::str_helper::split;
 use system_shutdown::shutdown;
+
+use crate::logger::print_order_of_merging;
 
 fn main() -> Result<(), Error> {
     exit_when_ffmpeg_not_available();
@@ -37,7 +40,7 @@ fn main() -> Result<(), Error> {
         if !ffmpeg_input_content.is_empty() {
             let tmp_dir = create_tmp_dir();
 
-            helper::print_order_of_merging(&ffmpeg_input_content);
+            print_order_of_merging(&ffmpeg_input_content);
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 
