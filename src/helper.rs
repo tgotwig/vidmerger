@@ -1,5 +1,5 @@
 use crate::helpers::io_helper::read_dir;
-use regex::Regex;
+use crate::helpers::vec_helper::filter_files;
 use std::fmt::Write as FmtWrite;
 use std::fs::{canonicalize, File};
 use std::io::Write;
@@ -21,18 +21,6 @@ pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String 
         .unwrap();
     }
     ffmpeg_input_content
-}
-
-fn filter_files(all_files: Vec<PathBuf>, file_format: &str) -> Vec<PathBuf> {
-    let re = Regex::new(format!(r"[\\/][^.]*\.{}$", regex::escape(file_format)).as_str()).unwrap();
-    let mut filtered_files = Vec::new();
-
-    for possible_file_to_merge in all_files {
-        if re.is_match(&format!("{}", possible_file_to_merge.display())) {
-            filtered_files.push(possible_file_to_merge);
-        }
-    }
-    filtered_files
 }
 
 pub fn print_order_of_merging(ffmpeg_input_content: &str) -> String {
