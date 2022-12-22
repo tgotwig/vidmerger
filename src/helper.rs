@@ -2,7 +2,7 @@ use std::env::temp_dir;
 
 use std::fmt::Write as FmtWrite;
 use std::fs::{self, canonicalize, File};
-use std::io::{Result, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use regex::Regex;
@@ -11,6 +11,8 @@ use nanoid::nanoid;
 
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
+
+use crate::helpers::io_helper::read_dir;
 
 pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
     let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
@@ -26,12 +28,6 @@ pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String 
         .unwrap();
     }
     ffmpeg_input_content
-}
-
-fn read_dir(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
-    fs::read_dir(input_vids_path)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>>>()
 }
 
 fn filter_files(all_files: Vec<PathBuf>, file_format: &str) -> Vec<PathBuf> {
