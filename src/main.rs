@@ -12,7 +12,9 @@ mod cli;
 mod commanders;
 mod ffmpeg_args_factory;
 mod helper;
+mod helpers;
 
+use helpers::str_helper::split;
 use system_shutdown::shutdown;
 
 fn main() -> Result<(), Error> {
@@ -25,7 +27,7 @@ fn main() -> Result<(), Error> {
         .to_string();
     let should_shutdown = matches.is_present("shutdown");
 
-    for file_format in helper::split(formats) {
+    for file_format in split(formats) {
         let ffmpeg_output_file = target_dir.join(format!("output.{}", file_format));
 
         helper::remove_file(&ffmpeg_output_file)?;
