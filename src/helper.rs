@@ -1,4 +1,6 @@
 use std::env::temp_dir;
+
+use std::fmt::Write as FmtWrite;
 use std::fs::{self, canonicalize, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
@@ -36,10 +38,12 @@ pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String 
     let mut ffmpeg_input_content = String::new();
 
     for file_to_merge in files_to_merge {
-        ffmpeg_input_content.push_str(&format!(
-            "file '{}'\n",
+        writeln!(
+            ffmpeg_input_content,
+            "file '{}'",
             canonicalize(file_to_merge).unwrap().display()
-        ));
+        )
+        .unwrap();
     }
     ffmpeg_input_content
 }
