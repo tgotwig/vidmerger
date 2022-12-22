@@ -14,6 +14,7 @@ mod ffmpeg_args_factory;
 mod helper;
 mod helpers;
 
+use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
 use helpers::str_helper::split;
@@ -38,7 +39,7 @@ fn main() -> Result<(), Error> {
             helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
 
         if !ffmpeg_input_content.is_empty() {
-            let tmp_dir = helper::create_tmp_dir();
+            let tmp_dir = create_tmp_dir();
 
             helper::print_order_of_merging(&ffmpeg_input_content);
             println!("⏳ Starts after 3 seconds...\n");
