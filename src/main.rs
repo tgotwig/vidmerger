@@ -38,13 +38,12 @@ fn main() -> Result<(), Error> {
             helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
 
         if !ffmpeg_input_content.is_empty() {
-            let tmp_dir = create_tmp_dir();
-
             print_order_of_merging(&ffmpeg_input_content);
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 
-            let ffmpeg_input_file = helper::gen_ffmpeg_input_file(ffmpeg_input_content, tmp_dir);
+            let ffmpeg_input_file = create_tmp_dir().join("ffmpeg_input_file.txt");
+            helper::gen_ffmpeg_input_file(&ffmpeg_input_file, ffmpeg_input_content);
 
             let ffmpeg_merge_args = ffmpeg_args_factory::make_ffmpeg_merge_args(
                 &ffmpeg_input_file.to_slash().unwrap(),

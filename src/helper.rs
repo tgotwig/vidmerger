@@ -21,11 +21,10 @@ pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String 
     ffmpeg_input_content
 }
 
-pub fn gen_ffmpeg_input_file(string: String, mut dir: PathBuf) -> PathBuf {
-    dir.push("ffmpeg_input_file.txt");
-    File::create(&dir)
+pub fn gen_ffmpeg_input_file(path_to_ffmpeg_input_file: &PathBuf, buf: String) -> &PathBuf {
+    File::create(&path_to_ffmpeg_input_file)
         .unwrap()
-        .write_all(string.as_bytes())
+        .write_all(buf.as_bytes())
         .unwrap();
-    dir
+    path_to_ffmpeg_input_file
 }
