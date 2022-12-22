@@ -1,9 +1,8 @@
 mod integration {
-    use std::fs;
-
     use assert_cmd::{assert::Assert, Command};
     use k9::assertions::{greater_than::assert_greater_than, lesser_than::assert_lesser_than};
     use regex::Regex;
+    use std::fs;
     use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";

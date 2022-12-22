@@ -1,19 +1,15 @@
 #![deny(warnings)]
-
+use cli::Cli;
 use core::time;
+use path_slash::PathExt;
 use std::io::Error;
 use std::path::Path;
 use std::thread;
-
-use cli::Cli;
-use path_slash::PathExt;
-
 mod cli;
 mod commanders;
 mod ffmpeg_args_factory;
 mod helper;
 mod helpers;
-
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;

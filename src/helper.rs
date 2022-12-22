@@ -1,14 +1,11 @@
+use crate::helpers::io_helper::read_dir;
+use regex::Regex;
 use std::fmt::Write as FmtWrite;
 use std::fs::{canonicalize, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-
-use regex::Regex;
-
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
-
-use crate::helpers::io_helper::read_dir;
 
 pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
     let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
