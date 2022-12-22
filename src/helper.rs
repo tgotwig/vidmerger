@@ -1,8 +1,7 @@
 use crate::helpers::io_helper::read_dir;
 use crate::helpers::vec_helper::filter_files;
 use std::fmt::Write as FmtWrite;
-use std::fs::{canonicalize, File};
-use std::io::Write;
+use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 
 pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String {
@@ -19,12 +18,4 @@ pub fn gen_ffmpeg_input_content(target_dir: &Path, file_format: &str) -> String 
         .unwrap();
     }
     ffmpeg_input_content
-}
-
-pub fn gen_ffmpeg_input_file(path_to_ffmpeg_input_file: &PathBuf, buf: String) -> &PathBuf {
-    File::create(&path_to_ffmpeg_input_file)
-        .unwrap()
-        .write_all(buf.as_bytes())
-        .unwrap();
-    path_to_ffmpeg_input_file
 }

@@ -11,6 +11,7 @@ mod ffmpeg_args_factory;
 mod helper;
 mod helpers;
 mod logger;
+use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
@@ -43,7 +44,7 @@ fn main() -> Result<(), Error> {
             thread::sleep(time::Duration::from_secs(3));
 
             let ffmpeg_input_file = create_tmp_dir().join("ffmpeg_input_file.txt");
-            helper::gen_ffmpeg_input_file(&ffmpeg_input_file, ffmpeg_input_content);
+            create(&ffmpeg_input_file, ffmpeg_input_content);
 
             let ffmpeg_merge_args = ffmpeg_args_factory::make_ffmpeg_merge_args(
                 &ffmpeg_input_file.to_slash().unwrap(),

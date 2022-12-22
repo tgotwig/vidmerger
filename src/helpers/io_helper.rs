@@ -1,7 +1,7 @@
 use nanoid::nanoid;
 use std::env::temp_dir;
-use std::fs;
-use std::io::Result;
+use std::fs::{self, File};
+use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -30,4 +30,12 @@ pub fn create_tmp_dir() -> PathBuf {
     let dir = temp_dir().join(nanoid!(8));
     fs::create_dir(&dir).unwrap();
     dir
+}
+
+pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
+    File::create(&path)
+        .unwrap()
+        .write_all(buf.as_bytes())
+        .unwrap();
+    path
 }
