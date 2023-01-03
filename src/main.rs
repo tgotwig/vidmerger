@@ -1,24 +1,27 @@
 #![deny(warnings)]
 use cli::Cli;
 use core::time;
+use helpers::io_helper::path_bufs_to_strings;
+use helpers::io_helper::read_dir;
+use helpers::str_helper::gen_input_file_content_for_ffmpeg;
+use helpers::vec_helper::filter_files;
 use path_slash::PathExt;
 use std::io::Error;
 use std::path::Path;
+use std::path::PathBuf;
 use std::thread;
 mod cli;
 mod commanders;
 mod ffmpeg_args_factory;
-mod helper;
 mod helpers;
 mod logger;
+use crate::logger::print_order_of_merging;
 use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
 use helpers::str_helper::split;
 use system_shutdown::shutdown;
-
-use crate::logger::print_order_of_merging;
 
 fn main() -> Result<(), Error> {
     exit_when_ffmpeg_not_available();
@@ -36,7 +39,7 @@ fn main() -> Result<(), Error> {
         remove_file(&ffmpeg_output_file)?;
 
         let ffmpeg_input_content =
-            helper::gen_ffmpeg_input_content(target_dir, file_format.as_str());
+            gen_input_file_content_for_ffmpeg_from_dir(target_dir, file_format.as_str());
 
         if !ffmpeg_input_content.is_empty() {
             print_order_of_merging(&ffmpeg_input_content);
@@ -63,4 +66,11 @@ fn main() -> Result<(), Error> {
     } else {
         Ok(())
     }
+}
+
+pub fn gen_input_file_content_for_ffmpeg_from_dir(target_dir: &Path, file_format: &str) -> String {
+    let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
+    let files_to_merge = filter_files(all_files_on_target_dir, file_format);
+    let files_to_merge = path_bufs_to_strings(files_to_merge);
+    gen_input_file_content_for_ffmpeg(files_to_merge)
 }
