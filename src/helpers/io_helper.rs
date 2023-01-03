@@ -39,3 +39,10 @@ pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
         .unwrap();
     path
 }
+
+pub fn path_bufs_to_strings(path_bufs: Vec<PathBuf>) -> Vec<String> {
+    path_bufs
+        .iter()
+        .map(|path_buf| path_buf.to_str().unwrap().to_string())
+        .collect()
+}
