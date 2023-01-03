@@ -1,6 +1,6 @@
 use nanoid::nanoid;
 use std::env::temp_dir;
-use std::fs::{self, File};
+use std::fs::{self, canonicalize, File};
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
@@ -43,6 +43,11 @@ pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
 pub fn path_bufs_to_strings(path_bufs: Vec<PathBuf>) -> Vec<String> {
     path_bufs
         .iter()
-        .map(|path_buf| path_buf.to_str().unwrap().to_string())
+        .map(|path_buf| {
+            canonicalize(path_buf.to_str().unwrap())
+                .unwrap()
+                .display()
+                .to_string()
+        })
         .collect()
 }
