@@ -33,7 +33,7 @@ pub fn create_tmp_dir() -> PathBuf {
 }
 
 pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
-    File::create(&path)
+    File::create(path)
         .unwrap()
         .write_all(buf.as_bytes())
         .unwrap();
