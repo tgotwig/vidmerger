@@ -52,26 +52,25 @@ jobs:
 
       - name: 🕵️ Run tests
         run: make test
-  # todo: https://github.com/TGotwig/vidmerger/issues/37
-  # Windows:
-  #   runs-on: windows-latest
-  #   name: 🏳️‍🌈 Windows
-  #   steps:
-  #     - name: 🚀 actions/checkout@v2
-  #       uses: actions/checkout@v2
+  Windows:
+    runs-on: self-hosted
+    name: 🏳️‍🌈 Windows
+    steps:
+      - name: 🚀 actions/checkout@v2
+        uses: actions/checkout@v2
 
-  #     - name: ⬇️ Install chocolatey
-  #       uses: crazy-max/ghaction-chocolatey@v1
-  #       with:
-  #         args: -h
-  #     - name: ⬇️ Install nmake
-  #       uses: ilammy/msvc-dev-cmd@v1
+      - name: ⬇️ Install chocolatey
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: -h
+      - name: ⬇️ Install nmake
+        uses: ilammy/msvc-dev-cmd@v1
 
-  #     - name: ⬇️ Install yt-dlp
-  #       run: choco install yt-dlp
+      - name: ⬇️ Install yt-dlp
+        run: choco install yt-dlp
 
-  #     - name: ⬇️ Install ffmpeg
-  #       run: choco install ffmpeg
+      - name: ⬇️ Install ffmpeg
+        run: choco install ffmpeg
 
-  #     - name: 🕵️ Run tests
-  #       run: nmake test
+      - name: 🕵️ Run tests
+        run: nmake test
