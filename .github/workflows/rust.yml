@@ -48,7 +48,7 @@ jobs:
           echo "$(pwd)" >> $GITHUB_PATH
 
       - name: ⬇️ Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        run: sudo apt install -y ffmpeg
 
       - name: 🕵️ Run tests
         run: make test
