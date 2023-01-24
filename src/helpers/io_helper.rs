@@ -40,7 +40,7 @@ pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
     path
 }
 
-pub fn path_bufs_to_strings(path_bufs: Vec<PathBuf>) -> Vec<String> {
+pub fn path_bufs_to_strings(path_bufs: &[PathBuf]) -> Vec<String> {
     path_bufs
         .iter()
         .map(|path_buf| {

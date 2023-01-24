@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **FPS Changer** which detects different fps values and scales down to the lowest number, or an fps value specified via `--fps`, this feature can also be skipped via `skip-fps-changer`. None of the original videos will be deleted, instead it generates new ones from the originals in an temporary folder and merges with those.
 - Set all `ffmpeg` supported video and audio formats as default.
 - Make binaries tiny: [johnthagen/min-sized-rust](https://github.com/johnthagen/min-sized-rust)
 - Print only file names of files which should be merged before the merge.

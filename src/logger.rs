@@ -1,4 +1,5 @@
 use term_painter::Color::BrightBlue;
+use term_painter::Color::BrightRed;
 use term_painter::ToStyle;
 
 pub fn print_order_of_merging(ffmpeg_input_content: &str) -> String {
@@ -15,6 +16,15 @@ pub fn print_order_of_merging(ffmpeg_input_content: &str) -> String {
         .join("\n");
     println!("{}\n", file_names_to_be_merged); // todo: mock this for unit tests
     file_names_to_be_merged
+}
+
+pub fn print_red_box(msg: &str) {
+    let len = msg.len();
+    println!();
+    println!("{}", BrightRed.paint("*".repeat(len - 1)));
+    println!("{}", BrightRed.paint(format!("* {} *", msg)));
+    println!("{}", BrightRed.paint("*".repeat(len - 1)));
+    println!();
 }
 
 #[cfg(test)]
