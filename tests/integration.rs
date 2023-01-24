@@ -136,8 +136,8 @@ mod integration {
 
     #[test]
     fn check_for_binaries() {
-        if which::which("youtube-dl").is_err() {
-            panic!("❌ youtube-dl wasn't found");
+        if which::which("yt-dlp").is_err() {
+            panic!("❌ yt-dlp wasn't found");
         }
         if which::which("ffmpeg").is_err() {
             panic!("❌ ffmpeg wasn't found");
@@ -251,7 +251,7 @@ mod integration {
     }
 
     fn download(url: &str, format: &str, out: &str) {
-        Command::new("youtube-dl")
+        Command::new("yt-dlp")
             .args(&["-o", out, "-f", format, url])
             .unwrap();
     }

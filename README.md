@@ -77,7 +77,7 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 ### Prerequisites
 
 - [Rust 2021](https://www.rust-lang.org/tools/install)
-- [youtube-dl](http://ytdl-org.github.io/youtube-dl/download.html)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Installation)
 - [ffmpeg](https://ffmpeg.org/download.html)
 - If you are on Windows and want to have the `make` command: [Windows Subsystem for Linux with Ubuntu](https://www.microsoft.com/de-de/p/ubuntu-2004-lts/9n6svws3rx71?activetab=pivot:overviewtab)
 
@@ -122,7 +122,7 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🧪 Tests
 
-- For major tests: `make test` (requires `youtube-dl` and `ffmpeg` to be installed)
+- For major tests: `make test` (requires `yt-dlp` and `ffmpeg` to be installed)
 - For linting tests: `make lint`
 
 ## 🌟 Style guide
