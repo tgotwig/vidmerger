@@ -5,7 +5,6 @@ use helpers::io_helper::path_bufs_to_strings;
 use helpers::io_helper::read_dir;
 use helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use helpers::vec_helper::filter_files;
-use logger::print_red_box;
 use path_slash::PathExt;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -17,9 +16,9 @@ mod cli;
 mod commanders;
 mod ffmpeg_args_factory;
 mod helpers;
-mod logger;
 use crate::commanders::fps_reader::get_fps;
-use crate::logger::print_order_of_merging;
+use crate::helpers::str_helper::create_order_of_merging;
+use crate::helpers::str_helper::print_red_box;
 use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
@@ -62,7 +61,9 @@ fn main() -> Result<(), Error> {
                 ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
             }
 
-            print_order_of_merging(&ffmpeg_input_content);
+            println!("\n👇 Order of merging:\n");
+            let file_names_to_be_merged = create_order_of_merging(&ffmpeg_input_content);
+            println!("{}\n", file_names_to_be_merged);
             println!("⏳ Starts after 3 seconds...\n");
             thread::sleep(time::Duration::from_secs(3));
 
