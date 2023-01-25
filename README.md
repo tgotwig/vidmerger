@@ -23,19 +23,21 @@ Here is the usage help of vidmerger 🤗
 
 ```shell
 USAGE:
-    vidmerger [FLAGS] [OPTIONS] <DIR>
+    vidmerger [OPTIONS] <TARGET_DIR>
 
 ARGS:
-    <DIR>    Sets the input file to use
-
-FLAGS:
-    -h, --help        Prints help information
-        --shutdown    For doing a shutdown at the end (needs sudo)
-    -V, --version     Prints version information
+    <TARGET_DIR>    Sets the input file to use
 
 OPTIONS:
-    -f, --format <format>    Specifies which formats should be merged individually, the default is
-                             👉 3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv
+    -f, --format <format>     Specifies which formats should be merged individually, the default is
+                              👉 3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv
+        --fps <fps>           Generates videos inside a temporary folder with this fps value and
+                              merges them
+    -h, --help                Print help information
+        --shutdown            For doing a shutdown at the end (needs sudo)
+        --skip-fps-changer    Skips the fps changer
+        --skip-wait           Skips the wait time for reading
+    -V, --version             Print version information
 ```
 
 ## ✨ Installing / Getting started
