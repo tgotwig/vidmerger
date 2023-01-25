@@ -7,7 +7,7 @@ pub struct Cli {
 impl Cli {
     pub fn init() -> Self {
         let matches = Command::new("vidmerger")
-        .version("0.2.0")
+        .version("0.3.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simlifies merging multiple videos 🎞")
         .arg(Arg::new("TARGET_DIR")
