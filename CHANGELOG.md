@@ -9,15 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `skip-wait` which skips the wait time for reading.
-- **FPS Changer** which detects different fps values and scales down to the lowest number, or an fps value specified via `--fps`, this feature can also be skipped via `skip-fps-changer`. None of the original videos will be deleted, instead it generates new ones from the originals in an temporary folder and merges with those.
-- Set all `ffmpeg` supported video and audio formats as default.
+- `skip-wait` which skips the wait time for reading
+- **FPS Changer** which detects different fps values and scales down to the lowest number, or an fps value specified via `--fps`, this feature can also be skipped via `skip-fps-changer`. None of the original videos will be deleted, instead it generates new ones from the originals in an temporary folder and merges with those
+
+### Changed
+
+- Set all `ffmpeg` supported video and audio formats as default
 - Make binaries tiny: [johnthagen/min-sized-rust](https://github.com/johnthagen/min-sized-rust)
-- Print only file names of files which should be merged before the merge.
-- Works with folder names which starts with a dot.
+- Make logs short and consistent
+- Panic with error message from ffmpeg if something goes wrong
+
+### Removed
+
 - Remove `--preview`
 - Remove `--scale`
-- Panic with error message from ffmpeg if something goes wrong.
+
+### Fixed
+
+- Works now with folder names which starts with a dot
 
 ## 🎉 [0.2.0] - 2022-05-09
 
@@ -27,56 +36,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - MacOS: `/var/folders/q9/lgznjs3170b27wn5k9jd54g80000gn/T/<8-RAND-CHARS>`
   - Linux: `/tmp/<8-RAND-CHARS>`
   - Windows: `~/AppData/Local/Temp/<8-RAND-CHARS>`
-- Video files starting with a `.` will be ignored (can be the case when dealing with network volumes).
-- Append the following message to the success message: `(it can still be broken 🙈)`.
+- Video files starting with a `.` will be ignored (can be the case when dealing with network volumes)
+- Append the following message to the success message: `(it can still be broken 🙈)`
 
 ### Fixed
 
-- Set `-safe 0` to get rid of `[concat @ 0x55c6fb1e7600] Unsafe file name`.
+- Set `-safe 0` to get rid of `[concat @ 0x55c6fb1e7600] Unsafe file name`
 
 ## 🎉 [0.2.0] - 2021-09-05
 
 ### Added
 
-- Added `--shutdown` flag for doing a system shutdown after script execution.
+- Added `--shutdown` flag for doing a system shutdown after script execution
 
 ### Changed
 
-- Improved `--preview`.
+- Improved `--preview`
 
 ## 🎉 [0.1.5] - 2021-07-04
 
 ### Added
 
-- Scaling videos with the `--scale` / `-s` flag and a value like `320:240` before merging.
+- Scaling videos with the `--scale` / `-s` flag and a value like `320:240` before merging
 
 ### Changed
 
-- Wait for `3 seconds` before merging after showing the merge order for having time to read.
-- Improved logging.
+- Wait for `3 seconds` before merging after showing the merge order for having time to read
+- Improved logging
 
 ### Fixed
 
-- Small fix for the printed ffmpeg command.
+- Small fix for the printed ffmpeg command
 
 ## 🎉 [0.1.4] - 2020-10-02
 
 ### Added
 
-- The `--preview` flag was added.
+- The `--preview` flag was added
 
 ### Changed
 
-- Vidmerger can now run without the `--format` flag.
+- Vidmerger can now run without the `--format` flag
 
 ## 🎉 [0.1.2] - 2020-07-29
 
 ### Fixed
 
-- Fix issues with backslash-paths on Windows.
+- Fix issues with backslash-paths on Windows
 
 ## 🎉 [0.1.1] - 2020-06-27
 
 ### Added
 
-- Show merge-order before merging.
+- Show merge-order before merging
