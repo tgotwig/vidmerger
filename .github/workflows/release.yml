@@ -40,7 +40,7 @@ jobs:
             ### Fixed
 
             - Works now with folder names which starts with a dot
-          draft: false
+          draft: true
           prerelease: false
 
   release-osx:
