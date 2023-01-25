@@ -18,7 +18,6 @@ mod ffmpeg_args_factory;
 mod helpers;
 use crate::commanders::fps_reader::get_fps;
 use crate::helpers::str_helper::create_order_of_merging;
-use crate::helpers::str_helper::print_red_box;
 use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
@@ -53,6 +52,12 @@ fn main() -> Result<(), Error> {
         let mut ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
 
         if !ffmpeg_input_content.is_empty() {
+            println!("\n----------------------------------------------------------------");
+            println!("📜 Order of merging:\n");
+            println!("{}", create_order_of_merging(&ffmpeg_input_content));
+            println!("\n⏳ Waiting 3 seconds to read");
+            thread::sleep(time::Duration::from_secs(3));
+
             let tmp_dir = create_tmp_dir();
 
             if !skip_fps_changer {
@@ -61,11 +66,8 @@ fn main() -> Result<(), Error> {
                 ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
             }
 
-            println!("\n👇 Order of merging:\n");
-            let file_names_to_be_merged = create_order_of_merging(&ffmpeg_input_content);
-            println!("{}\n", file_names_to_be_merged);
-            println!("⏳ Starts after 3 seconds...\n");
-            thread::sleep(time::Duration::from_secs(3));
+            println!("----------------------------------------------------------------");
+            println!("🚀 Start Merger, calling:\n");
 
             let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");
             create(&ffmpeg_input_file, ffmpeg_input_content);
@@ -107,25 +109,27 @@ pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: i8
     };
 
     if set.len() > 1 {
-        print_red_box(&format!(
-            "⚠️ Different fps detected. Adjusting all fps values to {}",
-            fps_goal
-        ));
+        println!("----------------------------------------------------------------");
+        println!("🔎 FPS mismatches detected");
+        println!();
         println!("Will be merged directly: \n");
         for (key, value) in &map {
             if key == &fps_goal {
-                println!("- {:?} ({} fps)", value, key);
+                println!("- {} ({} fps)", value.to_string_lossy(), key);
             }
         }
         println!();
-        println!("Will be merged indirectly, generating new files from listed below and merges with listed above: \n");
+        println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
+        println!();
         for (key, value) in &map {
             if key != &fps_goal {
-                println!("- {:?} ({} fps)", value, key);
+                println!("- {} ({} fps)", value.to_string_lossy(), key);
             }
         }
-        println!();
 
+        println!("----------------------------------------------------------------");
+        println!("🚀 Start FPS Changer, calling:");
+        println!();
         for file_to_merge in files_to_merge {
             let fps = get_fps(&file_to_merge);
 

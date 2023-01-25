@@ -1,6 +1,5 @@
 use std::{borrow::Cow, fmt::Write as FmtWrite};
 use term_painter::Color::BrightBlue;
-use term_painter::Color::BrightRed;
 use term_painter::ToStyle;
 
 pub fn split(string: String) -> Vec<String> {
@@ -27,26 +26,16 @@ pub fn extract_fps_from_ffmpeg_output(str: Cow<str>) -> i8 {
 }
 
 pub fn create_order_of_merging(ffmpeg_input_content: &str) -> String {
-    let file_names_to_be_merged = ffmpeg_input_content
+    ffmpeg_input_content
         .lines()
         .map(|line| {
             format!(
-                "📄 {}",
+                "- {}",
                 BrightBlue.paint(line.split(['/', '\\']).last().unwrap().replace('\'', ""))
             )
         })
         .collect::<Vec<String>>()
-        .join("\n");
-    file_names_to_be_merged
-}
-
-pub fn print_red_box(msg: &str) {
-    let len = msg.len();
-    println!();
-    println!("{}", BrightRed.paint("*".repeat(len - 1)));
-    println!("{}", BrightRed.paint(format!("* {} *", msg)));
-    println!("{}", BrightRed.paint("*".repeat(len - 1)));
-    println!();
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -125,7 +114,7 @@ mod tests {
     fn test_create_order_of_merging_with_slashes() {
         assert_eq!(
             create_order_of_merging("/target_dir/1.mp4\n/target_dir/2.mp4"),
-            "📄 1.mp4\n📄 2.mp4"
+            "- 1.mp4\n- 2.mp4"
         );
     }
 
@@ -133,7 +122,7 @@ mod tests {
     fn test_create_order_of_merging_with_backslashes() {
         assert_eq!(
             create_order_of_merging("C:\\target_dir\\1.mp4\nC:\\target_dir\\2.mp4"),
-            "📄 1.mp4\n📄 2.mp4"
+            "- 1.mp4\n- 2.mp4"
         );
     }
 }

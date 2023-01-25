@@ -4,14 +4,14 @@ pub fn merge(ffmpeg_args: [String; 10], file_format: String) {
     let child = _cmd::merge(ffmpeg_args);
 
     let res = child.unwrap().wait_with_output();
-    println!("{:?}\n", res);
+    println!("{:?}", res);
 
+    println!("----------------------------------------------------------------");
     if res.is_ok() {
-        println!(
-            "✅ Successfully generated 'output.{}'! (it can still be broken 🙈)",
-            file_format
-        )
+        println!("✅ Successfully generated:");
+        println!();
+        println!("- output.{}", file_format);
     } else {
-        panic!("❌ Something went wrong 😖\n{}", res.unwrap_err());
+        panic!("❌ Something went wrong: \n\n{}", res.unwrap_err());
     }
 }

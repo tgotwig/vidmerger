@@ -9,7 +9,7 @@ use path_slash::PathBufExt;
 pub fn merge(args: [String; 10]) -> Result<Child, Error> {
     let cmd = format!("ffmpeg {}", args.join(" "));
 
-    println!("🚀 Calling: '{}'\n", cmd);
+    println!("- {}\n", cmd);
     Command::new("ffmpeg")
         .args(&args)
         .stdout(Stdio::piped())
@@ -33,7 +33,7 @@ pub fn adjust_fps_by_ffmpeg(
         fps_goal,
         new_file_location.to_str().unwrap()
     );
-    println!("🚀 Calling: '{}'", cmd);
+    println!("- {}", cmd);
 
     execute_cmd(cmd);
     new_file_location

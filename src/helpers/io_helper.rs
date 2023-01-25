@@ -14,7 +14,11 @@ pub fn exit_when_ffmpeg_not_available() {
 
 pub fn remove_file(path: &Path) -> Result<()> {
     if Path::new(path).exists() {
-        println!("🔥 Removing {}", path.display());
+        println!("----------------------------------------------------------------");
+        print!(
+            "🗑️  Removing old data:\n\n- {}",
+            path.file_name().unwrap().to_string_lossy()
+        );
         fs::remove_file(path)?;
     }
     Ok(())
