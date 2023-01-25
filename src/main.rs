@@ -94,11 +94,11 @@ fn main() -> Result<(), Error> {
 pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: i8) -> Vec<PathBuf> {
     let mut new_files_to_merge = Vec::new();
     let mut set: HashSet<i8> = HashSet::new();
-    let mut map: HashMap<i8, &PathBuf> = HashMap::new();
+    let mut map: HashMap<&PathBuf, i8> = HashMap::new();
 
     for file_to_merge in &files_to_merge {
         set.insert(get_fps(file_to_merge));
-        map.insert(get_fps(file_to_merge), file_to_merge);
+        map.insert(file_to_merge, get_fps(file_to_merge));
     }
 
     let fps_goal = if fps_from_cli != 0 {
@@ -114,16 +114,24 @@ pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: i8
         println!();
         println!("Will be merged directly: \n");
         for (key, value) in &map {
-            if key == &fps_goal {
-                println!("- {} ({} fps)", value.to_string_lossy(), key);
+            if value == &fps_goal {
+                println!(
+                    "- {} ({} fps)",
+                    key.file_name().unwrap().to_string_lossy(),
+                    value
+                );
             }
         }
         println!();
         println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
         println!();
         for (key, value) in &map {
-            if key != &fps_goal {
-                println!("- {} ({} fps)", value.to_string_lossy(), key);
+            if value != &fps_goal {
+                println!(
+                    "- {} ({} fps)",
+                    key.file_name().unwrap().to_string_lossy(),
+                    value
+                );
             }
         }
 
