@@ -1,8 +1,8 @@
 name: 🎉 Release
 on:
   push:
-   tags:
-     - '*'
+    tags:
+      - "*"
 jobs:
   prepare:
     name: 👷 Prepare
@@ -10,111 +10,118 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-    - uses: actions/checkout@v2
-    - name: 🐣 Create Release folder on Github
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.token }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
-        body: |
+      - uses: actions/checkout@v2
+      - name: 🐣 Create Release folder on Github
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            ### Added
+
+            - `skip-wait` which skips the wait time for reading
+            - **FPS Changer** which detects different fps values and scales down to the lowest number, or an fps value specified via `--fps`, this feature can also be skipped via `skip-fps-changer`. None of the original videos will be deleted, instead it generates new ones from the originals in an temporary folder and merges with those
+
             ### Changed
 
-            - Files like `list.txt` and scaled videos will be created inside a temporary folder where the endpoint looks like `8EbQrP3j`:
-              - MacOS: `/var/folders/q9/lgznjs3170b27wn5k9jd54g80000gn/T/<8-RAND-CHARS>`
-              - Linux: `/tmp/<8-RAND-CHARS>`
-              - Windows: `~/AppData/Local/Temp/<8-RAND-CHARS>`
-            - Video files starting with a `.` will be ignored (can be the case when dealing with network volumes).
-            - Append the following message to the success message: `(it can still be broken 🙈)`.
+            - Set all `ffmpeg` supported video and audio formats as default
+            - Make binaries tiny: [johnthagen/min-sized-rust](https://github.com/johnthagen/min-sized-rust)
+            - Make logs short and consistent
+            - Panic with error message from ffmpeg if something goes wrong
+
+            ### Removed
+
+            - Remove `--preview`
+            - Remove `--scale`
 
             ### Fixed
 
-            - Set `-safe 0` to get rid of `[concat @ 0x55c6fb1e7600] Unsafe file name`.
-
-        draft: false
-        prerelease: false
+            - Works now with folder names which starts with a dot
+          draft: false
+          prerelease: false
 
   release-osx:
     name: 🍎 Release on MacOS
     runs-on: macos-latest
     needs: prepare
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: 🧑‍🔧 Build Release
-      run: cargo build --release && make zip-mac
+      - name: 🧑‍🔧 Build Release
+        run: cargo build --release && make zip-mac
 
-    - name: ⬆️ Get version
-      id: get_version
-      run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
-    
-    - name: 🧮 Set SHA
-      id: shasum
-      run: |
-        echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')"
+      - name: ⬆️ Get version
+        id: get_version
+        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
-    - name: 🚀 Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.token }}
-      with:
-        upload_url: ${{ needs.prepare.outputs.upload_url }}
-        asset_path: target/release/vidmerger-mac.tar.gz
-        asset_name: vidmerger-mac.tar.gz
-        asset_content_type: application/gzip
+      - name: 🧮 Set SHA
+        id: shasum
+        run: |
+          echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')"
 
-    - name: 🍺 Bump Brew
-      env: 
-        HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
-      run: |
-        brew tap tgotwig/homebrew-vidmerger
-        brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-        --sha256=${{ steps.shasum.outputs.sha }} \
-        --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
-        tgotwig/homebrew-vidmerger/vidmerger
+      - name: 🚀 Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        with:
+          upload_url: ${{ needs.prepare.outputs.upload_url }}
+          asset_path: target/release/vidmerger-mac.tar.gz
+          asset_name: vidmerger-mac.tar.gz
+          asset_content_type: application/gzip
+
+      - name: 🍺 Bump Brew
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
+        run: |
+          brew tap tgotwig/homebrew-vidmerger
+          brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
+          --sha256=${{ steps.shasum.outputs.sha }} \
+          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
+          tgotwig/homebrew-vidmerger/vidmerger
 
   release-linux:
     name: 🐧 Release on Linux
     runs-on: ubuntu-latest
     needs: prepare
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: 🧑‍🔧 Build Release
-      run: cargo build --release && make zip-linux
+      - name: 🧑‍🔧 Build Release
+        run: cargo build --release && make zip-linux
 
-    - name: ⬆️ Get version
-      id: get_version
-      run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
-    
-    - name: 🧮 Set SHA
-      id: shasum
-      run: |
-        echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')"
+      - name: ⬆️ Get version
+        id: get_version
+        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
-    - name: 🚀 Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.token }}
-      with:
-        upload_url: ${{ needs.prepare.outputs.upload_url }}
-        asset_path: target/release/vidmerger-linux.tar.gz
-        asset_name: vidmerger-linux.tar.gz
-        asset_content_type: application/gzip
+      - name: 🧮 Set SHA
+        id: shasum
+        run: |
+          echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')"
 
-    - name: 🏝 Set git config
-      run: |
+      - name: 🚀 Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        with:
+          upload_url: ${{ needs.prepare.outputs.upload_url }}
+          asset_path: target/release/vidmerger-linux.tar.gz
+          asset_name: vidmerger-linux.tar.gz
+          asset_content_type: application/gzip
+
+      - name: 🏝 Set git config
+        run: |
           git config --global user.email "github@tomasu.mozmail.com"
           git config --global user.name "Thomas Gotwig"
 
-    - name: 🍺 Bump Brew
-      env: 
-        HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
-      run: |
-        brew tap tgotwig/homebrew-linux-vidmerger
-        brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-        --sha256=${{ steps.shasum.outputs.sha }} \
-        --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
-        tgotwig/homebrew-linux-vidmerger/vidmerger
+      - name: 🍺 Bump Brew
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
+        run: |
+          brew tap tgotwig/homebrew-linux-vidmerger
+          brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
+          --sha256=${{ steps.shasum.outputs.sha }} \
+          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
+          tgotwig/homebrew-linux-vidmerger/vidmerger
