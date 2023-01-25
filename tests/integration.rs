@@ -42,6 +42,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -59,6 +60,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -101,6 +103,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -127,9 +130,11 @@ mod integration {
 
     #[test]
     fn call_merger_against_mp4() {
-        let mut cmd = Command::cargo_bin(BIN).unwrap();
-        cmd.arg("data")
+        Command::cargo_bin(BIN)
+            .unwrap()
+            .arg("--skip-wait")
             .args(&["--format", "mp4"])
+            .arg("data")
             .assert()
             .success();
     }
@@ -152,12 +157,11 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
         );
-
-        println!("{}", res);
 
         assert!(!res.contains("Non-monotonous DTS"));
         assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("28 fps"));
@@ -172,6 +176,7 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .args(["--fps", "25"])
                 .arg(format!("data/{}", test_name))
                 .assert()
@@ -194,6 +199,7 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .arg("--skip-fps-changer")
                 .assert()

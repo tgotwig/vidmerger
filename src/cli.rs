@@ -34,6 +34,10 @@ impl Cli {
             .long("skip-fps-changer")
             .help("Skips the fps changer")
         )
+        .arg(Arg::new("skip-wait")
+            .long("skip-wait")
+            .help("Skips the wait time for reading")
+        )
         .arg_required_else_help(true)
         .get_matches();
 

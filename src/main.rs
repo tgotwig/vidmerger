@@ -35,6 +35,7 @@ fn main() -> Result<(), Error> {
         .to_string();
     let should_shutdown = matches.is_present("shutdown");
     let skip_fps_changer = matches.is_present("skip-fps-changer");
+    let skip_wait = matches.is_present("skip-wait");
     let fps_from_cli = matches
         .value_of("fps")
         .unwrap_or("0")
@@ -55,8 +56,10 @@ fn main() -> Result<(), Error> {
             println!("\n----------------------------------------------------------------");
             println!("📜 Order of merging:\n");
             println!("{}", create_order_of_merging(&ffmpeg_input_content));
-            println!("\n⏳ Waiting 3 seconds to read");
-            thread::sleep(time::Duration::from_secs(3));
+            if !skip_wait {
+                println!("\n⏳ Waiting 3 seconds to read");
+                thread::sleep(time::Duration::from_secs(3));
+            }
 
             let tmp_dir = create_tmp_dir();
 
