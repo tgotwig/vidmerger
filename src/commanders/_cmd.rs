@@ -24,7 +24,7 @@ pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error>
 
 pub fn adjust_fps_by_ffmpeg(
     file_to_merge: PathBuf,
-    fps_goal: &i8,
+    fps_goal: &f32,
     new_file_location: PathBuf,
 ) -> PathBuf {
     let cmd = format!(

@@ -18,11 +18,11 @@ pub fn gen_input_file_content_for_ffmpeg(files_to_merge: Vec<String>) -> String 
     ffmpeg_input_content
 }
 
-pub fn extract_fps_from_ffmpeg_output(str: Cow<str>) -> i8 {
+pub fn extract_fps_from_ffmpeg_output(str: Cow<str>) -> f32 {
     let split = str.split(" fps,").collect::<Vec<&str>>();
     let split_from_split = split[0].split(' ').collect::<Vec<&str>>();
     let fps = String::from(split_from_split[split_from_split.len() - 1]);
-    fps.parse::<i8>().unwrap_or_default()
+    fps.parse::<f32>().unwrap_or_default()
 }
 
 pub fn create_order_of_merging(ffmpeg_input_content: &str) -> String {
@@ -101,13 +101,13 @@ mod tests {
     #[test]
     fn extract_fps_from_ffmpeg_output_with_30_fps() {
         let fps = extract_fps_from_ffmpeg_output(Cow::from("Stream #0:0(und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1280x720 [SAR 1:1 DAR 16:9], 201 kb/s, 30 fps, 30 tbr, 90k tbn"));
-        assert_eq!(fps, 30);
+        assert_eq!(fps, 30.);
     }
 
     #[test]
     fn extract_fps_from_ffmpeg_output_with_28_fps() {
         let fps = extract_fps_from_ffmpeg_output(Cow::from("Stream #0:0(und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1280x720 [SAR 1:1 DAR 16:9], 201 kb/s, 28 fps, 30 tbr, 90k tbn"));
-        assert_eq!(fps, 28);
+        assert_eq!(fps, 28.);
     }
 
     #[test]

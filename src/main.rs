@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
     let fps_from_cli = matches
         .value_of("fps")
         .unwrap_or("0")
-        .parse::<i8>()
+        .parse::<f32>()
         .unwrap();
 
     for file_format in split(formats) {
@@ -94,23 +94,23 @@ fn main() -> Result<(), Error> {
     }
 }
 
-pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: i8) -> Vec<PathBuf> {
+pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: f32) -> Vec<PathBuf> {
     let mut new_files_to_merge = Vec::new();
-    let mut set: HashSet<i8> = HashSet::new();
-    let mut map: HashMap<&PathBuf, i8> = HashMap::new();
+    let mut map: HashMap<&PathBuf, f32> = HashMap::new();
 
     for file_to_merge in &files_to_merge {
-        set.insert(get_fps(file_to_merge));
         map.insert(file_to_merge, get_fps(file_to_merge));
     }
 
-    let fps_goal = if fps_from_cli != 0 {
-        set.insert(fps_from_cli);
+    let fps_goal = if fps_from_cli != 0. {
         fps_from_cli
     } else {
-        *set.iter().min().unwrap()
+        *map.values()
+            .min_by(|x, y| x.partial_cmp(y).unwrap())
+            .unwrap()
     };
 
+    let set: HashSet<String> = map.values().map(|value| value.to_string()).collect();
     if set.len() > 1 {
         println!("----------------------------------------------------------------");
         println!("🔎 FPS mismatches detected");
