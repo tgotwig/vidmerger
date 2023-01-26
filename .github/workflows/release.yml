@@ -15,7 +15,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
@@ -65,7 +65,7 @@ jobs:
       - name: 🚀 Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           upload_url: ${{ needs.prepare.outputs.upload_url }}
           asset_path: target/release/vidmerger-mac.tar.gz
@@ -74,7 +74,7 @@ jobs:
 
       - name: 🍺 Bump Brew
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
         run: |
           brew tap tgotwig/homebrew-vidmerger
           brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
@@ -104,7 +104,7 @@ jobs:
       - name: 🚀 Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.token }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           upload_url: ${{ needs.prepare.outputs.upload_url }}
           asset_path: target/release/vidmerger-linux.tar.gz
@@ -116,12 +116,16 @@ jobs:
           git config --global user.email "github@tomasu.mozmail.com"
           git config --global user.name "Thomas Gotwig"
 
+      - name: 🔄 Install Linuxbrew
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" < /dev/null
+
       - name: 🍺 Bump Brew
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.token }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          brew tap tgotwig/homebrew-linux-vidmerger
-          brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
+          /home/linuxbrew/.linuxbrew/bin/brew tap tgotwig/homebrew-linux-vidmerger
+          /home/linuxbrew/.linuxbrew/bin/brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
           --sha256=${{ steps.shasum.outputs.sha }} \
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
           tgotwig/homebrew-linux-vidmerger/vidmerger
