@@ -44,8 +44,8 @@ pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
     path
 }
 
-pub fn path_bufs_to_strings(path_bufs: &[PathBuf]) -> Vec<String> {
-    path_bufs
+pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
+    let mut strings: Vec<String> = path_bufs
         .iter()
         .map(|path_buf| {
             canonicalize(path_buf.to_str().unwrap())
@@ -53,5 +53,7 @@ pub fn path_bufs_to_strings(path_bufs: &[PathBuf]) -> Vec<String> {
                 .display()
                 .to_string()
         })
-        .collect()
+        .collect();
+    strings.sort();
+    strings
 }

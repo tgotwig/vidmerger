@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Merge files in correct order
 - Fix wrong fps detection for floating point numbers
 
 ## 🎉 [0.3.0] - 2023-01-25

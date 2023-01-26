@@ -1,7 +1,7 @@
 #![deny(warnings)]
 use cli::Cli;
 use core::time;
-use helpers::io_helper::path_bufs_to_strings;
+use helpers::io_helper::path_bufs_to_sorted_strings;
 use helpers::io_helper::read_dir;
 use helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use helpers::vec_helper::filter_files;
@@ -49,7 +49,7 @@ fn main() -> Result<(), Error> {
 
         let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
         let mut files_to_merge = filter_files(all_files_on_target_dir, &file_format);
-        let mut files_to_merge_as_strings = path_bufs_to_strings(&files_to_merge);
+        let mut files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
         let mut ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
 
         if !ffmpeg_input_content.is_empty() {
@@ -65,7 +65,7 @@ fn main() -> Result<(), Error> {
 
             if !skip_fps_changer {
                 files_to_merge = change_fps(files_to_merge, &tmp_dir, fps_from_cli);
-                files_to_merge_as_strings = path_bufs_to_strings(&files_to_merge);
+                files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
                 ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
             }
 
