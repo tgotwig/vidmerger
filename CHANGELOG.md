@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Print files from FPS Changer in correct order
 - Merge files in correct order
 - Fix wrong fps detection for floating point numbers
 

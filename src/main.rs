@@ -116,28 +116,37 @@ pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: f3
         println!("🔎 FPS mismatches detected");
         println!();
         println!("Will be merged directly: \n");
+        let mut output = Vec::new();
         for (key, value) in &map {
             if value == &fps_goal {
-                println!(
+                output.push(format!(
                     "- {} ({} fps)",
                     key.file_name().unwrap().to_string_lossy(),
                     value
-                );
+                ));
             }
+        }
+        output.sort();
+        for line in output {
+            println!("{}", line);
         }
         println!();
         println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
         println!();
+        let mut output = Vec::new();
         for (key, value) in &map {
             if value != &fps_goal {
-                println!(
+                output.push(format!(
                     "- {} ({} fps)",
                     key.file_name().unwrap().to_string_lossy(),
                     value
-                );
+                ));
             }
         }
-
+        output.sort();
+        for line in output {
+            println!("{}", line);
+        }
         println!("----------------------------------------------------------------");
         println!("🚀 Start FPS Changer, calling:");
         println!();
