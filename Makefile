@@ -67,7 +67,7 @@ publish-choco:
 
 publish-dockerhub:
 	docker build --no-cache -t vidmerger .
-	docker tag vidmerger tgotwig/vidmerger:0.3.0
-	docker push tgotwig/vidmerger:0.3.0
+	docker tag vidmerger tgotwig/vidmerger:0.3.1
+	docker push tgotwig/vidmerger:0.3.1
 	docker tag vidmerger tgotwig/vidmerger
 	docker push tgotwig/vidmerger
