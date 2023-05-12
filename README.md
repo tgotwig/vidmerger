@@ -110,12 +110,12 @@ Run `make build` to build for Mac, Linux and Windows. You can find the compresse
 #### Automated steps
 
 - Homebrew (MacOS & Linux): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
+- Chocolatey (Windows): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
 
 #### Manual steps
 
 Increasing all versions by _find and replace_, then after `make build`:
 
-- Chocolatey (Windows): Edit the hash inside of _tools/VERIFICATION.txt_ and run `make publish-choco`.
 - Dockerhub: Run `make publish-dockerhub`.
 
 ## 📦 Versioning
