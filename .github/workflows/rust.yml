@@ -60,26 +60,27 @@ jobs:
 
       - name: 🕵️ Run tests
         run: task test
-  Windows:
-    runs-on: self-hosted
-    name: 🏳️‍🌈 Windows
-    steps:
-      - name: 🚀 actions/checkout@v2
-        uses: actions/checkout@v2
+  # TODO - setup self-hosted for that
+  # Windows:
+  #   runs-on: self-hosted
+  #   name: 🏳️‍🌈 Windows
+  #   steps:
+  #     - name: 🚀 actions/checkout@v2
+  #       uses: actions/checkout@v2
 
-      - name: ⬇️ Install chocolatey
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: -h
+  #     - name: ⬇️ Install chocolatey
+  #       uses: crazy-max/ghaction-chocolatey@v1
+  #       with:
+  #         args: -h
 
-      - name: ⬇️ Install yt-dlp
-        run: choco install yt-dlp
+  #     - name: ⬇️ Install yt-dlp
+  #       run: choco install yt-dlp
 
-      - name: ⬇️ Install ffmpeg
-        run: choco install ffmpeg
+  #     - name: ⬇️ Install ffmpeg
+  #       run: choco install ffmpeg
 
-      - name: ⬇️ Install task
-        run: choco install go-task
+  #     - name: ⬇️ Install task
+  #       run: choco install go-task
 
-      - name: 🕵️ Run tests
-        run: task test
+  #     - name: 🕵️ Run tests
+  #       run: task test
