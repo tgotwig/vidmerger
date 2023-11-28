@@ -32,6 +32,9 @@ jobs:
           wget https://evermeet.cx/ffmpeg/get/zip -qO ffmpeg.zip
           unzip ffmpeg.zip
 
+      - name: ⬇️ Install task
+        run: brew install go-task/tap/go-task
+
       - name: 🕵️ Run tests
         run: task test
   Ubuntu:
@@ -50,6 +53,11 @@ jobs:
       - name: ⬇️ Install ffmpeg
         run: sudo apt install -y ffmpeg
 
+      - name: ⬇️ Install task
+        run: |
+          curl -sL "https://github.com/go-task/task/releases/download/v3.9.0/task_linux_amd64.tar.gz" | tar xz
+          sudo mv task /usr/local/bin
+
       - name: 🕵️ Run tests
         run: task test
   Windows:
@@ -63,14 +71,15 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: -h
-      - name: ⬇️ Install task # TODO - test this
-        uses: ilammy/ghaction-task@v1
 
       - name: ⬇️ Install yt-dlp
         run: choco install yt-dlp
 
       - name: ⬇️ Install ffmpeg
         run: choco install ffmpeg
+
+      - name: ⬇️ Install task
+        run: choco install go-task
 
       - name: 🕵️ Run tests
         run: task test

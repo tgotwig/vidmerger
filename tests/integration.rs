@@ -188,6 +188,7 @@ mod integration {
         check_for_merged_file(test_name, "output.mp4");
     }
 
+    // TODO - fix this test (fails during CI-Test with MacOS)
     #[test]
     fn call_merger_without_fps_changer_on_vids_with_different_fps_values() {
         if cfg!(target_os = "linux") {
