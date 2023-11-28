@@ -6,14 +6,11 @@ use std::{
 
 use path_slash::PathBufExt;
 
-pub fn merge(args: [String; 10]) -> Result<Child, Error> {
+pub fn merge(args: [String; 10]) -> Result<Child, std::io::Error> {
     let cmd = format!("ffmpeg {}", args.join(" "));
 
-    println!("- {}\n", cmd);
-    Command::new("ffmpeg")
-        .args(&args)
-        .stdout(Stdio::piped())
-        .spawn()
+    println!("- {}", cmd);
+    execute_cmd(cmd)
 }
 
 pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error> {
@@ -35,11 +32,12 @@ pub fn adjust_fps_by_ffmpeg(
     );
     println!("- {}", cmd);
 
-    execute_cmd(cmd);
+    let res = execute_cmd(cmd).unwrap().wait_with_output();
+    println!("{:?}", res);
     new_file_location
 }
 
-fn execute_cmd(cmd: String) -> std::process::Output {
+fn execute_cmd(cmd: String) -> Result<Child, std::io::Error> {
     let (interpreter, arg) = if cfg!(target_os = "windows") {
         ("cmd", "/c")
     } else {
@@ -48,6 +46,6 @@ fn execute_cmd(cmd: String) -> std::process::Output {
     Command::new(interpreter)
         .arg(arg)
         .arg(cmd)
-        .output()
-        .expect("💥 Failed to execute command")
+        .stdout(Stdio::piped())
+        .spawn()
 }
