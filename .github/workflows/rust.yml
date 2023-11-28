@@ -33,7 +33,7 @@ jobs:
           unzip ffmpeg.zip
 
       - name: 🕵️ Run tests
-        run: make test
+        run: task test
   Ubuntu:
     runs-on: ubuntu-latest
     name: 🐧 Ubuntu
@@ -51,7 +51,7 @@ jobs:
         run: sudo apt install -y ffmpeg
 
       - name: 🕵️ Run tests
-        run: make test
+        run: task test
   Windows:
     runs-on: self-hosted
     name: 🏳️‍🌈 Windows
@@ -63,8 +63,8 @@ jobs:
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: -h
-      - name: ⬇️ Install nmake
-        uses: ilammy/msvc-dev-cmd@v1
+      - name: ⬇️ Install task # TODO - test this
+        uses: ilammy/ghaction-task@v1
 
       - name: ⬇️ Install yt-dlp
         run: choco install yt-dlp
@@ -73,4 +73,4 @@ jobs:
         run: choco install ffmpeg
 
       - name: 🕵️ Run tests
-        run: nmake test
+        run: task test

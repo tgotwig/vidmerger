@@ -87,16 +87,16 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 - [Rust 2021](https://www.rust-lang.org/tools/install)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Installation)
 - [ffmpeg](https://ffmpeg.org/download.html)
-- If you are on Windows and want to have the `make` command: [Windows Subsystem for Linux with Ubuntu](https://www.microsoft.com/de-de/p/ubuntu-2004-lts/9n6svws3rx71?activetab=pivot:overviewtab)
+- [task](https://taskfile.dev/#/installation)
 
 ### Setting up Dev
 
-Once you are done with installing the prerequisites, you should run `make` to see if everything runs smooth:
+Once you are done with installing the prerequisites, you should run `task` to see if everything runs smooth:
 
 ```shell
 git clone git@github.com:TGotwig/vidmerger.git
 cd vidmerger
-make
+task
 ```
 
 Also click on _fork_ from the top right corner of this repository and run:
@@ -109,7 +109,7 @@ git remote add <your-github-name> git@github.com:<your-github-name>/vidmerger.gi
 
 ### Building
 
-Run `make build` to build for Mac, Linux and Windows. You can find the compressed Mac & Linux .tar.gz-archives for Github under _target/tars_, the .exe file for Windows under _tools_.
+Run `task build` to build for Mac, Linux and Windows. You can find the compressed Mac & Linux .tar.gz-archives for Github under _target/tars_, the .exe file for Windows under _tools_.
 
 ### Deploying / Publishing
 
@@ -120,9 +120,9 @@ Run `make build` to build for Mac, Linux and Windows. You can find the compresse
 
 #### Manual steps
 
-Increasing all versions by _find and replace_, then after `make build`:
+Increasing all versions by _find and replace_, then after `task build`:
 
-- Dockerhub: Run `make publish_dockerhub`.
+- Dockerhub: Run `task publish_dockerhub`.
 
 ## 📦 Versioning
 
@@ -130,8 +130,8 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🧪 Tests
 
-- For major tests: `make test` (requires `yt-dlp` and `ffmpeg` to be installed)
-- For linting tests: `make lint`
+- For major tests: `task test` (requires `yt-dlp` and `ffmpeg` to be installed)
+- For linting tests: `task lint`
 
 ## 🌟 Style guide
 
