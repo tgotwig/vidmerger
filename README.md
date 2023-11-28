@@ -122,7 +122,7 @@ Run `make build` to build for Mac, Linux and Windows. You can find the compresse
 
 Increasing all versions by _find and replace_, then after `make build`:
 
-- Dockerhub: Run `make publish-dockerhub`.
+- Dockerhub: Run `make publish_dockerhub`.
 
 ## 📦 Versioning
 
