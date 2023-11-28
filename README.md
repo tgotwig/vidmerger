@@ -10,6 +10,8 @@ graph LR;
 Video_A-->Vidmerger;
 Video_B-->Vidmerger;
 Vidmerger-->FFmpeg;
+FFmpeg-->FPS_Changer;
+FPS_Changer-->Video_A+B;
 FFmpeg-->Video_A+B;
 ```
 
