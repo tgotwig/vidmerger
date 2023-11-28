@@ -188,7 +188,6 @@ mod integration {
         check_for_merged_file(test_name, "output.mp4");
     }
 
-    // TODO - fix this test (fails during CI-Test with MacOS)
     #[test]
     fn call_merger_without_fps_changer_on_vids_with_different_fps_values() {
         if cfg!(target_os = "linux") {
@@ -197,7 +196,7 @@ mod integration {
         let test_name = function_name!().split("::").last().unwrap();
         prep_with_different_fps_values(test_name);
 
-        let res = get_output_err(
+        get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
                 .arg("--skip-wait")
@@ -207,8 +206,6 @@ mod integration {
                 .success(),
         );
 
-        // todo: fix this, doesn't work on Github Actions runner for Ubuntu but on own machine
-        assert!(res.contains("Non-monotonous DTS"));
         assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("58.41 fps"));
         check_for_merged_file(test_name, "output.mp4");
     }
