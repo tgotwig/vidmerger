@@ -26,23 +26,26 @@ lint:
 
 # ----------------------------------------------------------------
 
+# TODO - fix this
 build:
 	make build-linux
 	make build-mac
 	make build-win
 	make shasum
 
-build_linux:
+# TODO - fix this
+build_linux_x64:
 	@echo 'Building for Linux... 🐧'
 	cross build --release --target=x86_64-unknown-linux-musl
 	mkdir -p target/release-archives && tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux.tar.gz vidmerger
 
-build_mac:
+# TODO - fix this
+build_mac_x64:
 	@echo 'Building for MacOS... 🍏'
 	cross build --release --target=x86_64-apple-darwin
 	mkdir -p target/release-archives && tar -C target/x86_64-apple-darwin/release -czf target/release-archives/vidmerger-mac.tar.gz vidmerger
 
-build_win:
+build_win_x64:
 	@echo 'Building for Windows... 🏳️‍🌈'
 	cross build --release --target x86_64-pc-windows-gnu
 	cd target/x86_64-pc-windows-gnu/release && mv vidmerger.exe ../../../tools
