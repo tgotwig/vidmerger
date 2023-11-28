@@ -51,12 +51,6 @@ shasum:
 	shasum -a 256 target/release-archives/vidmerger*
 	shasum -a 256 tools/vidmerger.exe
 
-zip-mac:
-	tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
-
-zip-linux:
-	tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
-
 # ----------------------------------------------------------------
 
 publish-choco:

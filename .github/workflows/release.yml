@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: 🧑‍🔧 Build Release
-        run: cargo build --release && make zip-mac
+        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
 
       - name: ⬆️ Get version
         id: get_version
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: 🧑‍🔧 Build Release
-        run: cargo build --release && make zip-linux
+        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
 
       - name: ⬆️ Get version
         id: get_version
