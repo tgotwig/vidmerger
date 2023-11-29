@@ -1,7 +1,7 @@
 use crate::commanders::_cmd;
 
-pub fn merge(ffmpeg_args: [String; 10], file_format: String) {
-    let child = _cmd::merge(ffmpeg_args);
+pub fn merge(input: String, output: String, file_format: String) {
+    let child = _cmd::merge(input, output);
 
     let res = child.unwrap().wait_with_output();
     println!("{:?}", res);

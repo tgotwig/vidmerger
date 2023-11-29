@@ -6,8 +6,11 @@ use std::{
 
 use path_slash::PathBufExt;
 
-pub fn merge(args: [String; 10]) -> Result<Child, std::io::Error> {
-    let cmd = format!("ffmpeg {}", args.join(" "));
+pub fn merge(input: String, output: String) -> Result<Child, std::io::Error> {
+    let cmd = format!(
+        "ffmpeg -y -f concat -safe 0 -i {} -c copy {}",
+        input, output
+    );
 
     println!("- {}", cmd);
     execute_cmd(cmd)

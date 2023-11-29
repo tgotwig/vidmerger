@@ -14,7 +14,6 @@ use std::path::PathBuf;
 use std::thread;
 mod cli;
 mod commanders;
-mod ffmpeg_args_factory;
 mod helpers;
 use crate::commanders::fps_reader::get_fps;
 use crate::helpers::str_helper::create_order_of_merging;
@@ -75,12 +74,11 @@ fn main() -> Result<(), Error> {
             let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");
             create(&ffmpeg_input_file, ffmpeg_input_content);
 
-            let ffmpeg_merge_args = ffmpeg_args_factory::make_ffmpeg_merge_args(
-                &ffmpeg_input_file.to_slash().unwrap(),
+            commanders::merger::merge(
+                ffmpeg_input_file.to_slash().unwrap(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
+                file_format,
             );
-
-            commanders::merger::merge(ffmpeg_merge_args, file_format);
         }
     }
 
