@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix --help and others cmds if ffmpeg is not available
 - Fix filter function which filtered out files with multiple dots in the filename
 
 ## 🎉 [0.3.1] - 2023-01-26

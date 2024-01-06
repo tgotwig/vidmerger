@@ -25,8 +25,9 @@ use helpers::str_helper::split;
 use system_shutdown::shutdown;
 
 fn main() -> Result<(), Error> {
-    exit_when_ffmpeg_not_available();
     let matches = Cli::init().get_matches();
+    exit_when_ffmpeg_not_available();
+
     let target_dir = Path::new(matches.value_of("TARGET_DIR").unwrap());
     let formats = matches
         .value_of("format")
