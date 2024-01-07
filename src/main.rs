@@ -1,9 +1,19 @@
 #![deny(warnings)]
+mod cli;
+mod commanders;
+mod helpers;
+use crate::commanders::fps_reader::get_fps;
+use crate::helpers::str_helper::create_order_of_merging;
 use cli::Cli;
 use core::time;
+use helpers::io_helper::create;
+use helpers::io_helper::create_tmp_dir;
+use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::path_bufs_to_sorted_strings;
 use helpers::io_helper::read_dir;
+use helpers::io_helper::remove_file;
 use helpers::str_helper::gen_input_file_content_for_ffmpeg;
+use helpers::str_helper::split;
 use helpers::vec_helper::filter_files;
 use path_slash::PathExt;
 use std::collections::HashMap;
@@ -12,16 +22,6 @@ use std::io::Error;
 use std::path::Path;
 use std::path::PathBuf;
 use std::thread;
-mod cli;
-mod commanders;
-mod helpers;
-use crate::commanders::fps_reader::get_fps;
-use crate::helpers::str_helper::create_order_of_merging;
-use helpers::io_helper::create;
-use helpers::io_helper::create_tmp_dir;
-use helpers::io_helper::exit_when_ffmpeg_not_available;
-use helpers::io_helper::remove_file;
-use helpers::str_helper::split;
 use system_shutdown::shutdown;
 
 fn main() -> Result<(), Error> {
