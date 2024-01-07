@@ -11,7 +11,7 @@ tasks:
 
   run:
     cmds:
-      - cargo run -- data
+      - cargo run -- data --skip-wait
 
   # TODO - fix this
   run_docker:
