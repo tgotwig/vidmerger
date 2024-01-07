@@ -1,5 +1,6 @@
 .DS_Store
 .vscode
+*.m4a
 *.mp4
 **/*.rs.bk
 /target/
