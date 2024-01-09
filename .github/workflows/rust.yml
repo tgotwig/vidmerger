@@ -10,16 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     name: 🧹 Linter
     steps:
-      - name: 🚀 actions/checkout@v2
-        uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v4
+        uses: actions/checkout@v4
       - name: 🕵️ Run linter
         run: cargo clippy
   MacOS:
     name: 🍎 MacOS
     runs-on: macos-latest
     steps:
-      - name: 🚀 actions/checkout@v2
-        uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: ⬇ Install yt-dlp
         run: |
@@ -41,8 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     name: 🐧 Ubuntu
     steps:
-      - name: 🚀 actions/checkout@v2
-        uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: ⬇️ Update package lists
         run: sudo apt-get update
@@ -67,8 +67,8 @@ jobs:
     runs-on: self-hosted
     name: 🏳️‍🌈 Windows
     steps:
-      - name: 🚀 actions/checkout@v2
-        uses: actions/checkout@v2
+      - name: 🚀 actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: ⬇️ Install chocolatey
         uses: crazy-max/ghaction-chocolatey@v1
