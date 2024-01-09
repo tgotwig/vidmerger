@@ -44,6 +44,9 @@ jobs:
       - name: 🚀 actions/checkout@v2
         uses: actions/checkout@v2
 
+      - name: ⬇️ Update package lists
+        run: sudo apt-get update
+
       - name: ⬇️ Install yt-dlp
         run: |
           wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
