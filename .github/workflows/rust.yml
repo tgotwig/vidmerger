@@ -64,7 +64,7 @@ jobs:
       - name: 🕵️ Run tests
         run: task test
   Windows:
-    runs-on: self-hosted
+    runs-on: windows-latest
     name: 🏳️‍🌈 Windows
     steps:
       - name: 🚀 actions/checkout@v4
