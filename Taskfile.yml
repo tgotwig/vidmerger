@@ -11,7 +11,7 @@ tasks:
 
   run:
     cmds:
-      - cargo run -- data --skip-wait
+      - cargo run -- data --skip-wait --format mp4
 
   # TODO - fix this
   run_docker:
