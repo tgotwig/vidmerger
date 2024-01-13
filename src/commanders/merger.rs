@@ -1,6 +1,6 @@
 use crate::commanders::_cmd;
 
-pub fn merge(input: String, output: String, file_format: String) {
+pub fn merge(input: String, output: String, file_format: &String) {
     let child = _cmd::merge(input, output);
 
     let res = child.unwrap().wait_with_output();

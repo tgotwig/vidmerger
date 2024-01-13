@@ -28,9 +28,7 @@ jobs:
           echo "$(pwd)" >> $GITHUB_PATH
 
       - name: ⬇️ Install ffmpeg
-        run: |
-          wget https://evermeet.cx/ffmpeg/get/zip -qO ffmpeg.zip
-          unzip ffmpeg.zip
+        run: brew install ffmpeg
 
       - name: ⬇️ Install task
         run: brew install go-task/tap/go-task
