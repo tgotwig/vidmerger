@@ -35,6 +35,7 @@ fn main() -> Result<(), Error> {
         .to_string();
     let should_shutdown = matches.is_present("shutdown");
     let skip_fps_changer = matches.is_present("skip-fps-changer");
+    let skip_chapterer = matches.is_present("skip-chapterer");
     let skip_wait = matches.is_present("skip-wait");
     let fps_from_cli = matches
         .value_of("fps")
@@ -50,7 +51,8 @@ fn main() -> Result<(), Error> {
         let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
         let mut files_to_merge = filter_files(all_files_on_target_dir, &file_format);
         let mut files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
-        let mut ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
+        let mut ffmpeg_input_content =
+            gen_input_file_content_for_ffmpeg(&files_to_merge_as_strings);
 
         if !ffmpeg_input_content.is_empty() {
             println!("\n----------------------------------------------------------------");
@@ -66,7 +68,8 @@ fn main() -> Result<(), Error> {
             if !skip_fps_changer {
                 files_to_merge = change_fps(files_to_merge, &tmp_dir, fps_from_cli);
                 files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
-                ffmpeg_input_content = gen_input_file_content_for_ffmpeg(files_to_merge_as_strings);
+                ffmpeg_input_content =
+                    gen_input_file_content_for_ffmpeg(&files_to_merge_as_strings);
             }
 
             println!("----------------------------------------------------------------");
@@ -78,8 +81,17 @@ fn main() -> Result<(), Error> {
             commanders::merger::merge(
                 ffmpeg_input_file.to_slash().unwrap(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
-                file_format,
+                &file_format,
             );
+
+            if !skip_chapterer {
+                commanders::chapterer::execute(
+                    files_to_merge_as_strings,
+                    tmp_dir,
+                    ffmpeg_output_file,
+                    &file_format,
+                );
+            }
         }
     }
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🎉 [Unreleased]
 
+### Added
+
+- **Chapterer** which creates `output.*` with chapters in it, everything in between the first `-` till the fill extension of the input files will be used as chapter titles 📖. Can be skipped by `--skip-chapterer`.
+
 ### Fixed
 
 - Keep subtitles with merger

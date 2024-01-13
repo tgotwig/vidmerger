@@ -9,10 +9,13 @@
 graph LR;
 Video_A-->Vidmerger;
 Video_B-->Vidmerger;
-Vidmerger-->FFmpeg;
-FFmpeg-->FPS_Changer;
-FPS_Changer-->Video_A+B;
-FFmpeg-->Video_A+B;
+Vidmerger-->FPS_Changer;
+FPS_Changer-->Merger;
+Merger-->Chapterer;
+Chapterer-->Video_A+B;
+
+Vidmerger-->Merger;
+Merger-->Video_A+B;
 ```
 
 <p align="center"><img src="img/demo.svg" alt="fusion gif"/></p>
@@ -24,6 +27,9 @@ Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-f
 Here is the usage help of vidmerger 🤗
 
 ```shell
+A wrapper around ffmpeg which simlifies merging multiple videos 🎞  Everything in between the first
+`-` till the fill extension of the input files will be used as chapter titles.
+
 USAGE:
     vidmerger [OPTIONS] <TARGET_DIR>
 
@@ -37,10 +43,10 @@ OPTIONS:
                               merges them
     -h, --help                Print help information
         --shutdown            For doing a shutdown at the end (needs sudo)
+        --skip-chapterer      Skips the chapterer
         --skip-fps-changer    Skips the fps changer
         --skip-wait           Skips the wait time for reading
-    -V, --version             Print version information
-```
+    -V, --version             Print version information```
 
 ## ✨ Installing / Getting started
 
