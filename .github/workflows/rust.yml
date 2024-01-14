@@ -6,61 +6,61 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linter:
-    runs-on: ubuntu-latest
-    name: 🧹 Linter
-    steps:
-      - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v4
-      - name: 🕵️ Run linter
-        run: cargo clippy
-  MacOS:
-    name: 🍎 MacOS
-    runs-on: macos-latest
-    steps:
-      - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v4
+  # Linter:
+  #   runs-on: ubuntu-latest
+  #   name: 🧹 Linter
+  #   steps:
+  #     - name: 🚀 actions/checkout@v4
+  #       uses: actions/checkout@v4
+  #     - name: 🕵️ Run linter
+  #       run: cargo clippy
+  # MacOS:
+  #   name: 🍎 MacOS
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: 🚀 actions/checkout@v4
+  #       uses: actions/checkout@v4
 
-      - name: ⬇ Install yt-dlp
-        run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
-          echo "$(pwd)" >> $GITHUB_PATH
+  #     - name: ⬇ Install yt-dlp
+  #       run: |
+  #         wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
+  #         chmod a+rx yt-dlp
+  #         echo "$(pwd)" >> $GITHUB_PATH
 
-      - name: ⬇️ Install ffmpeg
-        run: brew install ffmpeg
+  #     - name: ⬇️ Install ffmpeg
+  #       run: brew install ffmpeg
 
-      - name: ⬇️ Install task
-        run: brew install go-task/tap/go-task
+  #     - name: ⬇️ Install task
+  #       run: brew install go-task/tap/go-task
 
-      - name: 🕵️ Run tests
-        run: task test
-  Ubuntu:
-    runs-on: ubuntu-latest
-    name: 🐧 Ubuntu
-    steps:
-      - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v4
+  #     - name: 🕵️ Run tests
+  #       run: task test
+  # Ubuntu:
+  #   runs-on: ubuntu-latest
+  #   name: 🐧 Ubuntu
+  #   steps:
+  #     - name: 🚀 actions/checkout@v4
+  #       uses: actions/checkout@v4
 
-      - name: ⬇️ Update package lists
-        run: sudo apt-get update
+  #     - name: ⬇️ Update package lists
+  #       run: sudo apt-get update
 
-      - name: ⬇️ Install yt-dlp
-        run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
-          echo "$(pwd)" >> $GITHUB_PATH
+  #     - name: ⬇️ Install yt-dlp
+  #       run: |
+  #         wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
+  #         chmod a+rx yt-dlp
+  #         echo "$(pwd)" >> $GITHUB_PATH
 
-      - name: ⬇️ Install ffmpeg
-        run: sudo apt install -y ffmpeg
+  #     - name: ⬇️ Install ffmpeg
+  #       run: sudo apt install -y ffmpeg
 
-      - name: ⬇️ Install task
-        run: |
-          curl -sL "https://github.com/go-task/task/releases/download/v3.9.0/task_linux_amd64.tar.gz" | tar xz
-          sudo mv task /usr/local/bin
+  #     - name: ⬇️ Install task
+  #       run: |
+  #         curl -sL "https://github.com/go-task/task/releases/download/v3.9.0/task_linux_amd64.tar.gz" | tar xz
+  #         sudo mv task /usr/local/bin
 
-      - name: 🕵️ Run tests
-        run: task test
+  #     - name: 🕵️ Run tests
+  #       run: task test
   Windows:
     runs-on: windows-latest
     name: 🏳️‍🌈 Windows

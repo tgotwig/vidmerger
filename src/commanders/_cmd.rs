@@ -70,13 +70,14 @@ pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
 
     let output = res.unwrap().wait_with_output().unwrap();
     let output = String::from_utf8(output.stdout).unwrap();
+    println!("❗️ Output: {}\n", output);
     let output = output.trim().parse::<f64>().unwrap();
     Ok(output)
 }
 
 fn execute_cmd(cmd: String) -> Result<Child, std::io::Error> {
     let (interpreter, arg) = if cfg!(target_os = "windows") {
-        ("cmd", "/c")
+        ("powershell", "/c")
     } else {
         ("sh", "-c")
     };
