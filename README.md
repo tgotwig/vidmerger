@@ -47,6 +47,7 @@ OPTIONS:
         --skip-fps-changer    Skips the fps changer
         --skip-wait           Skips the wait time for reading
     -V, --version             Print version information```
+```
 
 ## ✨ Installing / Getting started
 
