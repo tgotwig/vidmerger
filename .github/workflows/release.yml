@@ -115,7 +115,7 @@ jobs:
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
           tgotwig/homebrew-linux-vidmerger/vidmerger
 
-  # todo: fix hard coded version number `0.3.1`
+  # todo: fix hard coded version number `0.3.2`
   # todo: upload `vidmerger.exe` to github
   release-windows-chocolatey:
     runs-on: windows-latest
@@ -133,7 +133,7 @@ jobs:
           echo '<package>' >> vidmerger.nuspec
           echo '  <metadata>' >> vidmerger.nuspec
           echo '    <id>vidmerger</id>' >> vidmerger.nuspec
-          echo '    <version>0.3.1</version>' >> vidmerger.nuspec
+          echo '    <version>0.3.2</version>' >> vidmerger.nuspec
           echo '    <title>vidmerger</title>' >> vidmerger.nuspec
           echo '    <authors>Thomas Gotwig</authors>' >> vidmerger.nuspec
           echo '    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>' >> vidmerger.nuspec
@@ -163,4 +163,4 @@ jobs:
       - name: Create chocolatey package
         run: choco pack vidmerger.nuspec
       - name: Publish on chocolatey
-        run: choco push vidmerger.0.3.1.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+        run: choco push vidmerger.0.3.2.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}

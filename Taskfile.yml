@@ -77,7 +77,7 @@ tasks:
   publish_dockerhub:
     cmds:
       - docker build --no-cache -t vidmerger .
-      - docker tag vidmerger tgotwig/vidmerger:0.3.1
-      - docker push tgotwig/vidmerger:0.3.1
+      - docker tag vidmerger tgotwig/vidmerger:0.3.2
+      - docker push tgotwig/vidmerger:0.3.2
       - docker tag vidmerger tgotwig/vidmerger
       - docker push tgotwig/vidmerger
