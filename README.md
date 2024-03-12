@@ -74,13 +74,14 @@ You can install it on all the three major operating systems 🤗
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger).
 
 ```bash
-docker container run -v <ABSOLUTE-PATH-TO-YOUR-VIDEOS>:/data tgotwig/vidmerger
+docker container run -v <PATH-TO-YOUR-VIDEOS>:/data tgotwig/vidmerger
 ```
 
-Example with Bash:
+Examples with Bash:
 
 ```bash
-docker container run -v `pwd`/data:/data tgotwig/vidmerger
+docker container run -v ./data:/data tgotwig/vidmerger
+docker container run -v ./data:/data tgotwig/vidmerger --version
 ```
 
 ## ⚙️ Developing
