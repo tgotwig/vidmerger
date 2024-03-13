@@ -55,9 +55,9 @@ tasks:
   build_win_x64:
     cmds:
       - echo 'Building for Windows... 🏳️‍🌈'
-      - cross build --release --target x86_64-pc-windows-gnu
+      - mkdir -p target
+      - sudo cross build --release --target x86_64-pc-windows-gnu
       - mkdir -p target/release-archives
-      - rm -f target/release-archives/vidmerger.exe
       - cp target/x86_64-pc-windows-gnu/release/vidmerger.exe target/release-archives/vidmerger.exe
 
   shasum:
