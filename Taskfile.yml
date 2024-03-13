@@ -63,7 +63,6 @@ tasks:
   shasum:
     cmds:
       - shasum -a 256 target/release-archives/vidmerger*
-      - shasum -a 256 tools/vidmerger.exe
 
   # TODO - test this
   publish_choco:
