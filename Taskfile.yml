@@ -31,9 +31,12 @@ tasks:
     cmds:
       - cargo clippy
 
-  # TODO - fix this
   build:
-    deps: [build_linux_x64, build_mac_x64, build_win_x64, shasum]
+    cmds:
+      - task: build_linux_x64
+      - task: build_mac_x64
+      - task: build_win_x64
+      - task: shasum
 
   build_linux_x64:
     cmds:
@@ -56,6 +59,7 @@ tasks:
     cmds:
       - echo 'Building for Windows... 🏳️‍🌈'
       - mkdir -p target
+      - sudo rm -r target/release
       - sudo cross build --release --target x86_64-pc-windows-gnu
       - mkdir -p target/release-archives
       - cp target/x86_64-pc-windows-gnu/release/vidmerger.exe target/release-archives/vidmerger.exe
