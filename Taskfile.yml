@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 tasks:
   default:
@@ -43,11 +43,12 @@ tasks:
       - mkdir -p target/release-archives
       - tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux.tar.gz vidmerger
 
-  # TODO - fix this
   build_mac_x64:
     cmds:
       - echo 'Building for MacOS... 🍏'
-      - cross build --release --target=x86_64-apple-darwin
+      - mkdir -p target
+      - rustup target add x86_64-apple-darwin
+      - sudo cargo build --release --target x86_64-apple-darwin
       - mkdir -p target/release-archives
       - tar -C target/x86_64-apple-darwin/release -czf target/release-archives/vidmerger-mac.tar.gz vidmerger
 
