@@ -73,7 +73,6 @@ tasks:
       - choco push vidmerger.nupkg --source https://push.chocolatey.org
       - Remove-Item vidmerger.nupkg
 
-  # TODO - test this, automate versioning
   publish_dockerhub:
     cmds:
       - docker build --no-cache -t vidmerger .
