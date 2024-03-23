@@ -6,6 +6,7 @@
 <p align="center">A wrapper around FFmpeg which simplifies merging of multiple videos.</p>
 
 ```mermaid
+%%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%
 graph LR;
 Video_A-->Vidmerger;
 Video_B-->Vidmerger;
