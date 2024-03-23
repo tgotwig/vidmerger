@@ -1,6 +1,6 @@
 <!-- https://github.com/elsewhencode/project-guidelines/blob/master/README.sample.md -->
 
-<p align="center"><a><img src="img/merge.gif" alt="img/merge.gif" height="256"/></a></p>
+<p align="center"><a><img src="img/merge.gif" alt="img/merge.gif"/></a></p>
 
 <h1 align="center">Vidmerger</h1>
 <p align="center">A wrapper around FFmpeg which simplifies merging of multiple videos.</p>
