@@ -74,7 +74,7 @@ You can install it on all the three major operating systems 🤗
 | Platform | Packager                                                                             | Command                                                                                                                                                                                 |
 | :------- | :----------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🍎 MacOS  | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) | brew tap tgotwig/vidmerger<br>brew install vidmerger                                                                                                                                    |
-| 🐧 Linux  | 🍺 WGET                                                                               | sudo wget -c https://github.com/bonny1992/vidmerger/releases/latest/download/vidmerger-linux-arm64.tar.gz -P /tmp && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin |
+| 🐧 Linux  | 🍺 WGET                                                                               | sudo wget -c https://github.com/tgotwig/vidmerger/releases/download/0.3.2/vidmerger-linux-arm64.tar.gz -P /tmp && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin |
 
 ## 🐳 Run it without installing
 
