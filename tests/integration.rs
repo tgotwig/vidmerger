@@ -18,7 +18,7 @@ mod integration {
 
         download(
             "https://www.youtube.com/watch?v=zGDzdps75ns",
-            "22",
+            "612",
             "data/1.mp4",
         );
         fs::copy("data/1.mp4", "data/2.mp4").unwrap();
@@ -206,7 +206,7 @@ mod integration {
                 .success(),
         );
 
-        assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("58.19 fps"));
+        assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("60 fps"));
         check_for_merged_file(test_name, "output.mp4");
     }
 
