@@ -1,0 +1,97 @@
+name: 💿 Install Vidmerger
+on:
+  workflow_dispatch:
+jobs:
+  # --- ❗️ X64 ---
+
+  install-x64-macos-homebrew:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Vidmerger
+        run: |
+          brew tap tgotwig/vidmerger
+          brew install vidmerger
+      - name: Verify installation
+        run: |
+          ffmpeg -version
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
+
+  install-x64-linux-homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - name: Install Vidmerger
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew --help
+          brew tap tgotwig/linux-vidmerger
+          brew install vidmerger
+      - name: Verify installation
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          ffmpeg -version
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
+
+  install-x64-linux-curl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Vidmerger
+        run: |
+          sudo curl -L https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux.tar.gz -o /tmp/vidmerger-linux.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux.tar.gz -C /usr/local/bin
+      - name: Verify installation
+        run: |
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
+
+  install-x64-windows-chocolatey:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Vidmerger
+        run: |
+          choco install vidmerger
+      - name: Verify installation
+        run: |
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          if ((Select-String -Path .\Cargo.toml -Pattern 'version = "(.*)"' | ForEach-Object { $_.Matches.Groups[1].Value }) -eq (vidmerger -V | ForEach-Object { $_ -split ' ' })[1]) { Write-Output "Versions match" } else { Write-Output "Versions do not match"; exit 1 }
+
+  # --- ❗️ ARM64 ---
+
+  install-arm64-macos-homebrew:
+    runs-on: ARM64
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Vidmerger
+        run: |
+          brew tap tgotwig/vidmerger
+          brew install vidmerger
+      - name: Verify installation
+        run: |
+          ffmpeg -version
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
+
+  install-arm64-linux-curl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pguyot/arm-runner-action@v2
+        with:
+          base_image: raspios_lite_arm64:latest
+          commands: |
+            sudo curl -L https://github.com/tgotwig/vidmerger/releases/download/0.3.2/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
+            vidmerger --version
+            # 🔎 Check if version from Cargo.toml matches with binary
+            version_cargo=$(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') && version_vidmerger=$(vidmerger -V | awk '{print $2}') && [ "$version_cargo" = "$version_vidmerger" ] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
