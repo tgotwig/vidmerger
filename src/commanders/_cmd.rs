@@ -12,7 +12,7 @@ pub fn merge(input: String, output: String) -> Result<Child, std::io::Error> {
         input, output
     );
 
-    println!("- {}", cmd);
+    println!("🚀 Start Merger, calling: `{}`\n", cmd);
     execute_cmd(cmd)
 }
 

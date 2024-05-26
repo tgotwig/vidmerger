@@ -48,7 +48,7 @@ fn main() -> Result<(), Error> {
         if !ffmpeg_input_content.is_empty() {
             println!("\n----------------------------------------------------------------");
             println!("📜 Order of merging:\n");
-            println!("{}", create_order_of_merging(&ffmpeg_input_content));
+            println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
             if !skip_wait {
                 println!("\n⏳ Waiting 3 seconds to read");
                 thread::sleep(time::Duration::from_secs(3));
@@ -60,9 +60,6 @@ fn main() -> Result<(), Error> {
                 (_, files_to_merge_as_strings, ffmpeg_input_content) =
                     change_fps(files_to_merge, &tmp_dir, fps_from_cli);
             }
-
-            println!("----------------------------------------------------------------");
-            println!("🚀 Start Merger, calling:\n");
 
             let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");
             create(&ffmpeg_input_file, ffmpeg_input_content);
