@@ -53,7 +53,8 @@ OPTIONS:
         --skip-chapterer      Skips the chapterer
         --skip-fps-changer    Skips the fps changer
         --skip-wait           Skips the wait time for reading
-    -V, --version             Print version information```
+    -V, --version             Print version information
+        --verbose             Prints detailed logs
 ```
 
 ## ✨ Installing / Getting started

@@ -1,5 +1,6 @@
 use super::fps_reader::get_fps;
 use crate::{
+    cli::Cli,
     commanders,
     helpers::{
         io_helper::path_bufs_to_sorted_strings, str_helper::gen_input_file_content_for_ffmpeg,
@@ -15,6 +16,9 @@ pub fn change_fps(
     tmp_dir: &Path,
     fps_from_cli: f32,
 ) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
+    let matches = Cli::init().get_matches();
+    let verbose: bool = matches.is_present("verbose");
+
     let mut new_files_to_merge = Vec::new();
     let mut map: HashMap<&PathBuf, f32> = HashMap::new();
 
@@ -32,44 +36,53 @@ pub fn change_fps(
 
     let set: HashSet<String> = map.values().map(|value| value.to_string()).collect();
     let files_to_merge = if set.len() > 1 {
-        println!("----------------------------------------------------------------");
-        println!("🔎 FPS mismatches detected");
-        println!();
-        println!("Will be merged directly: \n");
-        let mut output = Vec::new();
+        let mut output_directly = Vec::new();
         for (key, value) in &map {
             if value == &fps_goal {
-                output.push(format!(
+                output_directly.push(format!(
                     "- {} ({} fps)",
                     key.file_name().unwrap().to_string_lossy(),
                     value
                 ));
             }
         }
-        output.sort();
-        for line in output {
-            println!("{}", line);
-        }
-        println!();
-        println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
-        println!();
-        let mut output = Vec::new();
+        output_directly.sort();
+
+        let mut output_indirectly = Vec::new();
         for (key, value) in &map {
             if value != &fps_goal {
-                output.push(format!(
+                output_indirectly.push(format!(
                     "- {} ({} fps)",
                     key.file_name().unwrap().to_string_lossy(),
                     value
                 ));
             }
         }
-        output.sort();
-        for line in output {
-            println!("{}", line);
+        output_indirectly.sort();
+
+        println!(
+            "🔎 FPS mismatches detected ({:?}), scaling to {} fps: {}/{}",
+            set,
+            fps_goal,
+            output_indirectly.len(),
+            set.len()
+        );
+
+        if verbose {
+            println!();
+            println!("Will be merged directly: \n");
+            for line in output_directly {
+                println!("{}", line);
+            }
+            println!();
+            println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
+            println!();
+            for line in output_indirectly {
+                println!("{}", line);
+            }
+            println!();
         }
-        println!("----------------------------------------------------------------");
-        println!("🚀 Start FPS Changer, calling:");
-        println!();
+
         for file_to_merge in files_to_merge {
             let fps = get_fps(&file_to_merge);
 

@@ -5,6 +5,8 @@ use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
+use crate::cli::Cli;
+
 pub fn exit_when_ffmpeg_not_available() {
     if which::which("ffmpeg").is_err() {
         eprintln!("❌ ffmpeg is not available. Please install it first.");
@@ -13,12 +15,16 @@ pub fn exit_when_ffmpeg_not_available() {
 }
 
 pub fn remove_file(path: &Path) -> Result<()> {
+    let matches = Cli::init().get_matches();
+    let verbose: bool = matches.is_present("verbose");
+
     if Path::new(path).exists() {
-        println!("----------------------------------------------------------------");
-        print!(
-            "🗑️  Removing old data:\n\n- {}",
-            path.file_name().unwrap().to_string_lossy()
-        );
+        if verbose {
+            print!(
+                "🗑️  Removing old data: `{}`",
+                path.file_name().unwrap().to_string_lossy()
+            );
+        }
         fs::remove_file(path)?;
     }
     Ok(())

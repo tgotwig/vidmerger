@@ -42,6 +42,10 @@ impl Cli {
             .long("skip-wait")
             .help("Skips the wait time for reading")
         )
+        .arg(Arg::new("verbose")
+            .long("verbose")
+            .help("Prints detailed logs")
+        )
         .arg_required_else_help(true)
         .get_matches();
 

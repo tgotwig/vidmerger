@@ -17,6 +17,8 @@ use std::io::Error;
 use std::path::Path;
 use std::thread;
 use system_shutdown::shutdown;
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
 fn main() -> Result<(), Error> {
     let matches = Cli::init().get_matches();
@@ -31,6 +33,7 @@ fn main() -> Result<(), Error> {
     let skip_fps_changer = matches.is_present("skip-fps-changer");
     let skip_chapterer = matches.is_present("skip-chapterer");
     let skip_wait = matches.is_present("skip-wait");
+    let verbose: bool = matches.is_present("verbose");
     let fps_from_cli = matches
         .value_of("fps")
         .unwrap_or("0")
@@ -46,12 +49,13 @@ fn main() -> Result<(), Error> {
             select(target_dir, &file_format);
 
         if !ffmpeg_input_content.is_empty() {
-            println!("\n----------------------------------------------------------------");
-            println!("📜 Order of merging:\n");
-            println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
-            if !skip_wait {
-                println!("\n⏳ Waiting 3 seconds to read");
-                thread::sleep(time::Duration::from_secs(3));
+            if verbose {
+                println!("\n\n📜 Order of merging:\n");
+                println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
+                if !skip_wait {
+                    println!("\n⏳ Waiting 3 seconds to read");
+                    thread::sleep(time::Duration::from_secs(3));
+                }
             }
 
             let tmp_dir = create_tmp_dir();
@@ -63,11 +67,14 @@ fn main() -> Result<(), Error> {
 
             let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");
             create(&ffmpeg_input_file, ffmpeg_input_content);
+            println!(
+                "✅ Successfully generated: {} (contains merge order)",
+                BrightBlue.paint(ffmpeg_input_file.to_slash().unwrap())
+            );
 
             commanders::merger::merge(
                 ffmpeg_input_file.to_slash().unwrap(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
-                &file_format,
             );
 
             if !skip_chapterer {

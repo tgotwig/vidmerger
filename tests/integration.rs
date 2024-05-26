@@ -104,6 +104,7 @@ mod integration {
             Command::cargo_bin(BIN)
                 .unwrap()
                 .arg("--skip-wait")
+                .arg("--verbose")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),

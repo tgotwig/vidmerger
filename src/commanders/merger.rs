@@ -1,16 +1,14 @@
 use crate::commanders::_cmd;
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
-pub fn merge(input: String, output: String, file_format: &String) {
-    let child = _cmd::merge(input, output);
+pub fn merge(input: String, output: String) {
+    let child = _cmd::merge(input, &output);
 
     let res = child.unwrap().wait_with_output();
-    println!("{:?}", res);
 
-    println!("----------------------------------------------------------------");
     if res.is_ok() {
-        println!("✅ Successfully generated:");
-        println!();
-        println!("- output.{}", file_format);
+        println!("✅ Successfully generated: {}", BrightBlue.paint(output));
     } else {
         panic!("❌ Something went wrong: \n\n{}", res.unwrap_err());
     }

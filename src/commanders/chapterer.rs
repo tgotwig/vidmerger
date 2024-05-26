@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str;
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
 pub fn execute(
     files_to_merge_as_strings: Vec<String>,
@@ -12,9 +14,6 @@ pub fn execute(
     ffmpeg_output_file: PathBuf,
     file_format: &String,
 ) {
-    println!("----------------------------------------------------------------");
-    println!("📖 Start Chapterer\n");
-
     let mut start_time = 0;
     let mut metadata_string = String::from(";FFMETADATA1\n");
 
@@ -40,7 +39,8 @@ pub fn execute(
 
     let input_file_for_chapterer: String = ffmpeg_output_file.to_slash().unwrap().to_string();
     let mut output_with_chapters = ffmpeg_output_file.clone();
-    output_with_chapters.set_file_name(format!("output_with_chapters.{}", file_format));
+    let output_file_name = format!("output_with_chapters.{}", file_format);
+    output_with_chapters.set_file_name(&output_file_name);
     let output_file_for_chapterer: String = output_with_chapters.to_slash().unwrap().to_string();
 
     _cmd::merge_with_chapters(
@@ -51,11 +51,23 @@ pub fn execute(
     .unwrap()
     .wait_with_output()
     .unwrap();
+    println!(
+        "✅ Successfully generated: {}",
+        BrightBlue.paint(&output_file_for_chapterer)
+    );
 
     fs::remove_file(Path::new(&input_file_for_chapterer)).unwrap();
-    fs::rename(output_file_for_chapterer, ffmpeg_output_file).unwrap();
+    println!(
+        "✅ Successfully deleted: {}",
+        BrightBlue.paint(&input_file_for_chapterer)
+    );
 
-    println!("✅ Video with chapters created successfully.");
+    fs::rename(&output_file_for_chapterer, ffmpeg_output_file).unwrap();
+    println!(
+        "✅ Successfully renamed: {} to {}",
+        BrightBlue.paint(output_file_for_chapterer),
+        BrightBlue.paint(input_file_for_chapterer)
+    );
 }
 
 fn extract_title(path: &str, file_format: &str) -> String {
