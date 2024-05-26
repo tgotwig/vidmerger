@@ -3,6 +3,7 @@ mod cli;
 mod commanders;
 mod helpers;
 use crate::commanders::fps_reader::get_fps;
+use crate::commanders::selector::select;
 use crate::helpers::str_helper::create_order_of_merging;
 use cli::Cli;
 use core::time;
@@ -10,11 +11,9 @@ use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::path_bufs_to_sorted_strings;
-use helpers::io_helper::read_dir;
 use helpers::io_helper::remove_file;
 use helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use helpers::str_helper::split;
-use helpers::vec_helper::filter_files;
 use path_slash::PathExt;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -48,11 +47,8 @@ fn main() -> Result<(), Error> {
 
         remove_file(&ffmpeg_output_file)?;
 
-        let all_files_on_target_dir: Vec<PathBuf> = read_dir(target_dir).unwrap();
-        let mut files_to_merge = filter_files(all_files_on_target_dir, &file_format);
-        let mut files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
-        let mut ffmpeg_input_content =
-            gen_input_file_content_for_ffmpeg(&files_to_merge_as_strings);
+        let (mut files_to_merge, mut files_to_merge_as_strings, mut ffmpeg_input_content) =
+            select(target_dir, &file_format);
 
         if !ffmpeg_input_content.is_empty() {
             println!("\n----------------------------------------------------------------");

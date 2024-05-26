@@ -23,7 +23,7 @@ Merger-->Video_A+B;
 
 | Feature     | Description                                                                                                                                                                                                                                     |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Selecter    | Iterates through [this list of file endings](src/main.rs#L34), selects all files which matches with the current file ending except ones which start with a dot. The list can be overwritten by `--format` or `-f`, example: `--format mp4,mkv`. |
+| Selector    | Iterates through [this list of file endings](src/main.rs#L34), selects all files which matches with the current file ending except ones which start with a dot. The list can be overwritten by `--format` or `-f`, example: `--format mp4,mkv`. |
 | FPS_Changer | After detecting not matching fps values, it scales all the higher fps videos down to the lowest detecting fps value. Can be skipped by `--skip-fps-changer`. The desired fps value can be set by `--fps`, example: `--fps 23.976`.              |
 | Chapterer   | After the merge job is done, it creates the same file but with chapters in it, the title is all in between the first dash till the file extension, example: `Video_A - Chapter 1.mp4`. Can be skipped by `--skip-chapterer`.                    |
 
