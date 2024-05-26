@@ -47,7 +47,7 @@ fn main() -> Result<(), Error> {
 
         remove_file(&ffmpeg_output_file)?;
 
-        let (mut files_to_merge, mut files_to_merge_as_strings, mut ffmpeg_input_content) =
+        let (files_to_merge, mut files_to_merge_as_strings, mut ffmpeg_input_content) =
             select(target_dir, &file_format);
 
         if !ffmpeg_input_content.is_empty() {
@@ -62,10 +62,8 @@ fn main() -> Result<(), Error> {
             let tmp_dir = create_tmp_dir();
 
             if !skip_fps_changer {
-                files_to_merge = change_fps(files_to_merge, &tmp_dir, fps_from_cli);
-                files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
-                ffmpeg_input_content =
-                    gen_input_file_content_for_ffmpeg(&files_to_merge_as_strings);
+                (_, files_to_merge_as_strings, ffmpeg_input_content) =
+                    change_fps(files_to_merge, &tmp_dir, fps_from_cli);
             }
 
             println!("----------------------------------------------------------------");
@@ -101,7 +99,11 @@ fn main() -> Result<(), Error> {
     }
 }
 
-pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: f32) -> Vec<PathBuf> {
+pub fn change_fps(
+    files_to_merge: Vec<PathBuf>,
+    tmp_dir: &Path,
+    fps_from_cli: f32,
+) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
     let mut new_files_to_merge = Vec::new();
     let mut map: HashMap<&PathBuf, f32> = HashMap::new();
 
@@ -118,7 +120,7 @@ pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: f3
     };
 
     let set: HashSet<String> = map.values().map(|value| value.to_string()).collect();
-    if set.len() > 1 {
+    let files_to_merge = if set.len() > 1 {
         println!("----------------------------------------------------------------");
         println!("🔎 FPS mismatches detected");
         println!();
@@ -172,5 +174,14 @@ pub fn change_fps(files_to_merge: Vec<PathBuf>, tmp_dir: &Path, fps_from_cli: f3
         new_files_to_merge
     } else {
         files_to_merge
-    }
+    };
+
+    let files_to_merge_as_strings = path_bufs_to_sorted_strings(&files_to_merge);
+    let ffmpeg_input_content = gen_input_file_content_for_ffmpeg(&files_to_merge_as_strings);
+
+    (
+        files_to_merge,
+        files_to_merge_as_strings,
+        ffmpeg_input_content,
+    )
 }
