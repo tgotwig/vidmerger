@@ -107,7 +107,7 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 
 ### Setting up Dev
 
-Once you are done with installing the prerequisites, you should run `task` to see if everything runs smooth:
+Once you are done with installing the prerequisites, run `task`:
 
 ```shell
 git clone git@github.com:TGotwig/vidmerger.git
@@ -115,13 +115,7 @@ cd vidmerger
 task
 ```
 
-Also click on _fork_ from the top right corner of this repository and run:
-
-```shell
-git remote add <your-github-name> git@github.com:<your-github-name>/vidmerger.git
-```
-
-[Here](https://youtu.be/j_qpzND5yAg) is a little tutorial about working with forks along with [GitKraken](https://www.gitkraken.com) 🐙
+If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨ 
 
 ### Building
 
