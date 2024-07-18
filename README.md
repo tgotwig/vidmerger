@@ -154,7 +154,3 @@ We use [SemVer](http://semver.org/) for versioning.
 - [rust-clippy](rust-clippy)
 - [rls-vscode](https://github.com/rust-lang/rls-vscode)
 - [conventionalcommits](https://www.conventionalcommits.org/en/v1.0.0)
-
-## 📜 Licensing
-
-[MIT License with “Commons Clause”](LICENSE).
