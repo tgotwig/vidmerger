@@ -5,8 +5,9 @@ use regex::Regex;
 /// Returns a vector of PathBufs that match the given file format.
 /// Also filters out files that start with a dot.
 pub fn filter_files(all_files: Vec<PathBuf>, file_format: &str) -> Vec<PathBuf> {
-    let re = Regex::new(format!(r"[\\/][^.\\/][^\\/]*\.{}$", regex::escape(file_format)).as_str())
-        .unwrap();
+    let re: Regex =
+        Regex::new(format!(r"(?i)[\\/][^.\\/][^\\/]*\.{}$", regex::escape(file_format)).as_str())
+            .unwrap();
     let mut filtered_files = Vec::new();
 
     for possible_file_to_merge in all_files {

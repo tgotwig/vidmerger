@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **--verbose** which prints detailed logs.
 
+### Changed
+
+- Selector now case-insensitive, so it selects mp4 and MP4 etc.
+
 ## 🎉 [0.3.2] - 2024-01-14
 
 ### Added
