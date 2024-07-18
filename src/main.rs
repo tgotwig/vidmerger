@@ -46,7 +46,7 @@ fn main() -> Result<(), Error> {
         remove_file(&ffmpeg_output_file)?;
 
         let (files_to_merge, mut files_to_merge_as_strings, mut ffmpeg_input_content) =
-            select(target_dir, &file_format);
+            select(&file_format);
 
         if !ffmpeg_input_content.is_empty() {
             if verbose {
