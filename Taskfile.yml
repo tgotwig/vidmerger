@@ -19,7 +19,7 @@ tasks:
         docker build -t vidmerger .
         docker container run -it --rm -v ./data:/data vidmerger
 
-  test: cargo test -- --exact --nocapture $(name)
+  test: cargo test
 
   lint: cargo clippy
 
