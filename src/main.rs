@@ -68,7 +68,7 @@ fn main() -> Result<(), Error> {
             let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");
             create(&ffmpeg_input_file, ffmpeg_input_content);
             println!(
-                "✅ Successfully generated: {} (contains merge order)",
+                "🐣 Generated: {} (contains merge order)",
                 BrightBlue.paint(ffmpeg_input_file.to_slash().unwrap())
             );
 

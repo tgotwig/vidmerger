@@ -8,7 +8,7 @@ pub fn merge(input: String, output: String) {
     let res = child.unwrap().wait_with_output();
 
     if res.is_ok() {
-        println!("✅ Successfully generated: {}", BrightBlue.paint(output));
+        println!("🐣 Generated: {}", BrightBlue.paint(output));
     } else {
         panic!("❌ Something went wrong: \n\n{}", res.unwrap_err());
     }

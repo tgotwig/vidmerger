@@ -52,19 +52,19 @@ pub fn execute(
     .wait_with_output()
     .unwrap();
     println!(
-        "✅ Successfully generated: {}",
+        "🐣 Generated: {}",
         BrightBlue.paint(&output_file_for_chapterer)
     );
 
     fs::remove_file(Path::new(&input_file_for_chapterer)).unwrap();
     println!(
-        "✅ Successfully deleted: {}",
+        "🔥 Deleted: {}",
         BrightBlue.paint(&input_file_for_chapterer)
     );
 
     fs::rename(&output_file_for_chapterer, ffmpeg_output_file).unwrap();
     println!(
-        "✅ Successfully renamed: {} to {}",
+        "✏️ Renamed: {} to {}",
         BrightBlue.paint(output_file_for_chapterer),
         BrightBlue.paint(input_file_for_chapterer)
     );

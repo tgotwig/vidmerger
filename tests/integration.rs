@@ -48,7 +48,7 @@ mod integration {
                 .success(),
         );
 
-        assert!(res.contains("✅ Successfully generated"));
+        assert!(res.contains("🐣 Generated"));
         check_for_merged_file(test_name, "output.mp4");
     }
 
@@ -66,7 +66,7 @@ mod integration {
                 .success(),
         );
 
-        assert!(res.contains("✅ Successfully generated"));
+        assert!(res.contains("🐣 Generated"));
         check_for_merged_file(test_name, "output.m4a");
     }
 
@@ -110,7 +110,7 @@ mod integration {
                 .success(),
         );
 
-        assert!(res.contains("✅ Successfully generated"));
+        assert!(res.contains("🐣 Generated"));
         assert!(res.contains("1.mp4"));
         assert!(!res.contains(".3.mp4"));
         check_for_merged_file(test_name, "output.mp4");
