@@ -21,8 +21,6 @@ tasks:
 
   test: cargo test -- --exact --nocapture $(name)
 
-  test_units: cargo test --bins -- --exact --nocapture $(name)
-
   lint: cargo clippy
 
   build:
