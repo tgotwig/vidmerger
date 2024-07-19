@@ -3,12 +3,14 @@ use crate::{
     cli::Cli,
     commanders,
     helpers::{
-        io_helper::path_bufs_to_sorted_strings, str_helper::gen_input_file_content_for_ffmpeg,
+        io_helper::{create_dir_for_fps_changer, path_bufs_to_sorted_strings},
+        str_helper::gen_input_file_content_for_ffmpeg,
     },
 };
+use std::path::Path;
 use std::{
     collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 pub fn change_fps(
@@ -18,6 +20,7 @@ pub fn change_fps(
 ) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
     let matches = Cli::init().get_matches();
     let verbose: bool = matches.is_present("verbose");
+    let tmp_dir_for_fps_changer = create_dir_for_fps_changer(tmp_dir).unwrap();
 
     let mut new_files_to_merge = Vec::new();
     let mut map: HashMap<&PathBuf, f32> = HashMap::new();
@@ -87,8 +90,11 @@ pub fn change_fps(
             let fps = get_fps(&file_to_merge);
 
             if fps != fps_goal {
-                let new_file_to_merge =
-                    commanders::fps_adjuster::adjust_fps(file_to_merge, &fps_goal, tmp_dir);
+                let new_file_to_merge = commanders::fps_adjuster::adjust_fps(
+                    file_to_merge,
+                    &fps_goal,
+                    &tmp_dir_for_fps_changer,
+                );
                 new_files_to_merge.push(new_file_to_merge);
             } else {
                 new_files_to_merge.push(file_to_merge);

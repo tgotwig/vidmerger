@@ -1,7 +1,7 @@
 use nanoid::nanoid;
 use std::env::temp_dir;
 use std::fs::{self, canonicalize, File};
-use std::io::{Result, Write};
+use std::io::{self, Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
@@ -40,6 +40,13 @@ pub fn create_tmp_dir() -> PathBuf {
     let dir = temp_dir().join(nanoid!(8));
     fs::create_dir(&dir).unwrap();
     dir
+}
+
+pub fn create_dir_for_fps_changer(base_path: &Path) -> io::Result<PathBuf> {
+    let mut new_path = base_path.to_path_buf();
+    new_path.push("fps_changer");
+    fs::create_dir_all(&new_path)?;
+    Ok(new_path)
 }
 
 pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
