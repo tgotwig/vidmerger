@@ -5,6 +5,7 @@ mod helpers;
 use crate::commanders::fps_changer::change_fps;
 use crate::commanders::selector::select;
 use crate::helpers::str_helper::create_order_of_merging;
+use clap::ArgMatches;
 use cli::Cli;
 use core::time;
 use helpers::io_helper::create;
@@ -12,6 +13,7 @@ use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
 use helpers::str_helper::split;
+use lazy_static::lazy_static;
 use path_slash::PathExt;
 use std::io::Error;
 use std::path::Path;
@@ -19,6 +21,11 @@ use std::thread;
 use system_shutdown::shutdown;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
+
+lazy_static! {
+    static ref MATCHES: ArgMatches = Cli::init().get_matches();
+    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+}
 
 fn main() -> Result<(), Error> {
     let matches = Cli::init().get_matches();
@@ -33,7 +40,6 @@ fn main() -> Result<(), Error> {
     let skip_fps_changer = matches.is_present("skip-fps-changer");
     let skip_chapterer = matches.is_present("skip-chapterer");
     let skip_wait = matches.is_present("skip-wait");
-    let verbose: bool = matches.is_present("verbose");
     let fps_from_cli = matches
         .value_of("fps")
         .unwrap_or("0")
@@ -49,7 +55,7 @@ fn main() -> Result<(), Error> {
             select(&file_format);
 
         if !ffmpeg_input_content.is_empty() {
-            if verbose {
+            if *VERBOSE {
                 println!("\n\n📜 Order of merging:\n");
                 println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
                 if !skip_wait {

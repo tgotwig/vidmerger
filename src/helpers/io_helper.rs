@@ -1,3 +1,6 @@
+use crate::cli::Cli;
+use clap::ArgMatches;
+use lazy_static::lazy_static;
 use nanoid::nanoid;
 use std::env::temp_dir;
 use std::fs::{self, canonicalize, File};
@@ -5,7 +8,10 @@ use std::io::{self, Result, Write};
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
-use crate::cli::Cli;
+lazy_static! {
+    static ref MATCHES: ArgMatches = Cli::init().get_matches();
+    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+}
 
 pub fn exit_when_ffmpeg_not_available() {
     if which::which("ffmpeg").is_err() {
@@ -15,11 +21,8 @@ pub fn exit_when_ffmpeg_not_available() {
 }
 
 pub fn remove_file(path: &Path) -> Result<()> {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
-
     if Path::new(path).exists() {
-        if verbose {
+        if *VERBOSE {
             print!(
                 "🗑️  Removing old data: `{}`",
                 path.file_name().unwrap().to_string_lossy()

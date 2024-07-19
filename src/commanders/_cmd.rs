@@ -1,4 +1,6 @@
 use crate::cli::Cli;
+use clap::ArgMatches;
+use lazy_static::lazy_static;
 use path_slash::PathBufExt;
 use std::{
     io::Error,
@@ -8,17 +10,19 @@ use std::{
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
-pub fn merge(input: String, output: &String) -> Result<Child, std::io::Error> {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
+lazy_static! {
+    static ref MATCHES: ArgMatches = Cli::init().get_matches();
+    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+}
 
+pub fn merge(input: String, output: &String) -> Result<Child, std::io::Error> {
     let cmd = format!(
         "ffmpeg -y -f concat -safe 0 -i {} -map 0 -c copy {}",
         input, output
     );
 
     println!("🚀 Run Merger, calling: {}", BrightBlue.paint(&cmd));
-    if verbose {
+    if *VERBOSE {
         execute_cmd(cmd)
     } else {
         execute_cmd_silently(cmd)
@@ -30,9 +34,6 @@ pub fn merge_with_chapters(
     file_path: PathBuf,
     output_file_for_chapterer: &str,
 ) -> Result<Child, std::io::Error> {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
-
     let cmd = format!(
         "ffmpeg -y -i {} -i {} -map 0 -map_metadata 1 -codec copy {}",
         &input_file_for_chapterer,
@@ -41,7 +42,7 @@ pub fn merge_with_chapters(
     );
 
     println!("📖 Run Chapterer, calling: {}", BrightBlue.paint(&cmd));
-    if verbose {
+    if *VERBOSE {
         execute_cmd(cmd)
     } else {
         execute_cmd_silently(cmd)
@@ -59,9 +60,6 @@ pub fn adjust_fps_by_ffmpeg(
     fps_goal: &f32,
     new_file_location: PathBuf,
 ) -> PathBuf {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
-
     let cmd = format!(
         "ffmpeg -i {} -r {} {}",
         file_to_merge.to_str().unwrap(),
@@ -73,7 +71,7 @@ pub fn adjust_fps_by_ffmpeg(
     // let res = execute_cmd(cmd).unwrap().wait_with_output();
     // println!("{:?}", res);
 
-    if verbose {
+    if *VERBOSE {
         let res = execute_cmd(cmd).unwrap().wait_with_output();
         println!("{:?}", res);
     } else {
@@ -86,15 +84,12 @@ pub fn adjust_fps_by_ffmpeg(
 }
 
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
-
     let cmd = format!(
         "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{}'",
         media_path
     );
 
-    if verbose {
+    if *VERBOSE {
         println!(
             "📖 Getting media seconds, calling: {}",
             BrightBlue.paint(&cmd)

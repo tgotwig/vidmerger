@@ -7,19 +7,23 @@ use crate::{
         str_helper::gen_input_file_content_for_ffmpeg,
     },
 };
-use std::path::Path;
+use clap::ArgMatches;
+use lazy_static::lazy_static;
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
+
+lazy_static! {
+    static ref MATCHES: ArgMatches = Cli::init().get_matches();
+    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+}
 
 pub fn change_fps(
     files_to_merge: Vec<PathBuf>,
     tmp_dir: &Path,
     fps_from_cli: f32,
 ) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
-    let matches = Cli::init().get_matches();
-    let verbose: bool = matches.is_present("verbose");
     let tmp_dir_for_fps_changer = create_dir_for_fps_changer(tmp_dir).unwrap();
 
     let mut new_files_to_merge = Vec::new();
@@ -71,7 +75,7 @@ pub fn change_fps(
             set.len()
         );
 
-        if verbose {
+        if *VERBOSE {
             println!();
             println!("Will be merged directly: \n");
             for line in output_directly {
