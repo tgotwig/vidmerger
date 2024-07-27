@@ -54,7 +54,6 @@ OPTIONS:
         --skip-fps-changer    Skips the fps changer
         --skip-wait           Skips the wait time for reading
     -V, --version             Print version information
-        --verbose             Prints detailed logs
 ```
 
 ## ✨ Installing / Getting started
@@ -115,7 +114,7 @@ cd vidmerger
 task
 ```
 
-If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨ 
+If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨
 
 ### Building
 
