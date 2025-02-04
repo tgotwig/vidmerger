@@ -42,7 +42,6 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -60,7 +59,6 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -103,7 +101,6 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .arg("--verbose")
                 .arg(format!("data/{}", test_name))
                 .assert()
@@ -133,7 +130,6 @@ mod integration {
     fn call_merger_against_mp4() {
         Command::cargo_bin(BIN)
             .unwrap()
-            .arg("--skip-wait")
             .args(&["--format", "mp4"])
             .arg("data")
             .assert()
@@ -158,7 +154,6 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -177,7 +172,6 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .args(["--fps", "25"])
                 .arg(format!("data/{}", test_name))
                 .assert()
@@ -200,7 +194,6 @@ mod integration {
         get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
-                .arg("--skip-wait")
                 .arg(format!("data/{}", test_name))
                 .arg("--skip-fps-changer")
                 .assert()

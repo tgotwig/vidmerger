@@ -52,7 +52,6 @@ OPTIONS:
         --shutdown            For doing a shutdown at the end (needs sudo)
         --skip-chapterer      Skips the chapterer
         --skip-fps-changer    Skips the fps changer
-        --skip-wait           Skips the wait time for reading
     -V, --version             Print version information
 ```
 

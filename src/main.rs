@@ -7,7 +7,6 @@ use crate::commanders::selector::select;
 use crate::helpers::str_helper::create_order_of_merging;
 use clap::ArgMatches;
 use cli::Cli;
-use core::time;
 use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
@@ -17,7 +16,6 @@ use lazy_static::lazy_static;
 use path_slash::PathExt;
 use std::io::Error;
 use std::path::Path;
-use std::thread;
 use system_shutdown::shutdown;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -39,7 +37,6 @@ fn main() -> Result<(), Error> {
     let should_shutdown = matches.is_present("shutdown");
     let skip_fps_changer = matches.is_present("skip-fps-changer");
     let skip_chapterer = matches.is_present("skip-chapterer");
-    let skip_wait = matches.is_present("skip-wait");
     let fps_from_cli = matches
         .value_of("fps")
         .unwrap_or("0")
@@ -58,10 +55,6 @@ fn main() -> Result<(), Error> {
             if *VERBOSE {
                 println!("\n\n📜 Order of merging:\n");
                 println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
-                if !skip_wait {
-                    println!("\n⏳ Waiting 3 seconds to read");
-                    thread::sleep(time::Duration::from_secs(3));
-                }
             }
 
             let tmp_dir = create_tmp_dir();
