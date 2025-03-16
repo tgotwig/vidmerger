@@ -254,7 +254,15 @@ mod integration {
 
     fn download(url: &str, format: &str, out: &str) {
         Command::new("yt-dlp")
-            .args(&["-o", out, "-f", format, url])
+            .args(&[
+                "--cookies",
+                "youtube-cookies.txt",
+                "-o",
+                out,
+                "-f",
+                format,
+                url,
+            ])
             .unwrap();
     }
 

@@ -34,7 +34,11 @@ jobs:
         run: brew install go-task/tap/go-task
 
       - name: 🕵️ Run tests
-        run: task test
+        env:
+          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+        run: |
+          echo "$YT_COOKIES" > youtube-cookies.txt
+          task test
   Ubuntu:
     runs-on: ubuntu-latest
     name: 🐧 Ubuntu
@@ -60,7 +64,11 @@ jobs:
           sudo mv task /usr/local/bin
 
       - name: 🕵️ Run tests
-        run: task test
+        env:
+          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+        run: |
+          echo "$YT_COOKIES" > youtube-cookies.txt
+          task test
   Windows:
     runs-on: windows-latest
     name: 🏳️‍🌈 Windows
@@ -83,4 +91,8 @@ jobs:
         run: choco install go-task
 
       - name: 🕵️ Run tests
-        run: task test
+        env:
+          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+        run: |
+          echo "$YT_COOKIES" > youtube-cookies.txt
+          task test
