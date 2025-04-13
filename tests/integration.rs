@@ -3,6 +3,7 @@ mod integration {
     use k9::assertions::{greater_than::assert_greater_than, lesser_than::assert_lesser_than};
     use regex::Regex;
     use std::fs;
+    use std::fs::File;
     use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";
@@ -15,21 +16,26 @@ mod integration {
         println!("👷 Doing preparations...");
 
         fs::remove_dir_all("data").unwrap_or_default();
+        fs::create_dir_all("data").unwrap();
 
         download(
-            "https://www.youtube.com/watch?v=zGDzdps75ns",
-            "160",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-1.mp4",
             "data/1.mp4",
         );
-        fs::copy("data/1.mp4", "data/2.mp4").unwrap();
+        download(
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-2.mp4",
+            "data/2.mp4",
+        );
         File::create("data/.3.mp4").unwrap();
 
         download(
-            "https://www.youtube.com/watch?v=zGDzdps75ns",
-            "140",
-            "data/4.m4a",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-1.mp3",
+            "data/4.mp3",
         );
-        fs::copy("data/4.m4a", "data/5.m4a").unwrap();
+        download(
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-2.mp3",
+            "data/5.mp3",
+        );
 
         println!("✅ Preparations done!");
     }
@@ -65,7 +71,7 @@ mod integration {
         );
 
         assert!(res.contains("🐣 Generated"));
-        check_for_merged_file(test_name, "output.m4a");
+        check_for_merged_file(test_name, "output.mp3");
     }
 
     #[test]
@@ -138,9 +144,6 @@ mod integration {
 
     #[test]
     fn check_for_binaries() {
-        if which::which("yt-dlp").is_err() {
-            panic!("❌ yt-dlp wasn't found");
-        }
         if which::which("ffmpeg").is_err() {
             panic!("❌ ffmpeg wasn't found");
         }
@@ -200,7 +203,7 @@ mod integration {
                 .success(),
         );
 
-        assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("58.41 fps"));
+        assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("28 fps"));
         check_for_merged_file(test_name, "output.mp4");
     }
 
@@ -219,8 +222,8 @@ mod integration {
 
     fn prep_audio(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
-        fs::copy("data/4.m4a", format!("data/{}/4.m4a", test_name)).unwrap();
-        fs::copy("data/5.m4a", format!("data/{}/5.m4a", test_name)).unwrap();
+        fs::copy("data/4.mp3", format!("data/{}/4.mp3", test_name)).unwrap();
+        fs::copy("data/5.mp3", format!("data/{}/5.mp3", test_name)).unwrap();
     }
 
     fn prep_with_different_fps_values(test_name: &str) {
@@ -252,18 +255,10 @@ mod integration {
         String::from_utf8(assert.get_output().to_owned().stderr).unwrap()
     }
 
-    fn download(url: &str, format: &str, out: &str) {
-        Command::new("yt-dlp")
-            .args(&[
-                "--cookies",
-                "youtube-cookies.txt",
-                "-o",
-                out,
-                "-f",
-                format,
-                url,
-            ])
-            .unwrap();
+    fn download(url: &str, out: &str) {
+        let mut reader = ureq::get(url).call().unwrap().into_reader();
+        let mut file = File::create(out).unwrap();
+        std::io::copy(&mut reader, &mut file).unwrap();
     }
 
     fn get_video_info(file_path: &str) -> String {

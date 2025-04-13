@@ -99,7 +99,6 @@ Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependenci
 ### Prerequisites
 
 - [Rust 2021](https://www.rust-lang.org/tools/install)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Installation)
 - [ffmpeg](https://ffmpeg.org/download.html)
 - [task](https://taskfile.dev/#/installation)
 
@@ -138,7 +137,7 @@ We use [SemVer](http://semver.org/) for versioning.
 
 ## 🧪 Tests
 
-- For major tests: `task test` (requires `yt-dlp` and `ffmpeg` to be installed)
+- For major tests: `task test` (requires `ffmpeg` to be installed)
 - For linting tests: `task lint`
 
 ## 🌟 Style guide

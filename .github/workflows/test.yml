@@ -21,12 +21,6 @@ jobs:
       - name: 🚀 actions/checkout@v4
         uses: actions/checkout@v4
 
-      - name: ⬇ Install yt-dlp
-        run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
-          echo "$(pwd)" >> $GITHUB_PATH
-
       - name: ⬇️ Install ffmpeg
         run: brew install ffmpeg
 
@@ -34,11 +28,7 @@ jobs:
         run: brew install go-task/tap/go-task
 
       - name: 🕵️ Run tests
-        env:
-          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
-        run: |
-          echo "$YT_COOKIES" > youtube-cookies.txt
-          task test
+        run: task test
   Ubuntu:
     runs-on: ubuntu-latest
     name: 🐧 Ubuntu
@@ -49,12 +39,6 @@ jobs:
       - name: ⬇️ Update package lists
         run: sudo apt-get update
 
-      - name: ⬇️ Install yt-dlp
-        run: |
-          wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O yt-dlp
-          chmod a+rx yt-dlp
-          echo "$(pwd)" >> $GITHUB_PATH
-
       - name: ⬇️ Install ffmpeg
         run: sudo apt install -y ffmpeg
 
@@ -64,11 +48,7 @@ jobs:
           sudo mv task /usr/local/bin
 
       - name: 🕵️ Run tests
-        env:
-          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
-        run: |
-          echo "$YT_COOKIES" > youtube-cookies.txt
-          task test
+        run: task test
   Windows:
     runs-on: windows-latest
     name: 🏳️‍🌈 Windows
@@ -81,9 +61,6 @@ jobs:
         with:
           args: -h
 
-      - name: ⬇️ Install yt-dlp
-        run: choco install yt-dlp
-
       - name: ⬇️ Install ffmpeg
         run: choco install ffmpeg
 
@@ -91,8 +68,4 @@ jobs:
         run: choco install go-task
 
       - name: 🕵️ Run tests
-        env:
-          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
-        run: |
-          echo "$YT_COOKIES" > youtube-cookies.txt
-          task test
+        run: task test

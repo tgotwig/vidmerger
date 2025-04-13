@@ -7,4 +7,5 @@
 Cargo.lock
 data
 ffmpeg_input_file.txt
+private
 vidmerger.exe
