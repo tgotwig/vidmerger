@@ -71,7 +71,7 @@ pub fn execute(
 }
 
 fn extract_title(path: &str, file_format: &str) -> String {
-    let file_name = path.split('/').last().unwrap_or("");
+    let file_name = path.split('/').next_back().unwrap_or("");
     let mut parts = file_name.splitn(2, '-');
     parts.next(); // Skip the part before the first '-'
     let content_with_extension = parts.next().unwrap_or("").trim();

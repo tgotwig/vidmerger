@@ -31,7 +31,12 @@ pub fn create_order_of_merging(ffmpeg_input_content: &str) -> String {
         .map(|line| {
             format!(
                 "- {}",
-                BrightBlue.paint(line.split(['/', '\\']).last().unwrap().replace('\'', ""))
+                BrightBlue.paint(
+                    line.split(['/', '\\'])
+                        .next_back()
+                        .unwrap()
+                        .replace('\'', "")
+                )
             )
         })
         .collect::<Vec<String>>()
