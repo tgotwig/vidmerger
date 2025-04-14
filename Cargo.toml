@@ -14,7 +14,7 @@ strip = true
 assert_cmd = "2.0.12"
 clap = {version = "3.2.25", features = ["derive"]}
 ctor = "0.4.0"
-k9 = "0.11.6"
+k9 = "0.12.0"
 lazy_static = "1.5.0"
 nanoid = "0.4.0"
 path-slash = "0.1.5"
