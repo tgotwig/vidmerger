@@ -10,7 +10,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: 🐣 Create Release folder on Github
         id: create_release
         uses: actions/create-release@v1
@@ -33,7 +33,7 @@ jobs:
     runs-on: macos-latest
     needs: prepare
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: 🧑‍🔧 Build Release
         run: cargo build --release && tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: prepare
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: 🧑‍🔧 Build Release
         run: cargo build --release && tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
@@ -121,7 +121,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Build and package binary
         run: |
           cargo build --release
