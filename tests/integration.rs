@@ -4,6 +4,7 @@ mod integration {
     use regex::Regex;
     use std::fs;
     use std::fs::File;
+    use std::io;
     use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";
@@ -256,9 +257,10 @@ mod integration {
     }
 
     fn download(url: &str, out: &str) {
-        let mut reader = ureq::get(url).call().unwrap().into_reader();
+        let mut body = ureq::get(url).call().unwrap().into_body();
+        let mut reader = body.as_reader();
         let mut file = File::create(out).unwrap();
-        std::io::copy(&mut reader, &mut file).unwrap();
+        io::copy(&mut reader, &mut file).unwrap();
     }
 
     fn get_video_info(file_path: &str) -> String {
