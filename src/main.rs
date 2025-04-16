@@ -72,7 +72,7 @@ fn main() -> Result<(), Error> {
             );
 
             commanders::merger::merge(
-                ffmpeg_input_file.to_slash().unwrap(),
+                ffmpeg_input_file.to_slash().unwrap().into_owned(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
             );
 
