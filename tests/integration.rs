@@ -8,6 +8,11 @@ mod integration {
     use stdext::function_name;
 
     static BIN: &'static str = "vidmerger";
+    static DATA_1_MP3: &'static str = "1 - Chapter 1.mp3";
+    static DATA_1_MP4: &'static str = "1 - Chapter 1.mp4";
+    static DATA_2_MP3: &'static str = "2 - Chapter 2.mp3";
+    static DATA_2_MP4: &'static str = "2 - Chapter 2.mp4";
+    static DATA_3_MP4: &'static str = ".3.mp4";
 
     #[cfg(test)]
     #[ctor::ctor]
@@ -21,7 +26,7 @@ mod integration {
 
         download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp4");
         download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp4");
-        File::create("data/.3.mp4").unwrap();
+        File::create(format!("data/{}", DATA_3_MP4)).unwrap();
 
         download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp3");
         download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp3");
@@ -103,8 +108,8 @@ mod integration {
         );
 
         assert!(res.contains("🐣 Generated"));
-        assert!(res.contains("1 - Chapter 1.mp4"));
-        assert!(!res.contains(".3.mp4"));
+        assert!(res.contains(DATA_1_MP4));
+        assert!(!res.contains(DATA_3_MP4));
         check_for_merged_file(test_name, "output.mp4");
     }
 
@@ -201,32 +206,32 @@ mod integration {
     fn prep(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
         fs::copy(
-            "data/1 - Chapter 1.mp4",
-            format!("data/{}/1 - Chapter 1.mp4", test_name),
+            format!("data/{}", DATA_1_MP4),
+            format!("data/{}/{}", test_name, DATA_1_MP4),
         )
         .unwrap();
         fs::copy(
-            "data/2 - Chapter 2.mp4",
-            format!("data/{}/2 - Chapter 2.mp4", test_name),
+            format!("data/{}", DATA_2_MP4),
+            format!("data/{}/{}", test_name, DATA_2_MP4),
         )
         .unwrap();
     }
 
     fn prep_with_hidden_file(test_name: &str) {
         prep(test_name);
-        std::fs::File::create(format!("data/{}/.3.mp4", test_name)).unwrap();
+        std::fs::File::create(format!("data/{}/{}", test_name, DATA_3_MP4)).unwrap();
     }
 
     fn prep_audio(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
         fs::copy(
-            "data/1 - Chapter 1.mp3",
-            format!("data/{}/1 - Chapter 1.mp3", test_name),
+            format!("data/{}", DATA_1_MP3),
+            format!("data/{}/{}", test_name, DATA_1_MP3),
         )
         .unwrap();
         fs::copy(
-            "data/2 - Chapter 2.mp3",
-            format!("data/{}/2 - Chapter 2.mp3", test_name),
+            format!("data/{}", DATA_2_MP3),
+            format!("data/{}/{}", test_name, DATA_2_MP3),
         )
         .unwrap();
     }
@@ -234,13 +239,13 @@ mod integration {
     fn prep_with_different_fps_values(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
         fs::copy(
-            "data/1 - Chapter 1.mp4",
-            format!("data/{}/1 - Chapter 1.mp4", test_name),
+            format!("data/{}", DATA_1_MP4),
+            format!("data/{}/{}", test_name, DATA_1_MP4),
         )
         .unwrap();
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-i")
-            .arg(format!("data/{}/1 - Chapter 1.mp4", test_name))
+            .arg(format!("data/{}/{}", test_name, DATA_1_MP4))
             .arg("-r")
             .arg("28")
             .arg(format!("data/{}/2 - Chapter 2.mp4", test_name))
