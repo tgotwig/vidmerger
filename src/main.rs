@@ -22,23 +22,29 @@ use term_painter::ToStyle;
 
 lazy_static! {
     static ref MATCHES: ArgMatches = Cli::init().get_matches();
-    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+    static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
 fn main() -> Result<(), Error> {
     let matches = Cli::init().get_matches();
     exit_when_ffmpeg_not_available();
 
-    let target_dir = Path::new(matches.value_of("TARGET_DIR").unwrap());
+    let target_dir = Path::new(
+        matches
+            .get_one::<String>("TARGET_DIR")
+            .expect("TARGET_DIR is required"),
+    );
     let formats = matches
-        .value_of("format")
+        .get_one::<String>("format")
+        .map(|s| s.as_str())
         .unwrap_or("3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv")
         .to_string();
-    let should_shutdown = matches.is_present("shutdown");
-    let skip_fps_changer = matches.is_present("skip-fps-changer");
-    let skip_chapterer = matches.is_present("skip-chapterer");
+    let should_shutdown = matches.get_flag("shutdown");
+    let skip_fps_changer = matches.get_flag("skip-fps-changer");
+    let skip_chapterer = matches.get_flag("skip-chapterer");
     let fps_from_cli = matches
-        .value_of("fps")
+        .get_one::<String>("fps")
+        .map(|s| s.as_str())
         .unwrap_or("0")
         .parse::<f32>()
         .unwrap();

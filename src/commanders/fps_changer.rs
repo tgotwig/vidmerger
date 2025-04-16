@@ -16,7 +16,7 @@ use std::{
 
 lazy_static! {
     static ref MATCHES: ArgMatches = Cli::init().get_matches();
-    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+    static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
 pub fn change_fps(
