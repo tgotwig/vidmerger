@@ -17,7 +17,7 @@ lazy_static! {
 
 pub fn merge(input: String, output: &String) -> Result<Child, std::io::Error> {
     let cmd = format!(
-        "ffmpeg -y -f concat -safe 0 -i {} -map 0 -c copy {}",
+        "ffmpeg -y -f concat -safe 0 -i '{}' -map 0 -c copy '{}'",
         input, output
     );
 
@@ -35,7 +35,7 @@ pub fn merge_with_chapters(
     output_file_for_chapterer: &str,
 ) -> Result<Child, std::io::Error> {
     let cmd = format!(
-        "ffmpeg -y -i {} -i {} -map 0 -map_metadata 1 -codec copy {}",
+        "ffmpeg -y -i '{}' -i '{}' -map 0 -map_metadata 1 -codec copy '{}'",
         &input_file_for_chapterer,
         file_path.to_str().unwrap(),
         output_file_for_chapterer
@@ -61,7 +61,7 @@ pub fn adjust_fps_by_ffmpeg(
     new_file_location: PathBuf,
 ) -> PathBuf {
     let cmd = format!(
-        "ffmpeg -i {} -r {} {}",
+        "ffmpeg -i '{}' -r {} '{}'",
         file_to_merge.to_str().unwrap(),
         fps_goal,
         new_file_location.to_str().unwrap()
