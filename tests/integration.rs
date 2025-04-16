@@ -19,12 +19,12 @@ mod integration {
         fs::remove_dir_all("data").unwrap_or_default();
         fs::create_dir_all("data").unwrap();
 
-        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp4");
-        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp4");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp4");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp4");
         File::create("data/.3.mp4").unwrap();
 
-        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp3");
-        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp3");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp3");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp3");
 
         println!("✅ Preparations done!");
     }
@@ -103,7 +103,7 @@ mod integration {
         );
 
         assert!(res.contains("🐣 Generated"));
-        assert!(res.contains("1.mp4"));
+        assert!(res.contains("1 - Chapter 1.mp4"));
         assert!(!res.contains(".3.mp4"));
         check_for_merged_file(test_name, "output.mp4");
     }
@@ -200,8 +200,16 @@ mod integration {
 
     fn prep(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
-        fs::copy("data/1.mp4", format!("data/{}/1.mp4", test_name)).unwrap();
-        fs::copy("data/2.mp4", format!("data/{}/2.mp4", test_name)).unwrap();
+        fs::copy(
+            "data/1 - Chapter 1.mp4",
+            format!("data/{}/1 - Chapter 1.mp4", test_name),
+        )
+        .unwrap();
+        fs::copy(
+            "data/2 - Chapter 2.mp4",
+            format!("data/{}/2 - Chapter 2.mp4", test_name),
+        )
+        .unwrap();
     }
 
     fn prep_with_hidden_file(test_name: &str) {
@@ -211,19 +219,31 @@ mod integration {
 
     fn prep_audio(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
-        fs::copy("data/1.mp3", format!("data/{}/1.mp3", test_name)).unwrap();
-        fs::copy("data/2.mp3", format!("data/{}/2.mp3", test_name)).unwrap();
+        fs::copy(
+            "data/1 - Chapter 1.mp3",
+            format!("data/{}/1 - Chapter 1.mp3", test_name),
+        )
+        .unwrap();
+        fs::copy(
+            "data/2 - Chapter 2.mp3",
+            format!("data/{}/2 - Chapter 2.mp3", test_name),
+        )
+        .unwrap();
     }
 
     fn prep_with_different_fps_values(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
-        fs::copy("data/1.mp4", format!("data/{}/1.mp4", test_name)).unwrap();
+        fs::copy(
+            "data/1 - Chapter 1.mp4",
+            format!("data/{}/1 - Chapter 1.mp4", test_name),
+        )
+        .unwrap();
         let mut cmd = Command::new("ffmpeg");
         cmd.arg("-i")
-            .arg(format!("data/{}/1.mp4", test_name))
+            .arg(format!("data/{}/1 - Chapter 1.mp4", test_name))
             .arg("-r")
             .arg("28")
-            .arg(format!("data/{}/2.mp4", test_name))
+            .arg(format!("data/{}/2 - Chapter 2.mp4", test_name))
             .output()
             .unwrap();
     }
@@ -245,7 +265,7 @@ mod integration {
     }
 
     fn download(url: &str) {
-        let filename = url.split('/').last().unwrap();
+        let filename = url.split('/').last().unwrap().replace("+", " ");
         let out = format!("data/{}", filename);
 
         let mut body = ureq::get(url).call().unwrap().into_body();
