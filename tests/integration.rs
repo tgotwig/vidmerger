@@ -19,24 +19,12 @@ mod integration {
         fs::remove_dir_all("data").unwrap_or_default();
         fs::create_dir_all("data").unwrap();
 
-        download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp4",
-            "data/1.mp4",
-        );
-        download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp4",
-            "data/2.mp4",
-        );
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp4");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp4");
         File::create("data/.3.mp4").unwrap();
 
-        download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp3",
-            "data/1.mp3",
-        );
-        download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp3",
-            "data/2.mp3",
-        );
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp3");
+        download("https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp3");
 
         println!("✅ Preparations done!");
     }
@@ -256,7 +244,10 @@ mod integration {
         String::from_utf8(assert.get_output().to_owned().stderr).unwrap()
     }
 
-    fn download(url: &str, out: &str) {
+    fn download(url: &str) {
+        let filename = url.split('/').last().unwrap();
+        let out = format!("data/{}", filename);
+
         let mut body = ureq::get(url).call().unwrap().into_body();
         let mut reader = body.as_reader();
         let mut file = File::create(out).unwrap();
