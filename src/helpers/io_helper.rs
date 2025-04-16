@@ -10,7 +10,7 @@ use std::process::exit;
 
 lazy_static! {
     static ref MATCHES: ArgMatches = Cli::init().get_matches();
-    static ref VERBOSE: bool = MATCHES.is_present("verbose");
+    static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
 pub fn exit_when_ffmpeg_not_available() {

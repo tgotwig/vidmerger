@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 
 lazy_static! {
     static ref MATCHES: ArgMatches = Cli::init().get_matches();
-    static ref TARGET_DIR: &'static Path = Path::new(MATCHES.value_of("TARGET_DIR").unwrap());
+    static ref TARGET_DIR: &'static Path =
+        Path::new(MATCHES.get_one::<String>("TARGET_DIR").unwrap());
 }
 
 pub fn select(file_format: &str) -> (Vec<PathBuf>, Vec<String>, String) {
