@@ -31,11 +31,11 @@ mod integration {
 
         download(
             "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-1.mp3",
-            "data/4.mp3",
+            "data/1.mp3",
         );
         download(
             "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-2.mp3",
-            "data/5.mp3",
+            "data/2.mp3",
         );
 
         println!("✅ Preparations done!");
@@ -223,8 +223,8 @@ mod integration {
 
     fn prep_audio(test_name: &str) {
         fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
-        fs::copy("data/4.mp3", format!("data/{}/4.mp3", test_name)).unwrap();
-        fs::copy("data/5.mp3", format!("data/{}/5.mp3", test_name)).unwrap();
+        fs::copy("data/1.mp3", format!("data/{}/1.mp3", test_name)).unwrap();
+        fs::copy("data/2.mp3", format!("data/{}/2.mp3", test_name)).unwrap();
     }
 
     fn prep_with_different_fps_values(test_name: &str) {
