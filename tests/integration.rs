@@ -20,21 +20,21 @@ mod integration {
         fs::create_dir_all("data").unwrap();
 
         download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-1.mp4",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp4",
             "data/1.mp4",
         );
         download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-2.mp4",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp4",
             "data/2.mp4",
         );
         File::create("data/.3.mp4").unwrap();
 
         download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-1.mp3",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/1.mp3",
             "data/1.mp3",
         );
         download(
-            "https://vidmerger.s3.eu-central-1.amazonaws.com/cat-2.mp3",
+            "https://vidmerger.s3.eu-central-1.amazonaws.com/2.mp3",
             "data/2.mp3",
         );
 
