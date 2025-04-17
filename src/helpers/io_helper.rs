@@ -1,11 +1,16 @@
 use crate::cli::Cli;
 use clap::ArgMatches;
+use crossterm::{
+    event::{read, Event, KeyCode},
+    terminal::{disable_raw_mode, enable_raw_mode},
+};
 use lazy_static::lazy_static;
 use nanoid::nanoid;
 use std::env::temp_dir;
 use std::fs::{self, canonicalize, File};
 use std::io::{self, Result, Write};
 use std::path::{Path, PathBuf};
+use std::process;
 use std::process::exit;
 
 lazy_static! {
@@ -72,4 +77,24 @@ pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
         .collect();
     strings.sort();
     strings
+}
+
+pub fn wait_for_enter_or_esc_key() {
+    println!("❓ Press ENTER to continue or ESC to cancel...");
+    enable_raw_mode().unwrap();
+    loop {
+        if let Event::Key(key_event) = read().unwrap() {
+            match key_event.code {
+                KeyCode::Enter => {
+                    break;
+                }
+                KeyCode::Esc => {
+                    disable_raw_mode().unwrap();
+                    process::exit(0);
+                }
+                _ => {}
+            }
+        }
+    }
+    disable_raw_mode().unwrap();
 }

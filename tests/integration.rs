@@ -42,6 +42,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -59,6 +60,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -82,6 +84,7 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg(format!("data/nothing"))
                 .assert()
                 .failure(),
@@ -101,6 +104,7 @@ mod integration {
         let res = get_output(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg("--verbose")
                 .arg(format!("data/{}", test_name))
                 .assert()
@@ -117,6 +121,7 @@ mod integration {
     fn call_merger_without_ffmpeg() {
         Command::cargo_bin(BIN)
             .unwrap()
+            .arg("-y")
             .arg("data")
             .env_clear()
             .assert()
@@ -130,6 +135,7 @@ mod integration {
     fn call_merger_against_mp4() {
         Command::cargo_bin(BIN)
             .unwrap()
+            .arg("-y")
             .args(&["--format", "mp4"])
             .arg("data")
             .assert()
@@ -151,6 +157,7 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg(format!("data/{}", test_name))
                 .assert()
                 .success(),
@@ -169,6 +176,7 @@ mod integration {
         let res = get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .args(["--fps", "25"])
                 .arg(format!("data/{}", test_name))
                 .assert()
@@ -191,6 +199,7 @@ mod integration {
         get_output_err(
             Command::cargo_bin(BIN)
                 .unwrap()
+                .arg("-y")
                 .arg(format!("data/{}", test_name))
                 .arg("--skip-fps-changer")
                 .assert()

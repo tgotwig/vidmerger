@@ -11,6 +11,7 @@ use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
 use helpers::io_helper::remove_file;
+use helpers::io_helper::wait_for_enter_or_esc_key;
 use helpers::str_helper::split;
 use lazy_static::lazy_static;
 use path_slash::PathExt;
@@ -42,6 +43,7 @@ fn main() -> Result<(), Error> {
     let should_shutdown = matches.get_flag("shutdown");
     let skip_fps_changer = matches.get_flag("skip-fps-changer");
     let skip_chapterer = matches.get_flag("skip-chapterer");
+    let yes = matches.get_flag("yes");
     let fps_from_cli = matches
         .get_one::<String>("fps")
         .map(|s| s.as_str())
@@ -58,9 +60,10 @@ fn main() -> Result<(), Error> {
             select(&file_format);
 
         if !ffmpeg_input_content.is_empty() {
-            if *VERBOSE {
-                println!("\n\n📜 Order of merging:\n");
-                println!("{}\n", create_order_of_merging(&ffmpeg_input_content));
+            print!("\n📜 Order of merging:\n");
+            println!("{}", create_order_of_merging(&ffmpeg_input_content));
+            if !yes {
+                wait_for_enter_or_esc_key();
             }
 
             let tmp_dir = create_tmp_dir();

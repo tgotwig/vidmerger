@@ -30,7 +30,7 @@ pub fn create_order_of_merging(ffmpeg_input_content: &str) -> String {
         .lines()
         .map(|line| {
             format!(
-                "- {}",
+                "  {}",
                 BrightBlue.paint(
                     line.split(['/', '\\'])
                         .next_back()
@@ -119,7 +119,7 @@ mod tests {
     fn test_create_order_of_merging_with_slashes() {
         assert_eq!(
             create_order_of_merging("/target_dir/1.mp4\n/target_dir/2.mp4"),
-            "- 1.mp4\n- 2.mp4"
+            "  1.mp4\n  2.mp4"
         );
     }
 
@@ -127,7 +127,7 @@ mod tests {
     fn test_create_order_of_merging_with_backslashes() {
         assert_eq!(
             create_order_of_merging("C:\\target_dir\\1.mp4\nC:\\target_dir\\2.mp4"),
-            "- 1.mp4\n- 2.mp4"
+            "  1.mp4\n  2.mp4"
         );
     }
 }
