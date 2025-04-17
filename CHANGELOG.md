@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
 - Selector now case-insensitive, so it selects mp4 and MP4 etc.
 
+### Removed
+
+- Remove `--skip-wait`
+
 ## 🎉 [0.3.2] - 2024-01-14
 
 ### Added
@@ -52,7 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Remove `--skip-wait`
 - Remove `--preview`
 - Remove `--scale`
 
