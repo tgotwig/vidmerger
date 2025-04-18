@@ -5,6 +5,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "bierner.markdown-mermaid",
+        "bpruitt-goddard.mermaid-markdown-syntax-highlighting",
         "EditorConfig.EditorConfig",
         "rust-lang.rust-analyzer"
       ]
