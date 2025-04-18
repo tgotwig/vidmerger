@@ -15,33 +15,13 @@ lazy_static! {
     static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
-pub fn merge(input: String, output: &String) -> Result<Child, std::io::Error> {
+pub fn merge(input: String, output: &String, chapters: &String) -> Result<Child, std::io::Error> {
     let cmd = format!(
-        "ffmpeg -y -f concat -safe 0 -i '{}' -map 0 -c copy '{}'",
-        input, output
+        "ffmpeg -y -f concat -safe 0 -i '{}' -i '{}' -map 0 -map_metadata 1 -c copy '{}'",
+        input, chapters, output
     );
 
     println!("🚀 Run Merger, calling: {}", BrightBlue.paint(&cmd));
-    if *VERBOSE {
-        execute_cmd(cmd)
-    } else {
-        execute_cmd_silently(cmd)
-    }
-}
-
-pub fn merge_with_chapters(
-    input_file_for_chapterer: &str,
-    file_path: PathBuf,
-    output_file_for_chapterer: &str,
-) -> Result<Child, std::io::Error> {
-    let cmd = format!(
-        "ffmpeg -y -i '{}' -i '{}' -map 0 -map_metadata 1 -codec copy '{}'",
-        &input_file_for_chapterer,
-        file_path.to_str().unwrap(),
-        output_file_for_chapterer
-    );
-
-    println!("📖 Run Chapterer, calling: {}", BrightBlue.paint(&cmd));
     if *VERBOSE {
         execute_cmd(cmd)
     } else {

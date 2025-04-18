@@ -42,7 +42,6 @@ fn main() -> Result<(), Error> {
         .to_string();
     let should_shutdown = matches.get_flag("shutdown");
     let skip_fps_changer = matches.get_flag("skip-fps-changer");
-    let skip_chapterer = matches.get_flag("skip-chapterer");
     let yes = matches.get_flag("yes");
     let fps_from_cli = matches
         .get_one::<String>("fps")
@@ -83,16 +82,10 @@ fn main() -> Result<(), Error> {
             commanders::merger::merge(
                 ffmpeg_input_file.to_slash().unwrap().into_owned(),
                 ffmpeg_output_file.to_slash().unwrap().to_string(),
+                files_to_merge_as_strings,
+                &file_format,
+                tmp_dir,
             );
-
-            if !skip_chapterer {
-                commanders::chapterer::execute(
-                    files_to_merge_as_strings,
-                    tmp_dir,
-                    ffmpeg_output_file,
-                    &file_format,
-                );
-            }
         }
     }
 

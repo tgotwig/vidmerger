@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Chapters will now be included during the merge phase, seperate chapterer phase gets removed.
 - It will not wait anymore for a few seconds at the beginning, instead it will print the merge order and wait for you to press ENTER or ESC to continue or not.
 - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
 - Selector now case-insensitive, so it selects mp4 and MP4 etc.
