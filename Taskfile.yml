@@ -9,6 +9,7 @@ tasks:
       - |
         cargo install cross
         rustup component add clippy
+        rustup component add rustfmt
 
   run: cargo run -- data/call_merger -y
 
