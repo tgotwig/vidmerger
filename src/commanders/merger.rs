@@ -36,13 +36,18 @@ pub fn merge(
 
     // ========== Merge with chapters ========== //
 
+    let output_str = output.clone();
     let child = _cmd::merge(input, &output, &file_path.to_string_lossy().to_string());
-    let res = child.unwrap().wait_with_output();
+    let res = child.unwrap().wait_with_output().unwrap();
 
-    if res.is_ok() {
-        println!("🐣 Generated: {}", BrightBlue.paint(output));
+    if res.status.success() {
+        println!("🐣 Generated: {}", BrightBlue.paint(&output_str));
     } else {
-        panic!("❌ Something went wrong: \n\n{}", res.unwrap_err());
+        panic!(
+            "❌ Something went wrong (exit code: {:?}):{}",
+            res.status.code(),
+            String::from_utf8_lossy(&res.stderr)
+        );
     }
 }
 

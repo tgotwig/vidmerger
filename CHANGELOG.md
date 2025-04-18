@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove `--skip-wait`
 
+### Fixed
+
+- Fix wrong success message after merge failed.
+
 ## 🎉 [0.3.2] - 2024-01-14
 
 ### Added
