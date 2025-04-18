@@ -133,11 +133,14 @@ mod integration {
 
     #[test]
     fn call_merger_against_mp4() {
+        let test_name = function_name!().split("::").last().unwrap();
+        prep(test_name);
+
         Command::cargo_bin(BIN)
             .unwrap()
             .arg("-y")
             .args(&["--format", "mp4"])
-            .arg("data")
+            .arg(format!("data/{}", test_name))
             .assert()
             .success();
     }
