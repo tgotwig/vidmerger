@@ -1,5 +1,9 @@
 version: "3"
 
+vars:
+  VERSION:
+    sh: grep '^version' Cargo.toml | head -n1 | cut -d '"' -f2
+
 tasks:
   default:
     desc: Install dependencies and run tests
@@ -96,7 +100,7 @@ tasks:
     cmds:
       - |
         docker build --no-cache -t vidmerger .
-        docker tag vidmerger tgotwig/vidmerger:0.3.2
-        docker push tgotwig/vidmerger:0.3.2
+        docker tag vidmerger tgotwig/vidmerger:{{.VERSION}}
+        docker push tgotwig/vidmerger:{{.VERSION}}
         docker tag vidmerger tgotwig/vidmerger
         docker push tgotwig/vidmerger
