@@ -1,10 +1,13 @@
 {
-    "build": {
-        "dockerfile": "Dockerfile"
-    },
-    "customizations": {
-        "vscode": {
-            "extensions": ["rust-lang.rust-analyzer"]
-        }
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "EditorConfig.EditorConfig",
+        "rust-lang.rust-analyzer"
+      ]
     }
+  }
 }
