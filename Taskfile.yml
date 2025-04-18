@@ -10,7 +10,7 @@ tasks:
         cargo install cross
         rustup component add clippy
 
-  run: cargo run -- data -y --format mp4
+  run: cargo run -- data/call_merger -y
 
   run_docker:
     deps: [build_linux_x64]
