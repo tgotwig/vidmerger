@@ -3,9 +3,9 @@
 *.m4a
 *.mp4
 **/*.rs.bk
+*private*
 /target/
 Cargo.lock
 data
 ffmpeg_input_file.txt
-private
 vidmerger.exe
