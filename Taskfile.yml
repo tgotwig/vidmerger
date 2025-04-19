@@ -6,11 +6,9 @@ vars:
 
 tasks:
   default:
-    desc: Install dependencies and run tests
     deps: [install, test]
 
   install:
-    desc: Install required Rust tools
     cmds:
       - |
         cargo install cross
@@ -20,23 +18,17 @@ tasks:
   run: cargo run -- data/call_merger -y
 
   run_docker:
+    deps: [build_linux_x64]
     cmds:
       - |
         docker build -t vidmerger .
         docker container run -it --rm -v ./data:/data vidmerger
 
-  test:
-    desc: Run unit tests
-    cmds:
-      - cargo test
+  test: cargo test
 
-  lint:
-    desc: Run linter with Clippy
-    cmds:
-      - cargo clippy
+  lint: cargo clippy
 
   build:
-    desc: Build release binaries for all target platforms
     cmds:
       - |
         task: build_linux_x64
@@ -45,49 +37,38 @@ tasks:
         task: shasum
 
   build_linux_x64:
-    desc: Build for Linux x86_64 using musl
-    deps: [install]
     cmds:
       - |
         echo 'Building for Linux... 🐧'
         mkdir -p target
-        cross build --release --target=x86_64-unknown-linux-musl
+        sudo cross build --release --target=x86_64-unknown-linux-musl
         mkdir -p target/release-archives
         tar -C target/x86_64-unknown-linux-musl/release -czf target/release-archives/vidmerger-linux.tar.gz vidmerger
 
   build_mac_x64:
-    desc: Build for macOS x86_64
-    deps: [install]
     cmds:
       - |
         echo 'Building for MacOS... 🍏'
         mkdir -p target
         rustup target add x86_64-apple-darwin
-        cargo build --release --target x86_64-apple-darwin
+        sudo cargo build --release --target x86_64-apple-darwin
         mkdir -p target/release-archives
         tar -C target/x86_64-apple-darwin/release -czf target/release-archives/vidmerger-mac.tar.gz vidmerger
 
   build_win_x64:
-    desc: Build for Windows x86_64
-    deps: [install]
     cmds:
       - |
-        echo 'Building for Windows... 🪟'
+        echo 'Building for Windows... 🏳️‍🌈'
         mkdir -p target
-        rm -r target/release
-        cross build --release --target x86_64-pc-windows-gnu
+        sudo rm -r target/release
+        sudo cross build --release --target x86_64-pc-windows-gnu
         mkdir -p target/release-archives
         cp target/x86_64-pc-windows-gnu/release/vidmerger.exe target/release-archives/vidmerger.exe
 
-  shasum:
-    desc: Generate SHA256 checksums for all built archives
-    cmds:
-      - shasum -a 256 target/release-archives/vidmerger*
+  shasum: shasum -a 256 target/release-archives/vidmerger*
 
   # TODO - test this
   publish_choco:
-    desc: Publish Windows binary to Chocolatey
-    deps: [build_win_x64]
     cmds:
       - |
         choco pack
@@ -96,7 +77,6 @@ tasks:
         Remove-Item vidmerger.nupkg
 
   publish_dockerhub:
-    desc: Publish Docker image to DockerHub
     cmds:
       - |
         docker build --no-cache -t vidmerger .
