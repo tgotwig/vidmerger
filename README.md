@@ -80,14 +80,15 @@ You can install it on all the three major operating systems 🤗
 You can also use Docker to run vidmerger without installing anything except Docker, hosted on [Dockerhub](https://hub.docker.com/r/tgotwig/vidmerger).
 
 ```bash
-docker container run -v <PATH-TO-YOUR-VIDEOS>:/data tgotwig/vidmerger
+docker container run -it -v <PATH-TO-YOUR-VIDEOS>:/data tgotwig/vidmerger
 ```
 
 Examples with Bash:
 
 ```bash
-docker container run -v ./data:/data tgotwig/vidmerger
-docker container run -v ./data:/data tgotwig/vidmerger --version
+docker container run tgotwig/vidmerger --help
+docker container run tgotwig/vidmerger --version
+docker container run -it -v ./data/call_merger:/data tgotwig/vidmerger
 ```
 
 ## ⚙️ Developing
@@ -124,12 +125,7 @@ Run `task build` to build for Mac, Linux and Windows. You can find the compresse
 
 - Homebrew (MacOS & Linux): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
 - Chocolatey (Windows): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
-
-#### Manual steps
-
-Increasing all versions by _find and replace_, then after `task build`:
-
-- Dockerhub: Run `task publish_dockerhub`.
+- Docker: Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
 
 ## 📦 Versioning
 
