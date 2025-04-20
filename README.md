@@ -14,11 +14,7 @@ Video_A-->Vidmerger;
 Video_B-->Vidmerger;
 Vidmerger-->FPS_Changer;
 FPS_Changer-->Merger;
-Merger-->Chapterer;
-Chapterer-->Video_A+B;
-
-Vidmerger-->Merger;
-Merger-->Video_A+B;
+Merger-->Video_A+B_and_chapters;
 ```
 
 | Feature     | Description                                                                                                                                                                                                                                     |
@@ -34,25 +30,22 @@ Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-f
 Here is the usage help of vidmerger 🤗
 
 ```shell
-A wrapper around ffmpeg which simlifies merging multiple videos 🎞  Everything in between the first
-`-` till the fill extension of the input files will be used as chapter titles.
+A wrapper around ffmpeg which simplifies merging multiple videos 🎞  Everything in between the first `-` till the fill extension of the input files will be used as chapter titles 📖.
 
-USAGE:
-    vidmerger [OPTIONS] <TARGET_DIR>
+Usage: vidmerger [OPTIONS] <TARGET_DIR>
 
-ARGS:
-    <TARGET_DIR>    Sets the input file to use
+Arguments:
+  <TARGET_DIR>  Sets the input file to use
 
-OPTIONS:
-    -f, --format <format>     Specifies which formats should be merged individually, the default is
-                              👉 3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv
-        --fps <fps>           Generates videos inside a temporary folder with this fps value and
-                              merges them
-    -h, --help                Print help information
-        --shutdown            For doing a shutdown at the end (needs sudo)
-        --skip-chapterer      Skips the chapterer
-        --skip-fps-changer    Skips the fps changer
-    -V, --version             Print version information
+Options:
+  -f, --format <format>   Specifies which formats should be merged individually, the default is 👉 3g2,3gp,aac,ac3,alac,amr,ape,au,avi,awb,dts,f4a,f4b,f4p,f4v,flac,flv,m4a,m4b,m4p,m4r,m4v,mkv,mov,mp2,mp3,mp4,mpeg,mpg,oga,ogg,ogm,ogv,ogx,opus,pcm,spx,wav,webm,wma,wmv
+      --fps <fps>         Generates videos inside a temporary folder with this fps value and merges them
+      --shutdown          For doing a shutdown at the end (needs sudo)
+      --skip-fps-changer  Skips the fps changer
+  -y, --yes               Skips confirmation of merge order
+      --verbose           Prints detailed logs
+  -h, --help              Print help
+  -V, --version           Print version
 ```
 
 ## ✨ Installing / Getting started
@@ -73,7 +66,7 @@ You can install it on all the three major operating systems 🤗
 | Platform | Packager                                                                             | Command                                                                                                                                                                                                           |
 | :------- | :----------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 🍎 MacOS  | 🍺 [Homwbrew](https://github.com/TGotwig/homebrew-vidmerger/blob/master/vidmerger.rb) | brew tap tgotwig/vidmerger<br>brew install vidmerger                                                                                                                                                              |
-| 🐧 Linux  | 🍺 CURL                                                                               | sudo curl -L https://github.com/tgotwig/vidmerger/releases/download/0.3.2/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin |
+| 🐧 Linux  | 🍺 CURL                                                                               | sudo curl -L https://github.com/tgotwig/vidmerger/releases/download/0.4.0/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin |
 
 ## 🐳 Run it without installing
 

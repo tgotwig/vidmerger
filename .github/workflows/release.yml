@@ -20,11 +20,24 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
           body: |
+            ### Added
+
+            - **--verbose** which prints detailed logs.
+
+            ### Changed
+
+            - Chapters will now be included during the merge phase, seperate chapterer phase gets removed.
+            - It will not wait anymore for a few seconds at the beginning, instead it will print the merge order and wait for you to press ENTER or ESC to continue or not.
+            - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
+            - Selector now case-insensitive, so it selects mp4 and MP4 etc.
+
+            ### Removed
+
+            - Remove `--skip-wait`
+
             ### Fixed
 
-            - Print files from FPS Changer in correct order
-            - Merge files in correct order
-            - Fix wrong fps detection for floating point numbers
+            - Fix wrong success message after merge failed.
           draft: true
           prerelease: false
 
@@ -115,7 +128,7 @@ jobs:
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
           tgotwig/homebrew-linux-vidmerger/vidmerger
 
-  # todo: fix hard coded version number `0.3.2`
+  # todo: fix hard coded version number `0.4.0`
   # todo: upload `vidmerger.exe` to github
   release-windows-chocolatey:
     runs-on: windows-latest
@@ -133,7 +146,7 @@ jobs:
           echo '<package>' >> vidmerger.nuspec
           echo '  <metadata>' >> vidmerger.nuspec
           echo '    <id>vidmerger</id>' >> vidmerger.nuspec
-          echo '    <version>0.3.2</version>' >> vidmerger.nuspec
+          echo '    <version>0.4.0</version>' >> vidmerger.nuspec
           echo '    <title>vidmerger</title>' >> vidmerger.nuspec
           echo '    <authors>Thomas Gotwig</authors>' >> vidmerger.nuspec
           echo '    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>' >> vidmerger.nuspec
@@ -163,7 +176,7 @@ jobs:
       - name: Create chocolatey package
         run: choco pack vidmerger.nuspec
       - name: Publish on chocolatey
-        run: choco push vidmerger.0.3.2.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+        run: choco push vidmerger.0.4.0.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
 
   release-docker:
     runs-on: ubuntu-latest
