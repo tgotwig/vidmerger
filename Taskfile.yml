@@ -21,12 +21,3 @@ tasks:
   test: cargo test
 
   lint: cargo clippy
-
-  # TODO - test this
-  publish_choco:
-    cmds:
-      - |
-        choco pack
-        Get-ChildItem *.nupkg | ren -NewName vidmerger.nupkg
-        choco push vidmerger.nupkg --source https://push.chocolatey.org
-        Remove-Item vidmerger.nupkg
