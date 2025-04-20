@@ -36,8 +36,8 @@ Options:
 ```mermaid
 %%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%
 graph LR;
-Video_A-->Vidmerger;
-Video_B-->Vidmerger;
+VideoA((Video_A))-->Vidmerger;
+VideoB((Video_B))-->Vidmerger;
 Vidmerger-->FPS_Changer;
 FPS_Changer-->Merger;
 Merger-->Video_A+B_and_chapters;
