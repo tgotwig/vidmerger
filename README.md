@@ -38,8 +38,8 @@ Options:
 graph LR;
 VideoA((Video_A))-->Vidmerger;
 VideoB((Video_B))-->Vidmerger;
-Vidmerger-->FPS_Changer;
-FPS_Changer-->Merger;
+Vidmerger-->|no fps mismatch detected| Merger;
+Vidmerger-->FPS_Changer-->Merger;
 Merger-->Video_A+B_and_chapters;
 ```
 
