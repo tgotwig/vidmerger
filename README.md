@@ -7,22 +7,6 @@
 
 ![demo.png](img/demo.png)
 
-```mermaid
-%%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%
-graph LR;
-Video_A-->Vidmerger;
-Video_B-->Vidmerger;
-Vidmerger-->FPS_Changer;
-FPS_Changer-->Merger;
-Merger-->Video_A+B_and_chapters;
-```
-
-| Feature     | Description                                                                                                                                                                                                                                     |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Selector    | Iterates through [this list of file endings](src/main.rs#L34), selects all files which matches with the current file ending except ones which start with a dot. The list can be overwritten by `--format` or `-f`, example: `--format mp4,mkv`. |
-| FPS_Changer | After detecting not matching fps values, it scales all the higher fps videos down to the lowest detecting fps value. Can be skipped by `--skip-fps-changer`. The desired fps value can be set by `--fps`, example: `--fps 23.976`.              |
-| Chapterer   | After the merge job is done, it creates the same file but with chapters in it, the title is all in between the first dash till the file extension, example: `Video_A - Chapter 1.mp4`. Can be skipped by `--skip-chapterer`.                    |
-
 ## 🙉 What is this exactly?
 
 Vidmerger is a command-line-tool which uses **ffmpeg** to merge multiple video-files with the same file-extension into one file, for example running `vidmerger .` on mp4 files would create a merged video called `output.mp4` 🐣
@@ -47,6 +31,23 @@ Options:
   -h, --help              Print help
   -V, --version           Print version
 ```
+
+
+```mermaid
+%%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%
+graph LR;
+Video_A-->Vidmerger;
+Video_B-->Vidmerger;
+Vidmerger-->FPS_Changer;
+FPS_Changer-->Merger;
+Merger-->Video_A+B_and_chapters;
+```
+
+| Feature     | Description                                                                                                                                                                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Selector    | Iterates through [this list of file endings](src/main.rs#L34), selects all files which matches with the current file ending except ones which start with a dot. The list can be overwritten by `--format` or `-f`, example: `--format mp4,mkv`. |
+| FPS_Changer | After detecting not matching fps values, it scales all the higher fps videos down to the lowest detecting fps value. Can be skipped by `--skip-fps-changer`. The desired fps value can be set by `--fps`, example: `--fps 23.976`.              |
+| Chapterer   | After the merge job is done, it creates the same file but with chapters in it, the title is all in between the first dash till the file extension, example: `Video_A - Chapter 1.mp4`. Can be skipped by `--skip-chapterer`.                    |
 
 ## ✨ Installing / Getting started
 
