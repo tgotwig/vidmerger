@@ -1,166 +1,196 @@
 name: 🎉 Release
 on:
   push:
-    tags:
-      - "*"
+    # tags:
+    #   - "*"
+  pull_request:
 jobs:
-  prepare:
-    name: 👷 Prepare
-    runs-on: macos-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: 🐣 Create Release folder on Github
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: |
-            ### Fixed
+  # prepare:
+  #   name: 👷 Prepare
+  #   runs-on: macos-latest
+  #   outputs:
+  #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: 🐣 Create Release folder on Github
+  #       id: create_release
+  #       uses: actions/create-release@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.TOKEN }}
+  #       with:
+  #         tag_name: ${{ github.ref }}
+  #         release_name: ${{ github.ref }}
+  #         body: |
+  #           ### Fixed
 
-            - Print files from FPS Changer in correct order
-            - Merge files in correct order
-            - Fix wrong fps detection for floating point numbers
-          draft: true
-          prerelease: false
+  #           - Print files from FPS Changer in correct order
+  #           - Merge files in correct order
+  #           - Fix wrong fps detection for floating point numbers
+  #         draft: true
+  #         prerelease: false
 
-  release-osx:
-    name: 🍎 Release on MacOS
-    runs-on: macos-latest
-    needs: prepare
-    steps:
-      - uses: actions/checkout@v4
+  # release-osx:
+  #   name: 🍎 Release on MacOS
+  #   runs-on: macos-latest
+  #   needs: prepare
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: 🧑‍🔧 Build Release
-        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
+  #     - name: 🧑‍🔧 Build Release
+  #       run: cargo build --release && tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
 
-      - name: ⬆️ Get version
-        id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+  #     - name: ⬆️ Get version
+  #       id: get_version
+  #       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
 
-      - name: 🧮 Set SHA
-        id: shasum
-        run: |
-          echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')"
+  #     - name: 🧮 Set SHA
+  #       id: shasum
+  #       run: |
+  #         echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')"
 
-      - name: 🚀 Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        with:
-          upload_url: ${{ needs.prepare.outputs.upload_url }}
-          asset_path: target/release/vidmerger-mac.tar.gz
-          asset_name: vidmerger-mac.tar.gz
-          asset_content_type: application/gzip
+  #     - name: 🚀 Upload Release Asset
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.TOKEN }}
+  #       with:
+  #         upload_url: ${{ needs.prepare.outputs.upload_url }}
+  #         asset_path: target/release/vidmerger-mac.tar.gz
+  #         asset_name: vidmerger-mac.tar.gz
+  #         asset_content_type: application/gzip
 
-      - name: 🍺 Bump Brew
-        env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          brew tap tgotwig/homebrew-vidmerger
-          brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-          --sha256=${{ steps.shasum.outputs.sha }} \
-          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
-          tgotwig/homebrew-vidmerger/vidmerger
+  #     - name: 🍺 Bump Brew
+  #       env:
+  #         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
+  #       run: |
+  #         brew tap tgotwig/homebrew-vidmerger
+  #         brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
+  #         --sha256=${{ steps.shasum.outputs.sha }} \
+  #         --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
+  #         tgotwig/homebrew-vidmerger/vidmerger
 
-  release-linux:
-    name: 🐧 Release on Linux
+  # release-linux:
+  #   name: 🐧 Release on Linux
+  #   runs-on: ubuntu-latest
+  #   needs: prepare
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: 🧑‍🔧 Build Release
+  #       run: cargo build --release && tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
+
+  #     - name: ⬆️ Get version
+  #       id: get_version
+  #       run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
+
+  #     - name: 🧮 Set SHA
+  #       id: shasum
+  #       run: |
+  #         echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')"
+
+  #     - name: 🚀 Upload Release Asset
+  #       uses: actions/upload-release-asset@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.TOKEN }}
+  #       with:
+  #         upload_url: ${{ needs.prepare.outputs.upload_url }}
+  #         asset_path: target/release/vidmerger-linux.tar.gz
+  #         asset_name: vidmerger-linux.tar.gz
+  #         asset_content_type: application/gzip
+
+  #     - name: 🏝 Set git config
+  #       run: |
+  #         git config --global user.email "github@tomasu.mozmail.com"
+  #         git config --global user.name "Thomas Gotwig"
+
+  #     - name: 🔄 Install Linuxbrew
+  #       run: |
+  #         bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" < /dev/null
+
+  #     - name: 🍺 Bump Brew
+  #       env:
+  #         HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
+  #       run: |
+  #         /home/linuxbrew/.linuxbrew/bin/brew tap tgotwig/homebrew-linux-vidmerger
+  #         /home/linuxbrew/.linuxbrew/bin/brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
+  #         --sha256=${{ steps.shasum.outputs.sha }} \
+  #         --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
+  #         tgotwig/homebrew-linux-vidmerger/vidmerger
+
+  # # todo: fix hard coded version number `0.3.2`
+  # # todo: upload `vidmerger.exe` to github
+  # release-windows-chocolatey:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Build and package binary
+  #       run: |
+  #         cargo build --release
+  #         mkdir tools
+  #         mv target\release\vidmerger.exe tools
+  #     - name: Create nuspec file
+  #       run: |
+  #         echo '<?xml version="1.0"?>' > vidmerger.nuspec
+  #         echo '<package>' >> vidmerger.nuspec
+  #         echo '  <metadata>' >> vidmerger.nuspec
+  #         echo '    <id>vidmerger</id>' >> vidmerger.nuspec
+  #         echo '    <version>0.3.2</version>' >> vidmerger.nuspec
+  #         echo '    <title>vidmerger</title>' >> vidmerger.nuspec
+  #         echo '    <authors>Thomas Gotwig</authors>' >> vidmerger.nuspec
+  #         echo '    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>' >> vidmerger.nuspec
+  #         echo '    <description>Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.FORMAT`. It includes a usage help which you can print out by `vidmerger --help` 😃</description>' >> vidmerger.nuspec
+  #         echo '    <tags>video cli rust</tags>' >> vidmerger.nuspec
+  #         echo '  </metadata>' >> vidmerger.nuspec
+  #         echo '  <files>' >> vidmerger.nuspec
+  #         echo '    <file src="tools\**" target="tools" />' >> vidmerger.nuspec
+  #         echo '  </files>' >> vidmerger.nuspec
+  #         echo '</package>' >> vidmerger.nuspec
+  #     - name: Create LICENSE.txt
+  #       run: |
+  #         echo 'Copyright 2023 Thomas Gotwig' > tools/LICENSE.txt
+  #         echo '' >> tools/LICENSE.txt
+  #         echo 'Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:' >> tools/LICENSE.txt
+  #         echo '' >> tools/LICENSE.txt
+  #         echo 'The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.' >> tools/LICENSE.txt
+  #         echo '' >> tools/LICENSE.txt
+  #         echo 'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.' >> tools/LICENSE.txt
+  #         echo '' >> tools/LICENSE.txt
+  #     - name: Create VERIFICATION.txt
+  #       run: |
+  #         echo 'Generated by `CertUtil -hashfile vidmerger.exe SHA256`:' > tools/VERIFICATION.txt
+  #         echo '' >> tools/VERIFICATION.txt
+  #         echo $(CertUtil -hashfile tools\vidmerger.exe SHA256) >> tools/VERIFICATION.txt
+  #         echo '' >> tools/VERIFICATION.txt
+  #     - name: Create chocolatey package
+  #       run: choco pack vidmerger.nuspec
+  #     - name: Publish on chocolatey
+  #       run: choco push vidmerger.0.3.2.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+
+  release-docker:
     runs-on: ubuntu-latest
-    needs: prepare
     steps:
-      - uses: actions/checkout@v4
-
-      - name: 🧑‍🔧 Build Release
-        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
-
-      - name: ⬆️ Get version
-        id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF/refs\/tags\//}
-
-      - name: 🧮 Set SHA
-        id: shasum
-        run: |
-          echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')"
-
-      - name: 🚀 Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        with:
-          upload_url: ${{ needs.prepare.outputs.upload_url }}
-          asset_path: target/release/vidmerger-linux.tar.gz
-          asset_name: vidmerger-linux.tar.gz
-          asset_content_type: application/gzip
-
-      - name: 🏝 Set git config
-        run: |
-          git config --global user.email "github@tomasu.mozmail.com"
-          git config --global user.name "Thomas Gotwig"
-
-      - name: 🔄 Install Linuxbrew
-        run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" < /dev/null
-
-      - name: 🍺 Bump Brew
-        env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          /home/linuxbrew/.linuxbrew/bin/brew tap tgotwig/homebrew-linux-vidmerger
-          /home/linuxbrew/.linuxbrew/bin/brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-          --sha256=${{ steps.shasum.outputs.sha }} \
-          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
-          tgotwig/homebrew-linux-vidmerger/vidmerger
-
-  # todo: fix hard coded version number `0.3.2`
-  # todo: upload `vidmerger.exe` to github
-  release-windows-chocolatey:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build and package binary
-        run: |
-          cargo build --release
-          mkdir tools
-          mv target\release\vidmerger.exe tools
-      - name: Create nuspec file
-        run: |
-          echo '<?xml version="1.0"?>' > vidmerger.nuspec
-          echo '<package>' >> vidmerger.nuspec
-          echo '  <metadata>' >> vidmerger.nuspec
-          echo '    <id>vidmerger</id>' >> vidmerger.nuspec
-          echo '    <version>0.3.2</version>' >> vidmerger.nuspec
-          echo '    <title>vidmerger</title>' >> vidmerger.nuspec
-          echo '    <authors>Thomas Gotwig</authors>' >> vidmerger.nuspec
-          echo '    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>' >> vidmerger.nuspec
-          echo '    <description>Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.FORMAT`. It includes a usage help which you can print out by `vidmerger --help` 😃</description>' >> vidmerger.nuspec
-          echo '    <tags>video cli rust</tags>' >> vidmerger.nuspec
-          echo '  </metadata>' >> vidmerger.nuspec
-          echo '  <files>' >> vidmerger.nuspec
-          echo '    <file src="tools\**" target="tools" />' >> vidmerger.nuspec
-          echo '  </files>' >> vidmerger.nuspec
-          echo '</package>' >> vidmerger.nuspec
-      - name: Create LICENSE.txt
-        run: |
-          echo 'Copyright 2023 Thomas Gotwig' > tools/LICENSE.txt
-          echo '' >> tools/LICENSE.txt
-          echo 'Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:' >> tools/LICENSE.txt
-          echo '' >> tools/LICENSE.txt
-          echo 'The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.' >> tools/LICENSE.txt
-          echo '' >> tools/LICENSE.txt
-          echo 'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.' >> tools/LICENSE.txt
-          echo '' >> tools/LICENSE.txt
-      - name: Create VERIFICATION.txt
-        run: |
-          echo 'Generated by `CertUtil -hashfile vidmerger.exe SHA256`:' > tools/VERIFICATION.txt
-          echo '' >> tools/VERIFICATION.txt
-          echo $(CertUtil -hashfile tools\vidmerger.exe SHA256) >> tools/VERIFICATION.txt
-          echo '' >> tools/VERIFICATION.txt
-      - name: Create chocolatey package
-        run: choco pack vidmerger.nuspec
-      - name: Publish on chocolatey
-        run: choco push vidmerger.0.3.2.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: tgotwig
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ github.repository }}:0.4.0
+          platforms: linux/amd64,linux/arm64
+          provenance: false
+          outputs: type=registry,create-index=true
