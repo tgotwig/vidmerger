@@ -5,7 +5,7 @@
 <h1 align="center">Vidmerger</h1>
 <p align="center">A wrapper around FFmpeg which simplifies merging of multiple videos.</p>
 
-<p align="center"><img src="img/demo.svg" alt="fusion gif"/></p>
+![demo.png](img/demo.png)
 
 ```mermaid
 %%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%
