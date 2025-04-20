@@ -80,6 +80,7 @@ jobs:
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
           tgotwig/homebrew-vidmerger/vidmerger
 
+  # TODO: Add vidmerger-linux-arm64.tar.gz
   release-linux:
     name: 🐧 Release on Linux
     runs-on: ubuntu-latest
