@@ -1,23 +1,17 @@
-# Build Stage
-FROM rust:latest AS build_vidmerger
-RUN apt-get update && apt-get install -y musl-tools \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /build
+FROM rust:1.86.0 AS builder
+ARG TARGETPLATFORM
+RUN apt-get update && apt-get install -y musl-tools && \
+    rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+WORKDIR /app
 COPY . .
+RUN case "$TARGETPLATFORM" in \
+        "linux/amd64")   TARGET="x86_64-unknown-linux-musl" ;; \
+        "linux/arm64")   TARGET="aarch64-unknown-linux-musl" ;; \
+    esac && \
+    cargo build --release --target $TARGET && \
+    cp target/$TARGET/release/vidmerger /vidmerger
 
-## manual build without task
-RUN rustup target add x86_64-unknown-linux-musl && \
-    cargo build --release --target=x86_64-unknown-linux-musl
-ENTRYPOINT [ "bash" ]
-
-
-# Final Stage
 FROM alpine
-
-## install current apk ffmpeg
-RUN apk add --no-cache ffmpeg
-
-## copy recent built vidmerger
-COPY --from=build_vidmerger /build/target/x86_64-unknown-linux-musl/release/vidmerger /usr/local/bin/
-ENTRYPOINT ["vidmerger", "/data"]
+RUN apk add ffmpeg
+COPY --from=builder /vidmerger /vidmerger
+ENTRYPOINT ["./vidmerger", "/data"]
