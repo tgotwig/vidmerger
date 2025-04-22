@@ -18,6 +18,8 @@ tasks:
         docker build -t vidmerger .
         docker container run -it --rm -v ./data/call_merger:/data vidmerger
 
+  exec: docker exec -it -w /workspaces/vidmerger devcontainer-vidmerger fish
+
   test: cargo test
 
   lint: cargo clippy

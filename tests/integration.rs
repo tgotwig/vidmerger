@@ -21,6 +21,8 @@ mod integration {
 
         println!("👷 Doing preparations...");
 
+        // TODO: Somehow no devcontainer logs from here until "✅ Preparations done!"
+
         fs::remove_dir_all("data").unwrap_or_default();
         fs::create_dir_all("data").unwrap();
 
