@@ -21,8 +21,6 @@ mod integration {
 
         println!("👷 Doing preparations...");
 
-        // TODO: Somehow no devcontainer logs from here until "✅ Preparations done!"
-
         fs::remove_dir_all("data").unwrap_or_default();
         fs::create_dir_all("data").unwrap();
 
@@ -195,9 +193,6 @@ mod integration {
 
     #[test]
     fn call_merger_without_fps_changer_on_vids_with_different_fps_values() {
-        if cfg!(target_os = "linux") {
-            std::process::exit(0)
-        }
         let test_name = function_name!().split("::").last().unwrap();
         prep_with_different_fps_values(test_name);
 
