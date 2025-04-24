@@ -4,7 +4,7 @@
     "--name",
     "devcontainer-vidmerger"
   ],
-  "postCreateCommand": "asdf plugin add rust && asdf install && apt update -qq && apt install -yqq ffmpeg",
+  "postCreateCommand": "asdf plugin add rust && asdf install && apt update -qq && apt install -yqq ffmpeg && task",
   "containerEnv": {
     "PATH": "/root/.asdf/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
   },
