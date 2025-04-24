@@ -1,5 +1,5 @@
 {
-  "image": "tgotwig/ubuntu:0.0.3",
+  "image": "tgotwig/ubuntu:0.0.4-24.04",
   "runArgs": [
     "--name",
     "devcontainer-vidmerger"
