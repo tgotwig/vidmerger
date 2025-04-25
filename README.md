@@ -115,11 +115,7 @@ Run `task build` to build for Mac, Linux and Windows. You can find the compresse
 
 ### Deploying / Publishing
 
-#### Automated steps
-
-- Homebrew (MacOS & Linux): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
-- Chocolatey (Windows): Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
-- Docker: Gets automatically deployed by [release.yml](https://github.com/TGotwig/vidmerger/blob/master/.github/workflows/release.yml) after pushing a git tag.
+For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page.
 
 ## 📦 Versioning
 
