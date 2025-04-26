@@ -115,7 +115,7 @@ Run `task build` to build for Mac, Linux and Windows. You can find the compresse
 
 ### Deploying / Publishing
 
-For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page.
+For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page 📖
 
 ## 📦 Versioning
 
