@@ -117,10 +117,6 @@ Run `task build` to build for Mac, Linux and Windows. You can find the compresse
 
 For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page 📖
 
-## 📦 Versioning
-
-We use [SemVer](http://semver.org/) for versioning.
-
 ## 🧪 Tests
 
 - For major tests: `task test` (requires `ffmpeg` to be installed)
