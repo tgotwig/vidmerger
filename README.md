@@ -109,10 +109,6 @@ task
 
 If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨
 
-### Building
-
-Run `task build` to build for Mac, Linux and Windows. You can find the compressed Mac & Linux .tar.gz-archives for Github under _target/tars_, the .exe file for Windows under _tools_.
-
 ### Deploying / Publishing
 
 For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page 📖
