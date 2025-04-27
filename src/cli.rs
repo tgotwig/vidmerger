@@ -1,12 +1,12 @@
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
 pub struct Cli {
-    matches: ArgMatches,
+  matches: ArgMatches,
 }
 
 impl Cli {
-    pub fn init() -> Self {
-        let matches = Command::new("vidmerger")
+  pub fn init() -> Self {
+    let matches = Command::new("vidmerger")
         .version("0.4.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simplifies merging multiple videos 🎞  Everything in between the first `-` till the fill extension of the input files will be used as chapter titles 📖.")
@@ -50,10 +50,10 @@ impl Cli {
         .arg_required_else_help(true)
         .get_matches();
 
-        Cli { matches }
-    }
+    Cli { matches }
+  }
 
-    pub fn get_matches(self) -> ArgMatches {
-        self.matches
-    }
+  pub fn get_matches(self) -> ArgMatches {
+    self.matches
+  }
 }
