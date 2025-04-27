@@ -290,7 +290,7 @@ mod integration {
   }
 
   fn get_video_info(file_path: &str) -> String {
-    let output = Command::new("ffmpeg").arg("-i").arg(file_path).output();
+    let output = Command::new("ffprobe").arg("-i").arg(file_path).output();
     String::from_utf8_lossy(&output.unwrap().stderr).to_string()
   }
 }
