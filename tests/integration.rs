@@ -206,7 +206,7 @@ mod integration {
         .success(),
     );
 
-    assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("28 fps"));
+    assert!(get_video_info(&format!("data/{}/output.mp4", test_name)).contains("30.28 fps"));
     check_for_merged_file(test_name, "output.mp4");
   }
 
