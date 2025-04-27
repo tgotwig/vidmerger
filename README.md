@@ -87,25 +87,7 @@ docker container run -it -v ./data/call_merger:/data tgotwig/vidmerger
 
 ## ⚙️ Developing
 
-### Built With
-
-Rust and some listed Crates inside of [Cargo.toml](Cargo.toml) under _dependencies_.
-
-### Prerequisites
-
-- [Rust 2021](https://www.rust-lang.org/tools/install)
-- [ffmpeg](https://ffmpeg.org/download.html)
-- [task](https://taskfile.dev/#/installation)
-
-### Setting up Dev
-
-Once you are done with installing the prerequisites, run `task`:
-
-```shell
-git clone git@github.com:TGotwig/vidmerger.git
-cd vidmerger
-task
-```
+The primary requirements are rust, ffmpeg, and go-task. The devcontainer provides all necessary components 🔧
 
 If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨
 
@@ -115,7 +97,7 @@ For details on how to publish a new version, you can look up the [Publish new ve
 
 ## 🧪 Tests
 
-- For major tests: `task test` (requires `ffmpeg` to be installed)
+- For major tests: `task test`
 - For linting tests: `task lint`
 
 ## 🌟 Style guide
