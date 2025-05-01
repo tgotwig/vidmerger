@@ -1,4 +1,4 @@
-name: 🦀 Running Rust
+name: 🧪 Running integration tests
 
 on:
   push:
