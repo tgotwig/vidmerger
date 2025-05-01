@@ -5,7 +5,11 @@ on:
     branches-ignore:
       - 'renovate/**'
       - 'coderabbitai/**'
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
 
 env:
   CARGO_TERM_COLOR: always
