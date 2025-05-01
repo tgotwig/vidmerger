@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::str;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
+use std::process::Command;
 
 pub fn merge(
   input: String,
