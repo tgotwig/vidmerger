@@ -15,7 +15,7 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
-pub fn merge(input: String, output: &String, chapters: &String) -> Result<Child, std::io::Error> {
+pub fn merge(input: String, output: &String, chapters: &String) -> Output {
   let cmd = format!(
     "ffmpeg -y -f concat -safe 0 -i '{}' -i '{}' -map 0 -map_metadata 1 -c copy '{}'",
     input, chapters, output
@@ -23,9 +23,12 @@ pub fn merge(input: String, output: &String, chapters: &String) -> Result<Child,
 
   println!("🚀 Run Merger, calling: {}", BrightBlue.paint(&cmd));
   if *VERBOSE {
-    execute_cmd(cmd)
+    execute_cmd(cmd).unwrap().wait_with_output().unwrap()
   } else {
     execute_cmd_silently(cmd)
+      .unwrap()
+      .wait_with_output()
+      .unwrap()
   }
 }
 
@@ -47,9 +50,6 @@ pub fn adjust_fps_by_ffmpeg(
     new_file_location.to_str().unwrap()
   );
   println!("🚀 Start FPS Changer, calling: {}", BrightBlue.paint(&cmd));
-
-  // let res = execute_cmd(cmd).unwrap().wait_with_output();
-  // println!("{:?}", res);
 
   if *VERBOSE {
     let res = execute_cmd(cmd).unwrap().wait_with_output();
