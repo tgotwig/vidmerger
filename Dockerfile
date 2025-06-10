@@ -1,4 +1,4 @@
-FROM rust:1.86.0 AS builder
+FROM rust:1.87.0 AS builder
 ARG TARGETPLATFORM
 RUN apt-get update && apt-get install -y musl-tools && \
     rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
