@@ -17,8 +17,7 @@ lazy_static! {
 
 pub fn merge(input: String, output: &String, chapters: &String) -> Output {
   let cmd = format!(
-    "ffmpeg -y -f concat -safe 0 -i '{}' -i '{}' -map 0 -map_metadata 1 -c copy '{}'",
-    input, chapters, output
+    "ffmpeg -y -f concat -safe 0 -i '{input}' -i '{chapters}' -map 0 -map_metadata 1 -c copy '{output}'"
   );
 
   println!("🚀 Run Merger, calling: {}", BrightBlue.paint(&cmd));
@@ -53,7 +52,7 @@ pub fn adjust_fps_by_ffmpeg(
 
   if *VERBOSE {
     let res = execute_cmd(cmd).unwrap().wait_with_output();
-    println!("{:?}", res);
+    println!("{res:?}");
   } else {
     execute_cmd_silently(cmd)
       .unwrap()
@@ -65,8 +64,7 @@ pub fn adjust_fps_by_ffmpeg(
 
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
   let cmd = format!(
-    "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{}'",
-    media_path
+    "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{media_path}'"
   );
 
   if *VERBOSE {

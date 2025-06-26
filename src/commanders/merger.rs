@@ -57,7 +57,7 @@ fn extract_title(path: &str, file_format: &str) -> String {
   parts.next(); // Skip the part before the first '-'
   let content_with_extension = parts.next().unwrap_or("").trim();
 
-  let format_str = format!(".{}", file_format);
+  let format_str = format!(".{file_format}");
   content_with_extension
     .split(&format_str)
     .next()

@@ -51,7 +51,7 @@ fn main() -> Result<(), Error> {
     .unwrap();
 
   for file_format in split(formats) {
-    let ffmpeg_output_file = target_dir.join(format!("output.{}", file_format));
+    let ffmpeg_output_file = target_dir.join(format!("output.{file_format}"));
 
     remove_file(&ffmpeg_output_file)?;
 
