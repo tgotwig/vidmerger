@@ -80,13 +80,13 @@ pub fn change_fps(
       println!();
       println!("Will be merged directly: \n");
       for line in output_directly {
-        println!("{}", line);
+        println!("{line}");
       }
       println!();
-      println!("Will be merged indirectly, generating new files from listed below with {} fps and merges with listed above:", fps_goal);
+      println!("Will be merged indirectly, generating new files from listed below with {fps_goal} fps and merges with listed above:");
       println!();
       for line in output_indirectly {
-        println!("{}", line);
+        println!("{line}");
       }
       println!();
     }

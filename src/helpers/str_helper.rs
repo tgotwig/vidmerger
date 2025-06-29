@@ -13,7 +13,7 @@ pub fn gen_input_file_content_for_ffmpeg(files_to_merge: &Vec<String>) -> String
     if file_to_merge.trim().is_empty() {
       continue;
     }
-    writeln!(ffmpeg_input_content, "file '{}'", file_to_merge).unwrap();
+    writeln!(ffmpeg_input_content, "file '{file_to_merge}'").unwrap();
   }
   ffmpeg_input_content
 }
