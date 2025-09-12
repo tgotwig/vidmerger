@@ -10,6 +10,9 @@
   },
   "customizations": {
     "vscode": {
+      "settings": {
+        "terminal.integrated.minimumContrastRatio": 1
+      },
       "extensions": [
         "bierner.markdown-mermaid",
         "bpruitt-goddard.mermaid-markdown-syntax-highlighting",
