@@ -20,7 +20,7 @@ jobs:
     name: 🧹 Linter
     steps:
       - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: 🕵️ Run linter
         run: cargo clippy
   MacOS:
@@ -28,7 +28,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: ⬇️ Install ffmpeg
         run: brew install ffmpeg
@@ -43,7 +43,7 @@ jobs:
     name: 🐧 Ubuntu
     steps:
       - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: ⬇️ Update package lists
         run: sudo apt-get update
@@ -63,7 +63,7 @@ jobs:
     name: 🏳️‍🌈 Windows
     steps:
       - name: 🚀 actions/checkout@v4
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: ⬇️ Install chocolatey
         uses: crazy-max/ghaction-chocolatey@v3
