@@ -15,7 +15,7 @@ mod integration {
   static DATA_3_MP4: &'static str = ".3.mp4";
 
   #[cfg(test)]
-  #[ctor::ctor]
+  #[ctor::ctor(unsafe)]
   fn prepare() {
     use std::fs::{self, File};
 
