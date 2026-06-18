@@ -9,7 +9,7 @@ jobs:
   install-x64-macos-homebrew:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Vidmerger
         run: |
           brew tap tgotwig/vidmerger
@@ -24,7 +24,7 @@ jobs:
   install-x64-linux-homebrew:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Homebrew
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -45,7 +45,7 @@ jobs:
   install-x64-linux-curl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Vidmerger
         run: |
           sudo curl -L https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux.tar.gz -o /tmp/vidmerger-linux.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux.tar.gz -C /usr/local/bin
@@ -58,7 +58,7 @@ jobs:
   install-x64-windows-chocolatey:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Vidmerger
         run: |
           choco install vidmerger
@@ -73,7 +73,7 @@ jobs:
   install-arm64-macos-homebrew:
     runs-on: ARM64
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Vidmerger
         run: |
           brew tap tgotwig/vidmerger
@@ -88,7 +88,7 @@ jobs:
   install-arm64-linux-curl:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pguyot/arm-runner-action@v2
         with:
           base_image: raspios_lite_arm64:latest
