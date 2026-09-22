@@ -1,0 +1,13 @@
+{
+  "extends": [
+    ":semanticCommits"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "rust"
+      ],
+      "commitMessageTopic": "rust"
+    }
+  ]
+}
