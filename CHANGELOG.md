@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve filename order when merging videos after FPS conversion (#91).
+
 ## 🎉 [0.4.0] - 2024-04-20
 
 ### Added

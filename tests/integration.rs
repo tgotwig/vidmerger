@@ -212,6 +212,91 @@ mod integration {
     check_for_merged_file(test_name, "output.mp4");
   }
 
+  #[cfg(unix)]
+  #[test]
+  fn call_merger_keeps_first_video_first_when_fps_changes() {
+    let test_name = function_name!().split("::").last().unwrap();
+    let test_root = std::path::PathBuf::from(format!("data/{test_name}"));
+    let temp_dir = test_root.join("a-temp");
+    let input_dir = test_root.join("z-input");
+    fs::create_dir_all(&temp_dir).unwrap();
+    fs::create_dir_all(&input_dir).unwrap();
+
+    let temp_dir = fs::canonicalize(temp_dir).unwrap();
+    let input_dir = fs::canonicalize(input_dir).unwrap();
+    let clips = [
+      ("red", "25"),
+      ("green", "30"),
+      ("blue", "30"),
+      ("yellow", "30"),
+      ("magenta", "30"),
+      ("cyan", "30"),
+      ("white", "30"),
+      ("black", "30"),
+    ];
+
+    for (index, (color, fps)) in clips.iter().enumerate() {
+      let input = input_dir.join(format!("{} - Chapter {}.mp4", index + 1, index + 1));
+      let source = format!("color=c={color}:s=160x90:r={fps}:d=1");
+      let result = Command::new("ffmpeg")
+        .args(["-v", "error", "-f", "lavfi", "-i"])
+        .arg(source)
+        .args([
+          "-c:v",
+          "libx264",
+          "-preset",
+          "ultrafast",
+          "-pix_fmt",
+          "yuv420p",
+          "-an",
+          "-y",
+        ])
+        .arg(input)
+        .output()
+        .unwrap();
+      assert!(result.status.success(), "failed to generate test video");
+    }
+
+    Command::cargo_bin(BIN)
+      .unwrap()
+      .arg("-y")
+      .arg(&input_dir)
+      .env("TMPDIR", &temp_dir)
+      .assert()
+      .success();
+
+    let first_frame = Command::new("ffmpeg")
+      .args(["-v", "error", "-ss", "0.5", "-i"])
+      .arg(input_dir.join("output.mp4"))
+      .args([
+        "-frames:v",
+        "1",
+        "-vf",
+        "scale=2:2",
+        "-pix_fmt",
+        "rgb24",
+        "-f",
+        "rawvideo",
+        "pipe:1",
+      ])
+      .output()
+      .unwrap();
+    assert!(
+      first_frame.status.success(),
+      "failed to decode merged video"
+    );
+    assert!(first_frame.stdout.len() >= 3);
+    let (red, green, blue) = (
+      first_frame.stdout[0],
+      first_frame.stdout[1],
+      first_frame.stdout[2],
+    );
+    assert!(
+      red > green.saturating_add(100) && red > blue.saturating_add(100),
+      "expected the 25-fps red clip first, got RGB({red}, {green}, {blue})"
+    );
+  }
+
   // ----------------------------------------------------------------
 
   fn prep(test_name: &str) {
