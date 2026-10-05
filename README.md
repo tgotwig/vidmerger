@@ -62,8 +62,9 @@ Options:
       --verbose           Prints detailed logs
   -h, --help              Print help
   -V, --version           Print version
-```
 
+<DIAGRAM_FROM_BELOW>
+```
 
 ```mermaid
 %%{init: {'themeVariables': { 'mainBkg': 'white', 'nodeBorder': 'black' }}}%%

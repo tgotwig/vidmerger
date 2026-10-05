@@ -6,10 +6,31 @@ pub struct Cli {
 
 impl Cli {
   pub fn init() -> Self {
-    let matches = Command::new("vidmerger")
+    let matches = command().get_matches();
+
+    Cli { matches }
+  }
+
+  pub fn get_matches(self) -> ArgMatches {
+    self.matches
+  }
+}
+
+fn command() -> Command {
+  Command::new("vidmerger")
         .version("0.4.0")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simplifies merging multiple videos 🎞  Everything in between the first `-` till the fill extension of the input files will be used as chapter titles 📖.")
+        .after_help(concat!(
+            "Workflow:\n",
+            "  Video A ─┐\n",
+            "           ├─> Vidmerger ─┬─ no FPS mismatch ─────────────┐\n",
+            "  Video B ─┘              └─ FPS mismatch -> FPS changer ─┤\n",
+            "                                                          ↓\n",
+            "                                                        Merger\n",
+            "                                                          ↓\n",
+            "                                           Video A + B + chapters\n",
+        ))
         .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
             .required(true)
@@ -48,12 +69,19 @@ impl Cli {
             .action(ArgAction::SetTrue)
         )
         .arg_required_else_help(true)
-        .get_matches();
+}
 
-    Cli { matches }
-  }
+#[cfg(test)]
+mod tests {
+  use super::command;
 
-  pub fn get_matches(self) -> ArgMatches {
-    self.matches
+  #[test]
+  fn help_includes_workflow_diagram() {
+    let help = command().render_help().to_string();
+
+    assert!(help.contains("Workflow:"));
+    assert!(help.contains("no FPS mismatch"));
+    assert!(help.contains("FPS mismatch -> FPS changer"));
+    assert!(help.contains("Video A + B + chapters"));
   }
 }
