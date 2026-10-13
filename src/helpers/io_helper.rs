@@ -66,7 +66,11 @@ pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
 }
 
 pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
-  let mut strings: Vec<String> = path_bufs
+  let mut sorted_path_bufs = path_bufs.to_vec();
+  // FPS-adjusted clips live in a different directory, so sort by filename rather than full path.
+  sorted_path_bufs.sort_by(|left, right| left.file_name().cmp(&right.file_name()));
+
+  sorted_path_bufs
     .iter()
     .map(|path_buf| {
       canonicalize(path_buf.to_str().unwrap())
@@ -74,9 +78,7 @@ pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
         .display()
         .to_string()
     })
-    .collect();
-  strings.sort();
-  strings
+    .collect()
 }
 
 pub fn wait_for_enter_or_esc_key() {

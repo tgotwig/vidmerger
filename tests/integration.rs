@@ -212,6 +212,92 @@ mod integration {
     check_for_merged_file(test_name, "output.mp4");
   }
 
+  #[cfg(unix)]
+  #[test]
+  fn call_merger_keeps_first_video_first_when_fps_changes() {
+    let test_name = function_name!().split("::").last().unwrap();
+    let input_dir = std::path::PathBuf::from(format!("data/{test_name}"));
+    fs::create_dir_all(&input_dir).unwrap();
+    let input_dir = fs::canonicalize(input_dir).unwrap();
+
+    // The bug only appears when the converted clip's temp path sorts after the
+    // input path. "data/<name>_tmp" sorts after "data/<name>/" because '_' > '/'.
+    // The temp folder is removed when the test ends, even if an assert fails.
+    struct RemoveDirOnDrop(std::path::PathBuf);
+    impl Drop for RemoveDirOnDrop {
+      fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+      }
+    }
+    let temp_dir = std::path::PathBuf::from(format!("data/{test_name}_tmp"));
+    fs::create_dir_all(&temp_dir).unwrap();
+    let temp_dir = fs::canonicalize(temp_dir).unwrap();
+    let _cleanup = RemoveDirOnDrop(temp_dir.clone());
+
+    let clips = [("green", "30"), ("red", "25")];
+
+    for (index, (color, fps)) in clips.iter().enumerate() {
+      let input = input_dir.join(format!("{} - Chapter {}.mp4", index + 1, index + 1));
+      let source = format!("color=c={color}:s=160x90:r={fps}:d=1");
+      let result = Command::new("ffmpeg")
+        .args(["-v", "error", "-f", "lavfi", "-i"])
+        .arg(source)
+        .args([
+          "-c:v",
+          "libx264",
+          "-preset",
+          "ultrafast",
+          "-pix_fmt",
+          "yuv420p",
+          "-an",
+          "-y",
+        ])
+        .arg(input)
+        .output()
+        .unwrap();
+      assert!(result.status.success(), "failed to generate test video");
+    }
+
+    Command::cargo_bin(BIN)
+      .unwrap()
+      .arg("-y")
+      .arg(&input_dir)
+      .env("TMPDIR", &temp_dir)
+      .assert()
+      .success();
+
+    let first_frame = Command::new("ffmpeg")
+      .args(["-v", "error", "-ss", "0.5", "-i"])
+      .arg(input_dir.join("output.mp4"))
+      .args([
+        "-frames:v",
+        "1",
+        "-vf",
+        "scale=2:2",
+        "-pix_fmt",
+        "rgb24",
+        "-f",
+        "rawvideo",
+        "pipe:1",
+      ])
+      .output()
+      .unwrap();
+    assert!(
+      first_frame.status.success(),
+      "failed to decode merged video"
+    );
+    assert!(first_frame.stdout.len() >= 3);
+    let (red, green, blue) = (
+      first_frame.stdout[0],
+      first_frame.stdout[1],
+      first_frame.stdout[2],
+    );
+    assert!(
+      green > red.saturating_add(100) && green > blue.saturating_add(100),
+      "expected the 30-fps green clip first, got RGB({red}, {green}, {blue})"
+    );
+  }
+
   // ----------------------------------------------------------------
 
   fn prep(test_name: &str) {
