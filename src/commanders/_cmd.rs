@@ -15,7 +15,7 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
-pub fn merge(input: String, output: &String, chapters: &String) -> Output {
+pub fn merge(input: String, output: &str, chapters: &str) -> Output {
   let args = [
     "-y",
     "-f",
@@ -25,14 +25,14 @@ pub fn merge(input: String, output: &String, chapters: &String) -> Output {
     "-i",
     input.as_str(),
     "-i",
-    chapters.as_str(),
+    chapters,
     "-map",
     "0",
     "-map_metadata",
     "1",
     "-c",
     "copy",
-    output.as_str(),
+    output,
   ];
 
   println!(
