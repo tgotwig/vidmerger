@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Preserve filename order when merging videos after FPS conversion (#91).
+- Files with a single quote (`'`) in their name no longer cause an error (#69). FFmpeg and ffprobe are now started with direct argument passing instead of through a shell.
 
 ### Added
 
