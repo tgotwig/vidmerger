@@ -68,7 +68,8 @@ pub fn adjust_fps_by_ffmpeg(
 
   let res = spawn_command("ffmpeg", &args, !*VERBOSE)
     .unwrap()
-    .wait_with_output();
+    .wait_with_output()
+    .unwrap();
   if *VERBOSE {
     println!("{res:?}");
   }
