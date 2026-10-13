@@ -13,7 +13,10 @@ pub fn gen_input_file_content_for_ffmpeg(files_to_merge: &Vec<String>) -> String
     if file_to_merge.trim().is_empty() {
       continue;
     }
-    writeln!(ffmpeg_input_content, "file '{file_to_merge}'").unwrap();
+    // The concat list quotes each path with single quotes, so a single quote
+    // inside the name must be written as '\'' (close quote, escaped quote, reopen).
+    let escaped = file_to_merge.replace('\'', r"'\''");
+    writeln!(ffmpeg_input_content, "file '{escaped}'").unwrap();
   }
   ffmpeg_input_content
 }
@@ -103,6 +106,14 @@ mod tests {
     let ffmpeg_input_content = gen_input_file_content_for_ffmpeg(&files_to_merge);
     assert_eq!(ffmpeg_input_content, "")
   }
+
+  #[test]
+  fn test_gen_file_to_merge_escapes_single_quote() {
+    let files_to_merge = vec![String::from("/Bob's video.mp4")];
+    let ffmpeg_input_content = gen_input_file_content_for_ffmpeg(&files_to_merge);
+    assert_eq!(ffmpeg_input_content, "file '/Bob'\\''s video.mp4'\n")
+  }
+
 
   #[test]
   fn extract_fps_from_ffmpeg_output_with_30_fps() {

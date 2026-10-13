@@ -15,20 +15,34 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
-pub fn merge(input: String, output: &String, chapters: &String) -> Output {
-  let cmd = format!(
-    "ffmpeg -y -f concat -safe 0 -i '{input}' -i '{chapters}' -map 0 -map_metadata 1 -c copy '{output}'"
-  );
+pub fn merge(input: String, output: &str, chapters: &str) -> Output {
+  let args = [
+    "-y",
+    "-f",
+    "concat",
+    "-safe",
+    "0",
+    "-i",
+    input.as_str(),
+    "-i",
+    chapters,
+    "-map",
+    "0",
+    "-map_metadata",
+    "1",
+    "-c",
+    "copy",
+    output,
+  ];
 
-  println!("🚀 Run Merger, calling: {}", BrightBlue.paint(&cmd));
-  if *VERBOSE {
-    execute_cmd(cmd).unwrap().wait_with_output().unwrap()
-  } else {
-    execute_cmd_silently(cmd)
-      .unwrap()
-      .wait_with_output()
-      .unwrap()
-  }
+  println!(
+    "🚀 Run Merger, calling: {}",
+    BrightBlue.paint(describe("ffmpeg", &args))
+  );
+  spawn_command("ffmpeg", &args, !*VERBOSE)
+    .unwrap()
+    .wait_with_output()
+    .unwrap()
 }
 
 pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error> {
@@ -42,38 +56,44 @@ pub fn adjust_fps_by_ffmpeg(
   fps_goal: &f32,
   new_file_location: PathBuf,
 ) -> PathBuf {
-  let cmd = format!(
-    "ffmpeg -i '{}' -r {} '{}'",
-    file_to_merge.to_str().unwrap(),
-    fps_goal,
-    new_file_location.to_str().unwrap()
-  );
-  println!("🚀 Start FPS Changer, calling: {}", BrightBlue.paint(&cmd));
+  let input = file_to_merge.to_str().unwrap();
+  let fps = fps_goal.to_string();
+  let output = new_file_location.to_str().unwrap();
+  let args = ["-i", input, "-r", fps.as_str(), output];
 
+  println!(
+    "🚀 Start FPS Changer, calling: {}",
+    BrightBlue.paint(describe("ffmpeg", &args))
+  );
+
+  let res = spawn_command("ffmpeg", &args, !*VERBOSE)
+    .unwrap()
+    .wait_with_output()
+    .unwrap();
   if *VERBOSE {
-    let res = execute_cmd(cmd).unwrap().wait_with_output();
     println!("{res:?}");
-  } else {
-    execute_cmd_silently(cmd)
-      .unwrap()
-      .wait_with_output()
-      .unwrap();
   }
   new_file_location
 }
 
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
-  let cmd = format!(
-    "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '{media_path}'"
-  );
+  let args = [
+    "-v",
+    "error",
+    "-show_entries",
+    "format=duration",
+    "-of",
+    "default=noprint_wrappers=1:nokey=1",
+    media_path,
+  ];
 
   if *VERBOSE {
     println!(
       "📖 Getting media seconds, calling: {}",
-      BrightBlue.paint(&cmd)
+      BrightBlue.paint(describe("ffprobe", &args))
     );
   }
-  let res = execute_cmd(cmd);
+  let res = spawn_command("ffprobe", &args, false);
 
   let output = res.unwrap().wait_with_output().unwrap();
   let output = String::from_utf8(output.stdout).unwrap();
@@ -81,29 +101,26 @@ pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
   Ok(output)
 }
 
-fn execute_cmd(cmd: String) -> Result<Child, std::io::Error> {
-  let (interpreter, arg) = if cfg!(target_os = "windows") {
-    ("powershell", "/c")
+/// Starts a program with each argument passed separately (no shell).
+/// This keeps file names with quotes, spaces or `$` from being split or
+/// interpreted by a shell.
+fn spawn_command(program: &str, args: &[&str], silent: bool) -> Result<Child, std::io::Error> {
+  let mut command = Command::new(program);
+  command.args(args);
+  if silent {
+    command.stdout(Stdio::null()).stderr(Stdio::null());
   } else {
-    ("sh", "-c")
-  };
-  Command::new(interpreter)
-    .arg(arg)
-    .arg(cmd)
-    .stdout(Stdio::piped())
-    .spawn()
+    command.stdout(Stdio::piped());
+  }
+  command.spawn()
 }
 
-fn execute_cmd_silently(cmd: String) -> Result<Child, std::io::Error> {
-  let (interpreter, arg) = if cfg!(target_os = "windows") {
-    ("powershell", "/c")
-  } else {
-    ("sh", "-c")
-  };
-  Command::new(interpreter)
-    .arg(arg)
-    .arg(cmd)
-    .stdout(Stdio::null())
-    .stderr(Stdio::null())
-    .spawn()
+/// Builds a printable version of the command for log output only.
+/// It is never executed.
+fn describe(program: &str, args: &[&str]) -> String {
+  std::iter::once(program)
+    .chain(args.iter().copied())
+    .map(|arg| format!("'{arg}'"))
+    .collect::<Vec<_>>()
+    .join(" ")
 }
