@@ -4,7 +4,7 @@ use clap::ArgMatches;
 use lazy_static::lazy_static;
 use path_slash::PathBufExt;
 use std::{
-  io::{BufRead, BufReader, Error},
+  io::{BufRead, BufReader, Error, Read},
   path::PathBuf,
   process::{Child, Command, Output, Stdio},
 };
@@ -69,6 +69,14 @@ fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
     .stderr(Stdio::piped())
     .spawn()
     .unwrap();
+  // Drain stderr on its own thread, so FFmpeg never blocks on a full stderr pipe.
+  let stderr_reader = child.stderr.take().map(|mut stderr| {
+    std::thread::spawn(move || {
+      let mut buf = Vec::new();
+      let _ = stderr.read_to_end(&mut buf);
+      buf
+    })
+  });
   let mut bar = ProgressBar::start(label);
   if let Some(stdout) = child.stdout.take() {
     for line in BufReader::new(stdout).lines().map_while(Result::ok) {
@@ -79,9 +87,17 @@ fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
       }
     }
   }
-  let output = child.wait_with_output().unwrap();
-  bar.finish(output.status.success());
-  output
+  let status = child.wait().unwrap();
+  let stderr = stderr_reader
+    .and_then(|handle| handle.join().ok())
+    .unwrap_or_default();
+  bar.finish(status.success());
+  // stdout is consumed above for progress, so the returned Output has it empty.
+  Output {
+    status,
+    stdout: Vec::new(),
+    stderr,
+  }
 }
 
 /// Reads the `out_time_us=` value from FFmpeg's `-progress` output, in microseconds.
@@ -145,12 +161,19 @@ pub fn adjust_fps_by_ffmpeg(
     args.extend(PROGRESS_ARGS);
     args.push(output);
     let total_seconds = get_media_seconds(input).unwrap_or(0.0);
-    run_with_progress(&args, "Changing FPS", total_seconds);
+    let res = run_with_progress(&args, "Changing FPS", total_seconds);
+    if !res.status.success() {
+      panic!(
+        "❌ FPS change failed (exit code: {:?}):{}",
+        res.status.code(),
+        String::from_utf8_lossy(&res.stderr)
+      );
+    }
   }
   new_file_location
 }
 
-pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
+pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Error>> {
   let args = [
     "-v",
     "error",
@@ -167,12 +190,9 @@ pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<Error>> {
       BrightBlue.paint(describe("ffprobe", &args))
     );
   }
-  let res = spawn_command("ffprobe", &args, false);
-
-  let output = res.unwrap().wait_with_output().unwrap();
-  let output = String::from_utf8(output.stdout).unwrap();
-  let output = output.trim().parse::<f64>().unwrap();
-  Ok(output)
+  let output = spawn_command("ffprobe", &args, false)?.wait_with_output()?;
+  let output = String::from_utf8(output.stdout)?;
+  Ok(output.trim().parse::<f64>()?)
 }
 
 /// Starts a program with each argument passed separately (no shell).
