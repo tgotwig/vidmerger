@@ -1,4 +1,4 @@
-mod integration {
+mod e2e {
   use assert_cmd::{assert::Assert, Command};
   use k9::assertions::{greater_than::assert_greater_than, lesser_than::assert_lesser_than};
   use regex::Regex;

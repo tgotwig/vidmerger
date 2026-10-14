@@ -1,4 +1,4 @@
-name: 🧪 Running integration tests
+name: 🧪 Running e2e tests
 
 on:
   push:
