@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `--help` prints a diagram.
+- A progress bar from 0% to 100% is shown during the merge and FPS adjustment steps (#1). It uses FFmpeg's progress output and is hidden in verbose mode.
 
 ## 🎉 [0.4.0] - 2024-04-20
 
