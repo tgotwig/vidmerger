@@ -38,7 +38,12 @@ pub fn merge(
   // ========== Merge with chapters ========== //
 
   let output_str = output.clone();
-  let res = _cmd::merge(input, &output, &file_path.to_string_lossy());
+  let res = _cmd::merge(
+    input,
+    &output,
+    &file_path.to_string_lossy(),
+    start_time as f64,
+  );
 
   if res.status.success() {
     println!("🐣 Generated: {}", BrightBlue.paint(&output_str));
