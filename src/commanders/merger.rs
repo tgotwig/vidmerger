@@ -14,19 +14,23 @@ pub fn merge(
   tmp_dir: PathBuf,
 ) {
   let mut start_time = 0;
+  // Untruncated total length, used as the progress bar denominator.
+  let mut total_seconds = 0.0;
   let mut metadata_string = String::from(";FFMETADATA1\n");
   for path in files_to_merge_as_strings {
     let title = extract_title(&path, file_format);
-    let duration = _cmd::get_media_seconds(&path).unwrap() as i64;
+    let duration = _cmd::get_media_seconds(&path).unwrap();
+    total_seconds += duration;
+    let duration_secs = duration as i64;
 
     metadata_string.push_str(&format!(
       "\n[CHAPTER]\nTIMEBASE=1/1\nSTART={}\nEND={}\ntitle={}\n",
       start_time,
-      start_time + duration,
+      start_time + duration_secs,
       title
     ));
 
-    start_time += duration;
+    start_time += duration_secs;
   }
   let mut file_path = tmp_dir;
   file_path.push("chapters.txt");
@@ -38,12 +42,7 @@ pub fn merge(
   // ========== Merge with chapters ========== //
 
   let output_str = output.clone();
-  let res = _cmd::merge(
-    input,
-    &output,
-    &file_path.to_string_lossy(),
-    start_time as f64,
-  );
+  let res = _cmd::merge(input, &output, &file_path.to_string_lossy(), total_seconds);
 
   if res.status.success() {
     println!("🐣 Generated: {}", BrightBlue.paint(&output_str));
