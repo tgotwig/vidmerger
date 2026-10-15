@@ -4,6 +4,7 @@ use clap::ArgMatches;
 use lazy_static::lazy_static;
 use path_slash::PathBufExt;
 use std::{
+  collections::BTreeMap,
   io::{BufRead, BufReader, Error, Read},
   path::PathBuf,
   process::{Child, Command, Output, Stdio},
@@ -20,17 +21,9 @@ lazy_static! {
 /// and keep stderr short. Used when not in verbose mode.
 const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
 
-/// Merges the files and shows a 0–100% progress bar.
+/// Merges the files with stream copy and shows a 0–100% progress bar.
 /// `total_seconds` is the combined length of all input files.
-/// `extra_args` are added after `-c copy`, so they can override a codec
-/// (for example `-c:a aac`).
-pub fn merge(
-  input: String,
-  output: &str,
-  chapters: &str,
-  total_seconds: f64,
-  extra_args: &[&str],
-) -> Output {
+pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) -> Output {
   let mut args: Vec<&str> = vec![
     "-y",
     "-f",
@@ -48,7 +41,6 @@ pub fn merge(
     "-c",
     "copy",
   ];
-  args.extend(extra_args);
   if !*VERBOSE {
     args.extend(PROGRESS_ARGS);
   }
@@ -69,35 +61,51 @@ pub fn merge(
   run_with_progress(&args, "Merging videos", total_seconds)
 }
 
-/// Converts one input to an MP4 file that is safe to merge. Only video and audio
-/// streams are mapped, so data streams (e.g. `tmcd` timecode) are dropped.
-/// Video is re-encoded to H.264 and audio to AAC. `-write_tmcd 0` stops the MP4/MOV
-/// muxer from adding a `tmcd` track again when the input has a timecode tag.
-pub fn convert_for_merge(input: &str, output: &str) -> Output {
-  let args = [
-    "-y",
-    "-i",
-    input,
-    "-map",
-    "0:v?",
-    "-map",
-    "0:a?",
-    "-c:v",
-    "libx264",
-    "-c:a",
-    "aac",
-    "-write_tmcd",
-    "0",
-    output,
-  ];
+/// Converts one input to an MP4 file that is safe to merge.
+/// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
+/// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
+/// If `silent_audio` is true, the input has no audio, so silence is generated and
+/// `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
+/// adding a `tmcd` track again.
+pub fn convert_for_merge(
+  input: &str,
+  output: &str,
+  profile: Option<AudioProfile>,
+  silent_audio: bool,
+) -> Output {
+  let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
+  let audio_map = if silent_audio {
+    let profile = profile.expect("silent audio needs an audio profile");
+    args.extend(["-f", "lavfi", "-i"].map(String::from));
+    args.push(format!("anullsrc=r={}", profile.sample_rate));
+    "1:a"
+  } else {
+    "0:a?"
+  };
+  args.extend(
+    [
+      "-map", "0:v?", "-map", audio_map, "-c:v", "libx264", "-c:a", "aac",
+    ]
+    .map(String::from),
+  );
+  if let Some(profile) = profile {
+    args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
+    args.extend(["-ac".to_string(), profile.channels.to_string()]);
+  }
+  if silent_audio {
+    args.push("-shortest".to_string());
+  }
+  args.extend(["-write_tmcd", "0"].map(String::from));
+  args.push(output.to_string());
 
+  let shown: Vec<&str> = args.iter().map(String::as_str).collect();
   println!(
     "🔁 Converting for merge, calling: {}",
-    BrightBlue.paint(describe("ffmpeg", &args))
+    BrightBlue.paint(describe("ffmpeg", &shown))
   );
 
   // `output()` captures stderr too, so a failure message can be shown.
-  Command::new("ffmpeg").args(args).output().unwrap()
+  Command::new("ffmpeg").args(&args).output().unwrap()
 }
 
 /// Runs FFmpeg (which must have the `PROGRESS_ARGS` set) and shows a 0–100% bar.
@@ -196,35 +204,92 @@ pub fn adjust_fps_by_ffmpeg(
   new_file_location
 }
 
-/// Returns the codec names of all audio streams (e.g. `aac`, `pcm_alaw`),
-/// or `None` if there is no audio stream or ffprobe fails.
-pub fn get_audio_codecs(media_path: &str) -> Option<Vec<String>> {
+/// One stream reported by ffprobe. `sample_rate` and `channels` are only set for audio.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct MediaStream {
+  pub kind: String,
+  pub codec: String,
+  pub sample_rate: Option<u32>,
+  pub channels: Option<u32>,
+}
+
+/// Audio settings that all merged inputs share (sample rate in Hz, channel count).
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct AudioProfile {
+  pub sample_rate: u32,
+  pub channels: u32,
+}
+
+/// Lists the streams of a media file with one ffprobe call.
+/// Returns `Err` if ffprobe fails or an audio stream lacks its sample rate or channels.
+pub fn probe_streams(media_path: &str) -> Result<Vec<MediaStream>, String> {
   let output = Command::new("ffprobe")
     .args([
       "-v",
       "error",
-      "-select_streams",
-      "a",
       "-show_entries",
-      "stream=codec_name",
+      "stream=codec_type,codec_name,sample_rate,channels",
       "-of",
-      "default=noprint_wrappers=1:nokey=1",
+      "flat",
       media_path,
     ])
     .output()
-    .ok()?;
-  let codecs: Vec<String> = String::from_utf8(output.stdout)
-    .ok()?
-    .lines()
-    .map(str::trim)
-    .filter(|codec| !codec.is_empty())
-    .map(str::to_string)
-    .collect();
-  if codecs.is_empty() {
-    None
-  } else {
-    Some(codecs)
+    .map_err(|err| err.to_string())?;
+  if !output.status.success() {
+    return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
   }
+  parse_flat_streams(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Parses ffprobe `-of flat` output, e.g. `streams.stream.1.codec_type="audio"`.
+/// Fields are grouped by stream index. ffprobe leaves out fields a stream does not have.
+fn parse_flat_streams(text: &str) -> Result<Vec<MediaStream>, String> {
+  let mut streams: BTreeMap<usize, BTreeMap<&str, &str>> = BTreeMap::new();
+  for line in text.lines() {
+    let Some((key, value)) = line.split_once('=') else {
+      continue;
+    };
+    let parts: Vec<&str> = key.split('.').collect();
+    let ["streams", "stream", index, field] = parts.as_slice() else {
+      continue;
+    };
+    let Ok(index) = index.parse::<usize>() else {
+      continue;
+    };
+    streams
+      .entry(index)
+      .or_default()
+      .insert(field, value.trim_matches('"'));
+  }
+  streams.values().map(stream_from_fields).collect()
+}
+
+/// Builds one `MediaStream` from its ffprobe fields. Audio needs a sample rate and channels.
+fn stream_from_fields(fields: &BTreeMap<&str, &str>) -> Result<MediaStream, String> {
+  let kind = fields.get("codec_type").copied().unwrap_or("unknown");
+  let codec = fields.get("codec_name").copied().unwrap_or("");
+  let (sample_rate, channels) = if kind == "audio" {
+    let sample_rate = fields
+      .get("sample_rate")
+      .and_then(|v| v.parse::<u32>().ok());
+    let channels = fields.get("channels").and_then(|v| v.parse::<u32>().ok());
+    match (sample_rate, channels) {
+      (Some(rate), Some(count)) => (Some(rate), Some(count)),
+      _ => {
+        return Err(format!(
+          "audio stream without sample rate or channels: {fields:?}"
+        ))
+      }
+    }
+  } else {
+    (None, None)
+  };
+  Ok(MediaStream {
+    kind: kind.to_string(),
+    codec: codec.to_string(),
+    sample_rate,
+    channels,
+  })
 }
 
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Error>> {
@@ -271,6 +336,52 @@ fn describe(program: &str, args: &[&str]) -> String {
     .map(|arg| format!("'{arg}'"))
     .collect::<Vec<_>>()
     .join(" ")
+}
+
+#[cfg(test)]
+mod test_parse_flat_streams {
+  use super::{parse_flat_streams, MediaStream};
+
+  #[test]
+  fn parses_audio_and_video_streams_in_index_order() {
+    let text = "streams.stream.0.codec_name=\"h264\"\n\
+                streams.stream.0.codec_type=\"video\"\n\
+                streams.stream.1.codec_name=\"aac\"\n\
+                streams.stream.1.codec_type=\"audio\"\n\
+                streams.stream.1.sample_rate=\"44100\"\n\
+                streams.stream.1.channels=1\n";
+    assert_eq!(
+      parse_flat_streams(text),
+      Ok(vec![
+        MediaStream {
+          kind: "video".into(),
+          codec: "h264".into(),
+          sample_rate: None,
+          channels: None,
+        },
+        MediaStream {
+          kind: "audio".into(),
+          codec: "aac".into(),
+          sample_rate: Some(44100),
+          channels: Some(1),
+        },
+      ])
+    );
+  }
+
+  #[test]
+  fn parses_data_stream_without_audio_fields() {
+    let text = "streams.stream.0.codec_name=\"tmcd\"\nstreams.stream.0.codec_type=\"data\"\n";
+    let streams = parse_flat_streams(text).unwrap();
+    assert_eq!(streams[0].codec, "tmcd");
+    assert_eq!((streams[0].sample_rate, streams[0].channels), (None, None));
+  }
+
+  #[test]
+  fn rejects_audio_stream_without_numbers() {
+    let text = "streams.stream.0.codec_name=\"aac\"\nstreams.stream.0.codec_type=\"audio\"\n";
+    assert!(parse_flat_streams(text).is_err());
+  }
 }
 
 #[cfg(test)]
