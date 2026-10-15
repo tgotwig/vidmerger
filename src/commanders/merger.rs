@@ -58,7 +58,8 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         Some(p.sample_rate) == stream.sample_rate && Some(p.channels) == stream.channels
       })
   };
-  let actions = probes
+  // Per input: (needs conversion, silent audio needed).
+  let decisions: Vec<(bool, bool)> = probes
     .iter()
     .map(|streams| {
       let has_audio = streams.iter().any(|s| s.kind == "audio");
@@ -72,7 +73,16 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         .all(matches_profile);
       // Silence is only added when there is video, because `-shortest` ends the output with it.
       let silent_audio = profile.is_some() && !has_audio && has_video;
-      if force_convert || has_extra || !audio_fits || silent_audio {
+      (has_extra || !audio_fits || silent_audio, silent_audio)
+    })
+    .collect();
+  // Converted inputs always get H.264 video, so copied inputs could have a different video
+  // codec and break `-c copy`. If any input is converted, convert all of them.
+  let convert_all = force_convert || decisions.iter().any(|(convert, _)| *convert);
+  let actions = decisions
+    .into_iter()
+    .map(|(_, silent_audio)| {
+      if convert_all {
         InputAction::Convert { silent_audio }
       } else {
         InputAction::Copy
@@ -325,7 +335,7 @@ mod test_plan_merge {
   }
 
   #[test]
-  fn converts_only_the_input_with_unsupported_audio() {
+  fn converts_all_inputs_when_one_needs_conversion() {
     let probes = vec![
       vec![video(), aac_stereo_48k()],
       vec![video(), audio("pcm_alaw", 8_000, 1)],
@@ -333,7 +343,9 @@ mod test_plan_merge {
     assert_eq!(
       plan_merge(&probes, false).actions,
       vec![
-        InputAction::Copy,
+        InputAction::Convert {
+          silent_audio: false
+        },
         InputAction::Convert {
           silent_audio: false
         }
@@ -342,7 +354,7 @@ mod test_plan_merge {
   }
 
   #[test]
-  fn converts_input_with_different_sample_rate() {
+  fn converts_all_inputs_when_sample_rate_differs() {
     let probes = vec![
       vec![video(), aac_stereo_48k()],
       vec![video(), audio("aac", 44_100, 2)],
@@ -350,7 +362,9 @@ mod test_plan_merge {
     assert_eq!(
       plan_merge(&probes, false).actions,
       vec![
-        InputAction::Copy,
+        InputAction::Convert {
+          silent_audio: false
+        },
         InputAction::Convert {
           silent_audio: false
         }
@@ -359,13 +373,21 @@ mod test_plan_merge {
   }
 
   #[test]
-  fn converts_input_with_data_stream() {
-    let probes = vec![vec![video(), aac_stereo_48k(), stream("data", "tmcd")]];
+  fn converts_all_inputs_when_one_has_data_stream() {
+    let probes = vec![
+      vec![video(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k(), stream("data", "tmcd")],
+    ];
     assert_eq!(
       plan_merge(&probes, false).actions,
-      vec![InputAction::Convert {
-        silent_audio: false
-      }]
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        }
+      ]
     );
   }
 
@@ -375,7 +397,9 @@ mod test_plan_merge {
     assert_eq!(
       plan_merge(&probes, false).actions,
       vec![
-        InputAction::Copy,
+        InputAction::Convert {
+          silent_audio: false
+        },
         InputAction::Convert { silent_audio: true }
       ]
     );
@@ -393,7 +417,9 @@ mod test_plan_merge {
         InputAction::Convert {
           silent_audio: false
         },
-        InputAction::Copy
+        InputAction::Convert {
+          silent_audio: false
+        }
       ]
     );
   }
