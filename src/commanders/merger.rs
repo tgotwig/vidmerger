@@ -8,20 +8,37 @@ use term_painter::ToStyle;
 
 /// Containers that use the MP4 muxer. They reject many audio codecs (e.g. `pcm_alaw`).
 const MP4_FAMILY_FORMATS: [&str; 6] = ["mp4", "m4a", "m4v", "m4b", "mov", "3gp"];
-/// Audio codecs that MP4-family containers can store without re-encoding.
+/// Audio codecs that MP4 output can store without re-encoding.
 const MP4_SAFE_AUDIO_CODECS: [&str; 7] = ["aac", "mp3", "ac3", "eac3", "alac", "opus", "flac"];
+/// Audio codecs that MOV output can store without re-encoding (FLAC and Opus fail in MOV).
+const MOV_SAFE_AUDIO_CODECS: [&str; 5] = ["aac", "mp3", "ac3", "eac3", "alac"];
+/// Audio codecs that 3GP output can store without re-encoding (only AAC works in 3GP).
+const THREE_GP_SAFE_AUDIO_CODECS: [&str; 1] = ["aac"];
+
+/// Audio codecs the given MP4-family output format can store, or `None` if the format
+/// is not MP4-family.
+fn safe_audio_codecs_for(file_format: &str) -> Option<&'static [&'static str]> {
+  match file_format.to_lowercase().as_str() {
+    "mov" => Some(&MOV_SAFE_AUDIO_CODECS),
+    "3gp" => Some(&THREE_GP_SAFE_AUDIO_CODECS),
+    format if MP4_FAMILY_FORMATS.contains(&format) => Some(&MP4_SAFE_AUDIO_CODECS),
+    _ => None,
+  }
+}
 
 /// True when the output is an MP4-family file and at least one input has an audio
-/// codec that the container cannot store. Such audio must be re-encoded to AAC.
+/// codec that the output container cannot store. Such audio must be re-encoded to AAC.
 fn needs_audio_reencode(file_format: &str, files_to_merge_as_strings: &[String]) -> bool {
-  MP4_FAMILY_FORMATS.contains(&file_format.to_lowercase().as_str())
-    && files_to_merge_as_strings.iter().any(|path| {
-      _cmd::get_audio_codecs(path).is_some_and(|codecs| {
-        codecs
-          .iter()
-          .any(|codec| !MP4_SAFE_AUDIO_CODECS.contains(&codec.as_str()))
-      })
+  let Some(safe_codecs) = safe_audio_codecs_for(file_format) else {
+    return false;
+  };
+  files_to_merge_as_strings.iter().any(|path| {
+    _cmd::get_audio_codecs(path).is_some_and(|codecs| {
+      codecs
+        .iter()
+        .any(|codec| !safe_codecs.contains(&codec.as_str()))
     })
+  })
 }
 
 pub fn merge(
