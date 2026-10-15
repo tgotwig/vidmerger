@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Merging into MP4-family outputs no longer fails when an input has `pcm_alaw` audio (#17). The audio is re-encoded to AAC (`-c:a aac`) during the merge, because MP4 containers cannot store `pcm_alaw`.
+
 ## 🎉 [0.4.1] - 2026-10-15
 
 ### Added

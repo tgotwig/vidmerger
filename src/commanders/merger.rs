@@ -6,6 +6,21 @@ use std::str;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
+/// Containers that use the MP4 muxer. They reject many audio codecs (e.g. `pcm_alaw`).
+const MP4_FAMILY_FORMATS: [&str; 6] = ["mp4", "m4a", "m4v", "m4b", "mov", "3gp"];
+/// Audio codecs that MP4-family containers can store without re-encoding.
+const MP4_SAFE_AUDIO_CODECS: [&str; 7] = ["aac", "mp3", "ac3", "eac3", "alac", "opus", "flac"];
+
+/// True when the output is an MP4-family file and at least one input has an audio
+/// codec that the container cannot store. Such audio must be re-encoded to AAC.
+fn needs_audio_reencode(file_format: &str, files_to_merge_as_strings: &[String]) -> bool {
+  MP4_FAMILY_FORMATS.contains(&file_format)
+    && files_to_merge_as_strings.iter().any(|path| {
+      _cmd::get_audio_codec(path)
+        .is_some_and(|codec| !MP4_SAFE_AUDIO_CODECS.contains(&codec.as_str()))
+    })
+}
+
 pub fn merge(
   input: String,
   output: String,
@@ -13,6 +28,12 @@ pub fn merge(
   file_format: &str,
   tmp_dir: PathBuf,
 ) {
+  let extra_args: &[&str] = if needs_audio_reencode(file_format, &files_to_merge_as_strings) {
+    &["-c:a", "aac"]
+  } else {
+    &[]
+  };
+
   let mut start_time = 0;
   // Untruncated total length, used as the progress bar denominator.
   let mut total_seconds = 0.0;
@@ -42,7 +63,13 @@ pub fn merge(
   // ========== Merge with chapters ========== //
 
   let output_str = output.clone();
-  let res = _cmd::merge(input, &output, &file_path.to_string_lossy(), total_seconds);
+  let res = _cmd::merge(
+    input,
+    &output,
+    &file_path.to_string_lossy(),
+    total_seconds,
+    extra_args,
+  );
 
   if res.status.success() {
     println!("🐣 Generated: {}", BrightBlue.paint(&output_str));

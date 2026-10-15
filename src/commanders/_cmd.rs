@@ -22,7 +22,15 @@ const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel"
 
 /// Merges the files and shows a 0–100% progress bar.
 /// `total_seconds` is the combined length of all input files.
-pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) -> Output {
+/// `extra_args` are added after `-c copy`, so they can override a codec
+/// (for example `-c:a aac`).
+pub fn merge(
+  input: String,
+  output: &str,
+  chapters: &str,
+  total_seconds: f64,
+  extra_args: &[&str],
+) -> Output {
   let mut args: Vec<&str> = vec![
     "-y",
     "-f",
@@ -40,6 +48,7 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     "-c",
     "copy",
   ];
+  args.extend(extra_args);
   if !*VERBOSE {
     args.extend(PROGRESS_ARGS);
   }
@@ -171,6 +180,32 @@ pub fn adjust_fps_by_ffmpeg(
     }
   }
   new_file_location
+}
+
+/// Returns the codec name of the first audio stream (e.g. `aac`, `pcm_alaw`),
+/// or `None` if there is no audio stream or ffprobe fails.
+pub fn get_audio_codec(media_path: &str) -> Option<String> {
+  let output = Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "a:0",
+      "-show_entries",
+      "stream=codec_name",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      media_path,
+    ])
+    .output()
+    .ok()?;
+  let codec = String::from_utf8(output.stdout).ok()?;
+  let codec = codec.trim();
+  if codec.is_empty() {
+    None
+  } else {
+    Some(codec.to_string())
+  }
 }
 
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Error>> {
