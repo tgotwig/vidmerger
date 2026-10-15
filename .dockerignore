@@ -1,9 +1,9 @@
-/target/
 !/target/x86_64-unknown-linux-musl/release/vidmerger
-Cargo.lock
-**/*.rs.bk
 .DS_Store
+*.mp4
+**/*.rs.bk
+*private*
+/target/
+Cargo.lock
 data
 ffmpeg_input_file.txt
-
-*.mp4
