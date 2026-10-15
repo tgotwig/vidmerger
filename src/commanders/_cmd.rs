@@ -182,15 +182,15 @@ pub fn adjust_fps_by_ffmpeg(
   new_file_location
 }
 
-/// Returns the codec name of the first audio stream (e.g. `aac`, `pcm_alaw`),
+/// Returns the codec names of all audio streams (e.g. `aac`, `pcm_alaw`),
 /// or `None` if there is no audio stream or ffprobe fails.
-pub fn get_audio_codec(media_path: &str) -> Option<String> {
+pub fn get_audio_codecs(media_path: &str) -> Option<Vec<String>> {
   let output = Command::new("ffprobe")
     .args([
       "-v",
       "error",
       "-select_streams",
-      "a:0",
+      "a",
       "-show_entries",
       "stream=codec_name",
       "-of",
@@ -199,12 +199,17 @@ pub fn get_audio_codec(media_path: &str) -> Option<String> {
     ])
     .output()
     .ok()?;
-  let codec = String::from_utf8(output.stdout).ok()?;
-  let codec = codec.trim();
-  if codec.is_empty() {
+  let codecs: Vec<String> = String::from_utf8(output.stdout)
+    .ok()?
+    .lines()
+    .map(str::trim)
+    .filter(|codec| !codec.is_empty())
+    .map(str::to_string)
+    .collect();
+  if codecs.is_empty() {
     None
   } else {
-    Some(codec.to_string())
+    Some(codecs)
   }
 }
 

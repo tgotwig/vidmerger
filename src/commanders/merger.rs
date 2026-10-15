@@ -14,10 +14,13 @@ const MP4_SAFE_AUDIO_CODECS: [&str; 7] = ["aac", "mp3", "ac3", "eac3", "alac", "
 /// True when the output is an MP4-family file and at least one input has an audio
 /// codec that the container cannot store. Such audio must be re-encoded to AAC.
 fn needs_audio_reencode(file_format: &str, files_to_merge_as_strings: &[String]) -> bool {
-  MP4_FAMILY_FORMATS.contains(&file_format)
+  MP4_FAMILY_FORMATS.contains(&file_format.to_lowercase().as_str())
     && files_to_merge_as_strings.iter().any(|path| {
-      _cmd::get_audio_codec(path)
-        .is_some_and(|codec| !MP4_SAFE_AUDIO_CODECS.contains(&codec.as_str()))
+      _cmd::get_audio_codecs(path).is_some_and(|codecs| {
+        codecs
+          .iter()
+          .any(|codec| !MP4_SAFE_AUDIO_CODECS.contains(&codec.as_str()))
+      })
     })
 }
 
