@@ -57,21 +57,16 @@ pub fn merge(
   };
 
   // Untruncated total length, used as the progress bar denominator.
-  let mut total_seconds = 0.0;
-  // Running end of the previous chapter. It is not truncated, so chapter starts do not drift.
-  let mut elapsed_seconds: f64 = 0.0;
+  let durations: Vec<f64> = files_to_merge_as_strings
+    .iter()
+    .map(|path| _cmd::get_media_seconds(path).unwrap())
+    .collect();
+  let total_seconds: f64 = durations.iter().sum();
+  let bounds = chapter_bounds_ms(&durations);
+
   let mut metadata_string = String::from(";FFMETADATA1\n");
-  for path in &files_to_merge_as_strings {
+  for (path, (start_ms, end_ms)) in files_to_merge_as_strings.iter().zip(bounds) {
     let title = extract_title(path, file_format);
-    let duration = _cmd::get_media_seconds(path).unwrap();
-    total_seconds += duration;
-
-    // Chapters use milliseconds. Rounding the running total (not each clip) keeps
-    // the error below 1 ms, even for many clips.
-    let start_ms = (elapsed_seconds * 1000.0).round() as i64;
-    elapsed_seconds += duration;
-    let end_ms = (elapsed_seconds * 1000.0).round() as i64;
-
     metadata_string.push_str(&format!(
       "\n[CHAPTER]\nTIMEBASE=1/1000\nSTART={}\nEND={}\ntitle={}\n",
       start_ms, end_ms, title
@@ -110,6 +105,22 @@ pub fn merge(
       String::from_utf8_lossy(&res.stderr)
     );
   }
+}
+
+/// Returns the `(start_ms, end_ms)` of each chapter, given each clip's duration in seconds.
+/// The running total is kept unrounded and rounded once per boundary, so the error
+/// does not grow with the number of clips.
+fn chapter_bounds_ms(durations: &[f64]) -> Vec<(i64, i64)> {
+  let mut elapsed_seconds: f64 = 0.0;
+  durations
+    .iter()
+    .map(|duration| {
+      let start_ms = (elapsed_seconds * 1000.0).round() as i64;
+      elapsed_seconds += duration;
+      let end_ms = (elapsed_seconds * 1000.0).round() as i64;
+      (start_ms, end_ms)
+    })
+    .collect()
 }
 
 /// True when FFmpeg failed because an input stream has a type the output cannot hold.
@@ -153,6 +164,32 @@ fn extract_title(path: &str, file_format: &str) -> String {
     .unwrap_or("")
     .trim()
     .to_string()
+}
+
+#[cfg(test)]
+mod test_chapter_bounds_ms {
+  use super::chapter_bounds_ms;
+
+  #[test]
+  fn test_chapter_bounds_with_fractional_durations() {
+    let durations = [1.40, 2.64, 1.96, 3.32];
+    assert_eq!(
+      chapter_bounds_ms(&durations),
+      vec![(0, 1400), (1400, 4040), (4040, 6000), (6000, 9320)]
+    );
+  }
+
+  #[test]
+  fn test_chapter_bounds_do_not_drift_over_many_clips() {
+    let durations = [1.0003; 100];
+    let bounds = chapter_bounds_ms(&durations);
+    assert_eq!(bounds.last(), Some(&(99_030, 100_030)));
+  }
+
+  #[test]
+  fn test_chapter_bounds_empty() {
+    assert!(chapter_bounds_ms(&[]).is_empty());
+  }
 }
 
 #[cfg(test)]
