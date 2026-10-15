@@ -69,6 +69,37 @@ pub fn merge(
   run_with_progress(&args, "Merging videos", total_seconds)
 }
 
+/// Converts one input to an MP4 file that is safe to merge. Only video and audio
+/// streams are mapped, so data streams (e.g. `tmcd` timecode) are dropped.
+/// Video is re-encoded to H.264 and audio to AAC. `-write_tmcd 0` stops the MP4/MOV
+/// muxer from adding a `tmcd` track again when the input has a timecode tag.
+pub fn convert_for_merge(input: &str, output: &str) -> Output {
+  let args = [
+    "-y",
+    "-i",
+    input,
+    "-map",
+    "0:v?",
+    "-map",
+    "0:a?",
+    "-c:v",
+    "libx264",
+    "-c:a",
+    "aac",
+    "-write_tmcd",
+    "0",
+    output,
+  ];
+
+  println!(
+    "🔁 Converting for merge, calling: {}",
+    BrightBlue.paint(describe("ffmpeg", &args))
+  );
+
+  // `output()` captures stderr too, so a failure message can be shown.
+  Command::new("ffmpeg").args(args).output().unwrap()
+}
+
 /// Runs FFmpeg (which must have the `PROGRESS_ARGS` set) and shows a 0–100% bar.
 /// `total_seconds` is the length of the input. If it is 0, the bar only jumps to 100% at the end.
 fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
