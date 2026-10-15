@@ -150,23 +150,6 @@ fn parse_out_time_us(line: &str) -> Option<i64> {
     .ok()
 }
 
-#[cfg(test)]
-mod tests {
-  use super::parse_out_time_us;
-
-  #[test]
-  fn parses_out_time_us_line() {
-    assert_eq!(parse_out_time_us("out_time_us=1500000"), Some(1_500_000));
-  }
-
-  #[test]
-  fn ignores_other_progress_lines() {
-    assert_eq!(parse_out_time_us("out_time=00:00:01.500000"), None);
-    assert_eq!(parse_out_time_us("out_time_us=N/A"), None);
-    assert_eq!(parse_out_time_us("progress=continue"), None);
-  }
-}
-
 pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error> {
   Command::new("ffmpeg")
     .args(["-i", &file_to_merge.to_slash().unwrap()])
@@ -288,4 +271,21 @@ fn describe(program: &str, args: &[&str]) -> String {
     .map(|arg| format!("'{arg}'"))
     .collect::<Vec<_>>()
     .join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+  use super::parse_out_time_us;
+
+  #[test]
+  fn parses_out_time_us_line() {
+    assert_eq!(parse_out_time_us("out_time_us=1500000"), Some(1_500_000));
+  }
+
+  #[test]
+  fn ignores_other_progress_lines() {
+    assert_eq!(parse_out_time_us("out_time=00:00:01.500000"), None);
+    assert_eq!(parse_out_time_us("out_time_us=N/A"), None);
+    assert_eq!(parse_out_time_us("progress=continue"), None);
+  }
 }
