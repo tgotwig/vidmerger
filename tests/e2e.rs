@@ -71,6 +71,30 @@ mod e2e {
   }
 
   #[test]
+  fn call_merger_with_alaw_audio_reencodes_to_aac() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_alaw_audio(test_name);
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    assert!(res.contains("🐣 Generated"));
+    let probe = Command::new("ffprobe")
+      .args(["-v", "error", "-select_streams", "a:0"])
+      .args(["-show_entries", "stream=codec_name", "-of", "csv=p=0"])
+      .arg(format!("data/{}/output.mp4", test_name))
+      .output()
+      .unwrap();
+    assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "aac");
+  }
+
+  #[test]
   fn call_merger_without_args() {
     let res = get_output_err(Command::cargo_bin(BIN).unwrap().assert().failure());
 
@@ -331,6 +355,21 @@ mod e2e {
       format!("data/{}/{}", test_name, DATA_2_MP3),
     )
     .unwrap();
+  }
+
+  /// Creates two `.mp4`-named inputs whose audio is `pcm_alaw` (issue #17).
+  /// Matroska content is used because MP4 itself cannot store `pcm_alaw`.
+  fn prep_with_alaw_audio(test_name: &str) {
+    fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
+    for (name, freq) in [("1 - Clip A.mp4", "440"), ("2 - Clip B.mp4", "880")] {
+      Command::new("ffmpeg")
+        .args(["-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=d=1:s=160x120:r=30"])
+        .args(["-f", "lavfi", "-i", &format!("sine=f={freq}:d=1")])
+        .args(["-c:v", "mpeg4", "-c:a", "pcm_alaw", "-shortest", "-f", "matroska"])
+        .arg(format!("data/{}/{}", test_name, name))
+        .assert()
+        .success();
+    }
   }
 
   fn prep_with_different_fps_values(test_name: &str) {

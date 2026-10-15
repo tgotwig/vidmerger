@@ -6,6 +6,42 @@ use std::str;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
+/// Containers that use the MP4 muxer. They reject many audio codecs (e.g. `pcm_alaw`).
+const MP4_FAMILY_FORMATS: [&str; 6] = ["mp4", "m4a", "m4v", "m4b", "mov", "3gp"];
+/// Audio codecs that MP4 output can store without re-encoding.
+const MP4_SAFE_AUDIO_CODECS: [&str; 7] = ["aac", "mp3", "ac3", "eac3", "alac", "opus", "flac"];
+/// Audio codecs that MOV output can store without re-encoding (FLAC and Opus fail in MOV).
+const MOV_SAFE_AUDIO_CODECS: [&str; 5] = ["aac", "mp3", "ac3", "eac3", "alac"];
+/// Audio codecs that 3GP output can store without re-encoding (only AAC works in 3GP).
+const THREE_GP_SAFE_AUDIO_CODECS: [&str; 1] = ["aac"];
+
+/// Audio codecs the given MP4-family output format can store, or `None` if the format
+/// is not MP4-family.
+fn safe_audio_codecs_for(file_format: &str) -> Option<&'static [&'static str]> {
+  match file_format.to_lowercase().as_str() {
+    "mov" => Some(&MOV_SAFE_AUDIO_CODECS),
+    "3gp" => Some(&THREE_GP_SAFE_AUDIO_CODECS),
+    format if MP4_FAMILY_FORMATS.contains(&format) => Some(&MP4_SAFE_AUDIO_CODECS),
+    _ => None,
+  }
+}
+
+/// True when the output is an MP4-family file and at least one input has an audio
+/// codec that the output container cannot store. Such audio must be re-encoded to AAC.
+fn needs_audio_reencode(file_format: &str, files_to_merge_as_strings: &[String]) -> bool {
+  let Some(safe_codecs) = safe_audio_codecs_for(file_format) else {
+    return false;
+  };
+  files_to_merge_as_strings.iter().any(|path| {
+    // A failed probe (`None`) is treated as unsafe: re-encoding a file with no audio is harmless.
+    _cmd::get_audio_codecs(path).is_none_or(|codecs| {
+      codecs
+        .iter()
+        .any(|codec| !safe_codecs.contains(&codec.as_str()))
+    })
+  })
+}
+
 pub fn merge(
   input: String,
   output: String,
@@ -13,6 +49,12 @@ pub fn merge(
   file_format: &str,
   tmp_dir: PathBuf,
 ) {
+  let extra_args: &[&str] = if needs_audio_reencode(file_format, &files_to_merge_as_strings) {
+    &["-c:a", "aac"]
+  } else {
+    &[]
+  };
+
   let mut start_time = 0;
   // Untruncated total length, used as the progress bar denominator.
   let mut total_seconds = 0.0;
@@ -42,7 +84,13 @@ pub fn merge(
   // ========== Merge with chapters ========== //
 
   let output_str = output.clone();
-  let res = _cmd::merge(input, &output, &file_path.to_string_lossy(), total_seconds);
+  let res = _cmd::merge(
+    input,
+    &output,
+    &file_path.to_string_lossy(),
+    total_seconds,
+    extra_args,
+  );
 
   if res.status.success() {
     println!("🐣 Generated: {}", BrightBlue.paint(&output_str));
