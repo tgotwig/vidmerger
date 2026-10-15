@@ -56,24 +56,26 @@ pub fn merge(
     &[]
   };
 
-  let mut start_time = 0;
   // Untruncated total length, used as the progress bar denominator.
   let mut total_seconds = 0.0;
+  // Running end of the previous chapter. It is not truncated, so chapter starts do not drift.
+  let mut elapsed_seconds: f64 = 0.0;
   let mut metadata_string = String::from(";FFMETADATA1\n");
   for path in &files_to_merge_as_strings {
     let title = extract_title(path, file_format);
     let duration = _cmd::get_media_seconds(path).unwrap();
     total_seconds += duration;
-    let duration_secs = duration as i64;
+
+    // Chapters use milliseconds. Rounding the running total (not each clip) keeps
+    // the error below 1 ms, even for many clips.
+    let start_ms = (elapsed_seconds * 1000.0).round() as i64;
+    elapsed_seconds += duration;
+    let end_ms = (elapsed_seconds * 1000.0).round() as i64;
 
     metadata_string.push_str(&format!(
-      "\n[CHAPTER]\nTIMEBASE=1/1\nSTART={}\nEND={}\ntitle={}\n",
-      start_time,
-      start_time + duration_secs,
-      title
+      "\n[CHAPTER]\nTIMEBASE=1/1000\nSTART={}\nEND={}\ntitle={}\n",
+      start_ms, end_ms, title
     ));
-
-    start_time += duration_secs;
   }
   let mut file_path = tmp_dir.clone();
   file_path.push("chapters.txt");
