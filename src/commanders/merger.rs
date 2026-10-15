@@ -33,7 +33,8 @@ fn needs_audio_reencode(file_format: &str, files_to_merge_as_strings: &[String])
     return false;
   };
   files_to_merge_as_strings.iter().any(|path| {
-    _cmd::get_audio_codecs(path).is_some_and(|codecs| {
+    // A failed probe (`None`) is treated as unsafe: re-encoding a file with no audio is harmless.
+    _cmd::get_audio_codecs(path).map_or(true, |codecs| {
       codecs
         .iter()
         .any(|codec| !safe_codecs.contains(&codec.as_str()))
