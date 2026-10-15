@@ -1,3 +1,5 @@
+- 💬 general
+  - write in plain english for non-natives
 - 🌳 git handling
   - https://conventionalbranch.org
   - https://www.conventionalcommits.org/en/v1.0.0
