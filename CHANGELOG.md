@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 🎉 [0.4.1] - 2026-10-15
+
+### Added
+
+- A progress bar from 0% to 100% is shown during the merge and FPS adjustment steps (#1). It uses FFmpeg's progress output and is hidden in verbose mode.
+
+### Changed
+
+- `--help` prints a diagram.
+
 ### Fixed
 
 - Preserve filename order when merging videos after FPS conversion (#91).
 - Files with a single quote (`'`) in their name no longer cause an error (#69). FFmpeg and ffprobe are now started with direct argument passing instead of through a shell.
 - Files are sorted naturally, so `2` comes before `10` when numbers are not zero-padded (#41).
-
-### Added
-
-- `--help` prints a diagram.
-- A progress bar from 0% to 100% is shown during the merge and FPS adjustment steps (#1). It uses FFmpeg's progress output and is hidden in verbose mode.
 
 ## 🎉 [0.4.0] - 2024-04-20
 

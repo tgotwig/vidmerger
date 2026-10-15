@@ -1,0 +1,6 @@
+[submodule "submodules/homebrew-linux-vidmerger"]
+	path = submodules/homebrew-linux-vidmerger
+	url = git@github.com:tgotwig/homebrew-linux-vidmerger.git
+[submodule "submodules/homebrew-vidmerger"]
+	path = submodules/homebrew-vidmerger
+	url = git@github.com:tgotwig/homebrew-vidmerger.git

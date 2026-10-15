@@ -3,43 +3,41 @@ on:
   push:
     tags:
       - "*"
+permissions:
+  contents: write
+
 jobs:
   prepare:
     name: 👷 Prepare
     runs-on: macos-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v7
       - name: 🐣 Create Release folder on Github
-        id: create_release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: |
-            ### Added
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cat > "$RUNNER_TEMP/release_notes.md" <<'EOF'
+          ### Added
 
-            - **--verbose** which prints detailed logs.
+          - **--verbose** which prints detailed logs.
 
-            ### Changed
+          ### Changed
 
-            - Chapters will now be included during the merge phase, seperate chapterer phase gets removed.
-            - It will not wait anymore for a few seconds at the beginning, instead it will print the merge order and wait for you to press ENTER or ESC to continue or not.
-            - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
-            - Selector now case-insensitive, so it selects mp4 and MP4 etc.
+          - Chapters will now be included during the merge phase, seperate chapterer phase gets removed.
+          - It will not wait anymore for a few seconds at the beginning, instead it will print the merge order and wait for you to press ENTER or ESC to continue or not.
+          - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
+          - Selector now case-insensitive, so it selects mp4 and MP4 etc.
 
-            ### Removed
+          ### Removed
 
-            - Remove `--skip-wait`
+          - Remove `--skip-wait`
 
-            ### Fixed
+          ### Fixed
 
-            - Fix wrong success message after merge failed.
-          draft: true
-          prerelease: false
+          - Fix wrong success message after merge failed.
+          EOF
+          gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release_notes.md"
 
   release-osx:
     name: 🍎 Release on MacOS
@@ -61,20 +59,21 @@ jobs:
           echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')"
 
       - name: 🚀 Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.prepare.outputs.upload_url }}
-          asset_path: target/release/vidmerger-mac.tar.gz
-          asset_name: vidmerger-mac.tar.gz
-          asset_content_type: application/gzip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$GITHUB_REF_NAME" target/release/vidmerger-mac.tar.gz --clobber
 
       - name: 🍺 Bump Brew
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
         run: |
           brew tap tgotwig/homebrew-vidmerger
+          if curl -fsSL https://raw.githubusercontent.com/tgotwig/homebrew-vidmerger/master/vidmerger.rb | grep -q '${{ steps.shasum.outputs.sha }}'; then
+            echo "Formula already has this release's sha256, skipping bump"
+            exit 0
+          fi
+          brew trust --formula tgotwig/vidmerger/vidmerger
           brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
           --sha256=${{ steps.shasum.outputs.sha }} \
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
@@ -101,14 +100,10 @@ jobs:
           echo ::set-output name=sha::"$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')"
 
       - name: 🚀 Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.prepare.outputs.upload_url }}
-          asset_path: target/release/vidmerger-linux.tar.gz
-          asset_name: vidmerger-linux.tar.gz
-          asset_content_type: application/gzip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "$GITHUB_REF_NAME" target/release/vidmerger-linux.tar.gz --clobber
 
       - name: 🏝 Set git config
         run: |
@@ -121,15 +116,20 @@ jobs:
 
       - name: 🍺 Bump Brew
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
         run: |
           /home/linuxbrew/.linuxbrew/bin/brew tap tgotwig/homebrew-linux-vidmerger
+          if curl -fsSL https://raw.githubusercontent.com/tgotwig/homebrew-linux-vidmerger/master/vidmerger.rb | grep -q '${{ steps.shasum.outputs.sha }}'; then
+            echo "Formula already has this release's sha256, skipping bump"
+            exit 0
+          fi
+          /home/linuxbrew/.linuxbrew/bin/brew trust --formula tgotwig/homebrew-linux-vidmerger/vidmerger
           /home/linuxbrew/.linuxbrew/bin/brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
           --sha256=${{ steps.shasum.outputs.sha }} \
           --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
           tgotwig/homebrew-linux-vidmerger/vidmerger
 
-  # todo: fix hard coded version number `0.4.0`
+  # todo: fix hard coded version number `0.4.1`
   # todo: upload `vidmerger.exe` to github
   release-windows-chocolatey:
     runs-on: windows-latest
@@ -147,7 +147,7 @@ jobs:
           echo '<package>' >> vidmerger.nuspec
           echo '  <metadata>' >> vidmerger.nuspec
           echo '    <id>vidmerger</id>' >> vidmerger.nuspec
-          echo '    <version>0.4.0</version>' >> vidmerger.nuspec
+          echo '    <version>0.4.1</version>' >> vidmerger.nuspec
           echo '    <title>vidmerger</title>' >> vidmerger.nuspec
           echo '    <authors>Thomas Gotwig</authors>' >> vidmerger.nuspec
           echo '    <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>' >> vidmerger.nuspec
@@ -177,7 +177,7 @@ jobs:
       - name: Create chocolatey package
         run: choco pack vidmerger.nuspec
       - name: Publish on chocolatey
-        run: choco push vidmerger.0.4.0.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+        run: choco push vidmerger.0.4.1.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
 
   release-docker:
     runs-on: ubuntu-latest
@@ -192,7 +192,7 @@ jobs:
         uses: docker/login-action@v4
         with:
           username: tgotwig
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_VIDMERGER_SECRET }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4

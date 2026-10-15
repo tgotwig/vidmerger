@@ -18,7 +18,7 @@ impl Cli {
 
 fn command() -> Command {
   Command::new("vidmerger")
-        .version("0.4.0")
+        .version("0.4.1")
         .author("Thomas Gotwig")
         .about("A wrapper around ffmpeg which simplifies merging multiple videos 🎞  Everything in between the first `-` till the fill extension of the input files will be used as chapter titles 📖.")
         .after_help(concat!(
