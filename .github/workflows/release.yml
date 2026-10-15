@@ -16,26 +16,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+        # TODO: Automatically generate release notes from CHANGELOG.md
         run: |
           cat > "$RUNNER_TEMP/release_notes.md" <<'EOF'
           ### Added
 
-          - **--verbose** which prints detailed logs.
+          - A progress bar from 0% to 100% is shown during the merge and FPS adjustment steps (#1). It uses FFmpeg's progress output and is hidden in verbose mode.
 
           ### Changed
 
-          - Chapters will now be included during the merge phase, seperate chapterer phase gets removed.
-          - It will not wait anymore for a few seconds at the beginning, instead it will print the merge order and wait for you to press ENTER or ESC to continue or not.
-          - Videos with changed fps from fps_changer will be stored in <TMP_DIR>/fps_changer.
-          - Selector now case-insensitive, so it selects mp4 and MP4 etc.
-
-          ### Removed
-
-          - Remove `--skip-wait`
+          - `--help` prints a diagram.
 
           ### Fixed
 
-          - Fix wrong success message after merge failed.
+          - Preserve filename order when merging videos after FPS conversion (#91).
+          - Files with a single quote (`'`) in their name no longer cause an error (#69). FFmpeg and ffprobe are now started with direct argument passing instead of through a shell.
+          - Files are sorted naturally, so `2` comes before `10` when numbers are not zero-padded (#41).
           EOF
           gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release_notes.md"
 
