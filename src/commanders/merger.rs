@@ -1,7 +1,8 @@
 use crate::commanders::_cmd;
-use std::fs::File;
+use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
+use std::fs::{self, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str;
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -59,9 +60,9 @@ pub fn merge(
   // Untruncated total length, used as the progress bar denominator.
   let mut total_seconds = 0.0;
   let mut metadata_string = String::from(";FFMETADATA1\n");
-  for path in files_to_merge_as_strings {
-    let title = extract_title(&path, file_format);
-    let duration = _cmd::get_media_seconds(&path).unwrap();
+  for path in &files_to_merge_as_strings {
+    let title = extract_title(path, file_format);
+    let duration = _cmd::get_media_seconds(path).unwrap();
     total_seconds += duration;
     let duration_secs = duration as i64;
 
@@ -74,7 +75,7 @@ pub fn merge(
 
     start_time += duration_secs;
   }
-  let mut file_path = tmp_dir;
+  let mut file_path = tmp_dir.clone();
   file_path.push("chapters.txt");
   let mut file = File::create(&file_path).expect("Failed to create file");
   file
@@ -84,13 +85,19 @@ pub fn merge(
   // ========== Merge with chapters ========== //
 
   let output_str = output.clone();
-  let res = _cmd::merge(
-    input,
-    &output,
-    &file_path.to_string_lossy(),
-    total_seconds,
-    extra_args,
-  );
+  let chapters = file_path.to_string_lossy().to_string();
+  let mut res = _cmd::merge(input.clone(), &output, &chapters, total_seconds, extra_args);
+
+  // Fallback for issue #53: an input has a stream MP4 cannot hold (e.g. a `tmcd` data
+  // stream in a .mov). Convert each input to a clean MP4, point the concat list at
+  // the converted files, and merge once more.
+  if !res.status.success() && is_unsupported_stream_error(&res.stderr) {
+    println!("⚠️  Unsupported stream found, converting inputs and retrying the merge");
+    let converted = convert_inputs(&files_to_merge_as_strings, &tmp_dir);
+    fs::write(&input, gen_input_file_content_for_ffmpeg(&converted))
+      .expect("Failed to rewrite the concat list");
+    res = _cmd::merge(input, &output, &chapters, total_seconds, extra_args);
+  }
 
   if res.status.success() {
     println!("🐣 Generated: {}", BrightBlue.paint(&output_str));
@@ -101,6 +108,34 @@ pub fn merge(
       String::from_utf8_lossy(&res.stderr)
     );
   }
+}
+
+/// True when FFmpeg failed because an input stream has a type the output cannot hold.
+fn is_unsupported_stream_error(stderr: &[u8]) -> bool {
+  String::from_utf8_lossy(stderr).contains("unsupported type")
+}
+
+/// Converts every input to an MP4 in `tmp_dir` (see `_cmd::convert_for_merge`) and
+/// returns the new paths in the same order as the inputs.
+fn convert_inputs(files: &[String], tmp_dir: &Path) -> Vec<String> {
+  files
+    .iter()
+    .enumerate()
+    .map(|(index, input)| {
+      let output = tmp_dir.join(format!("converted_{index}.mp4"));
+      let output = output.to_string_lossy().to_string();
+      let res = _cmd::convert_for_merge(input, &output);
+      if !res.status.success() {
+        panic!(
+          "❌ Converting {} failed (exit code: {:?}):{}",
+          input,
+          res.status.code(),
+          String::from_utf8_lossy(&res.stderr)
+        );
+      }
+      output
+    })
+    .collect()
 }
 
 fn extract_title(path: &str, file_format: &str) -> String {

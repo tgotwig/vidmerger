@@ -114,7 +114,6 @@ mod tests {
     assert_eq!(ffmpeg_input_content, "file '/Bob'\\''s video.mp4'\n")
   }
 
-
   #[test]
   fn extract_fps_from_ffmpeg_output_with_30_fps() {
     let fps = extract_fps_from_ffmpeg_output(Cow::from("Stream #0:0(und): Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1280x720 [SAR 1:1 DAR 16:9], 201 kb/s, 30 fps, 30 tbr, 90k tbn"));
