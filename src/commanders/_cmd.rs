@@ -8,6 +8,7 @@ use std::{
   io::{BufRead, BufReader, Error, Read},
   path::PathBuf,
   process::{Child, Command, Output, Stdio},
+  sync::OnceLock,
 };
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -61,6 +62,58 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
   run_with_progress(&args, "Merging videos", total_seconds)
 }
 
+/// GPU H.264 encoders for Linux and Windows, in order of preference.
+const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
+
+/// Returns the first GPU encoder in `available`, or `libx264` (CPU) if there is none.
+fn pick_h264_encoder(available: &[&str]) -> &'static str {
+  GPU_H264_ENCODERS
+    .into_iter()
+    .find(|encoder| available.contains(encoder))
+    .unwrap_or("libx264")
+}
+
+/// Returns true if FFmpeg can encode one test frame with `encoder`.
+/// FFmpeg can list a GPU encoder even when no GPU is present, so a real test encode is used.
+fn encoder_works(encoder: &str) -> bool {
+  Command::new("ffmpeg")
+    .args([
+      "-v",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "nullsrc=s=256x256",
+      "-frames:v",
+      "1",
+      "-c:v",
+      encoder,
+      "-f",
+      "null",
+      "-",
+    ])
+    .output()
+    .map(|output| output.status.success())
+    .unwrap_or(false)
+}
+
+/// Returns the H.264 encoder to use. The result is found once per run.
+/// macOS uses VideoToolbox. Linux and Windows use a working GPU encoder (NVIDIA, Intel or AMD),
+/// or `libx264` on the CPU when none works.
+pub fn h264_encoder() -> &'static str {
+  static ENCODER: OnceLock<&'static str> = OnceLock::new();
+  ENCODER.get_or_init(|| {
+    if cfg!(target_os = "macos") {
+      return "h264_videotoolbox";
+    }
+    let available: Vec<&str> = GPU_H264_ENCODERS
+      .into_iter()
+      .filter(|encoder| encoder_works(encoder))
+      .collect();
+    pick_h264_encoder(&available)
+  })
+}
+
 /// Converts one input to an MP4 file that is safe to merge.
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
@@ -82,12 +135,9 @@ pub fn convert_for_merge(
   } else {
     "0:a?"
   };
-  args.extend(
-    [
-      "-map", "0:v?", "-map", audio_map, "-c:v", "libx264", "-c:a", "aac",
-    ]
-    .map(String::from),
-  );
+  args.extend(["-map", "0:v?", "-map", audio_map, "-c:v"].map(String::from));
+  args.push(h264_encoder().to_string());
+  args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
     args.extend(["-ac".to_string(), profile.channels.to_string()]);
@@ -381,6 +431,39 @@ mod test_parse_flat_streams {
   fn rejects_audio_stream_without_numbers() {
     let text = "streams.stream.0.codec_name=\"aac\"\nstreams.stream.0.codec_type=\"audio\"\n";
     assert!(parse_flat_streams(text).is_err());
+  }
+}
+
+#[cfg(test)]
+mod test_h264_encoder {
+  use super::{h264_encoder, pick_h264_encoder};
+
+  #[test]
+  fn picks_nvenc_before_qsv_and_amf() {
+    assert_eq!(
+      pick_h264_encoder(&["h264_amf", "h264_qsv", "h264_nvenc"]),
+      "h264_nvenc"
+    );
+  }
+
+  #[test]
+  fn picks_qsv_when_only_qsv_is_available() {
+    assert_eq!(pick_h264_encoder(&["h264_qsv"]), "h264_qsv");
+  }
+
+  #[test]
+  fn falls_back_to_libx264_without_gpu_encoder() {
+    assert_eq!(pick_h264_encoder(&[]), "libx264");
+  }
+
+  #[test]
+  fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
+    let encoder = h264_encoder();
+    if cfg!(target_os = "macos") {
+      assert_eq!(encoder, "h264_videotoolbox");
+    } else {
+      assert!(["h264_nvenc", "h264_qsv", "h264_amf", "libx264"].contains(&encoder));
+    }
   }
 }
 
