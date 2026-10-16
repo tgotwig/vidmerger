@@ -500,15 +500,26 @@ mod e2e {
     let filename = url.split('/').last().unwrap().replace("+", " ");
     let out = format!("data/{}", filename);
 
-    // Cache hit: the sample was downloaded in an earlier run.
-    if fs::metadata(&out).is_ok_and(|m| m.len() > 0) {
-      println!("♻️  Using cached sample: {out}");
-      return;
+    // Only the headers are read here. The body is downloaded only if the cache is not valid.
+    let response = ureq::get(url).call().unwrap();
+    let expected_len = response
+      .headers()
+      .get("content-length")
+      .and_then(|v| v.to_str().ok())
+      .and_then(|v| v.parse::<u64>().ok());
+
+    // Cache hit: a local file with the full size is kept. A partial file from an
+    // older run has a different size, so it is downloaded again.
+    if let Some(expected_len) = expected_len {
+      if fs::metadata(&out).is_ok_and(|m| m.len() == expected_len) {
+        println!("♻️  Using cached sample: {out}");
+        return;
+      }
     }
 
     // Write to a temporary file first, so an interrupted download is never used as a cache hit.
     let tmp = format!("{out}.part");
-    let mut body = ureq::get(url).call().unwrap().into_body();
+    let mut body = response.into_body();
     let mut reader = body.as_reader();
     let mut file = File::create(&tmp).unwrap();
     io::copy(&mut reader, &mut file).unwrap();
