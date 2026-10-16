@@ -9,8 +9,7 @@ tasks:
         rustup component add rustfmt
 
   run: cargo run -- data/call_merger -y
-
-  run_docker:
+  run-docker:
     - |
       docker build -t vidmerger .
       docker container run -it --rm -v ./data/call_merger:/data vidmerger
