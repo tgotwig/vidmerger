@@ -1,6 +1,9 @@
 - 💬 general
+  - use emojis
   - write in plain english for non-natives
 - 🌳 git handling
   - https://conventionalbranch.org
   - https://www.conventionalcommits.org/en/v1.0.0
+    - set a scope if it fits
+  - commit msg should have a max length of 72 chars
   - PR titles: <conventionalcommit msg> (<ISSUE_ID>)
