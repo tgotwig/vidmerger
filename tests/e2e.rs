@@ -21,8 +21,14 @@ mod e2e {
 
     println!("👷 Doing preparations...");
 
-    fs::remove_dir_all("data").unwrap_or_default();
+    // Keep the downloaded samples (the cache). Only remove the test folders inside `data`.
     fs::create_dir_all("data").unwrap();
+    for entry in fs::read_dir("data").unwrap() {
+      let path = entry.unwrap().path();
+      if path.is_dir() {
+        fs::remove_dir_all(path).unwrap();
+      }
+    }
 
     download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp4");
     download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp4");
@@ -494,10 +500,19 @@ mod e2e {
     let filename = url.split('/').last().unwrap().replace("+", " ");
     let out = format!("data/{}", filename);
 
+    // Cache hit: the sample was downloaded in an earlier run.
+    if fs::metadata(&out).is_ok_and(|m| m.len() > 0) {
+      println!("♻️  Using cached sample: {out}");
+      return;
+    }
+
+    // Write to a temporary file first, so an interrupted download is never used as a cache hit.
+    let tmp = format!("{out}.part");
     let mut body = ureq::get(url).call().unwrap().into_body();
     let mut reader = body.as_reader();
-    let mut file = File::create(out).unwrap();
+    let mut file = File::create(&tmp).unwrap();
     io::copy(&mut reader, &mut file).unwrap();
+    fs::rename(&tmp, &out).unwrap();
   }
 
   fn get_video_info(file_path: &str) -> String {
