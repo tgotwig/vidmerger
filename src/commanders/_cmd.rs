@@ -65,11 +65,12 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
 /// GPU H.264 encoders for Linux and Windows, in order of preference.
 const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
 
-/// Returns the first GPU encoder in `available`, or `libx264` (CPU) if there is none.
-fn pick_h264_encoder(available: &[&str]) -> &'static str {
+/// Returns the first GPU encoder for which `works` is true, or `libx264` (CPU) if none is.
+/// Stops at the first success, so later encoders are not tested.
+fn pick_h264_encoder(works: impl Fn(&str) -> bool) -> &'static str {
   GPU_H264_ENCODERS
     .into_iter()
-    .find(|encoder| available.contains(encoder))
+    .find(|encoder| works(encoder))
     .unwrap_or("libx264")
 }
 
@@ -106,11 +107,7 @@ pub fn h264_encoder() -> &'static str {
     if cfg!(target_os = "macos") {
       return "h264_videotoolbox";
     }
-    let available: Vec<&str> = GPU_H264_ENCODERS
-      .into_iter()
-      .filter(|encoder| encoder_works(encoder))
-      .collect();
-    pick_h264_encoder(&available)
+    pick_h264_encoder(encoder_works)
   })
 }
 
@@ -439,21 +436,24 @@ mod test_h264_encoder {
   use super::{h264_encoder, pick_h264_encoder};
 
   #[test]
-  fn picks_nvenc_before_qsv_and_amf() {
-    assert_eq!(
-      pick_h264_encoder(&["h264_amf", "h264_qsv", "h264_nvenc"]),
-      "h264_nvenc"
-    );
+  fn picks_nvenc_first_and_stops_testing() {
+    let mut tested = Vec::new();
+    let picked = pick_h264_encoder(|encoder| {
+      tested.push(encoder.to_string());
+      true
+    });
+    assert_eq!(picked, "h264_nvenc");
+    assert_eq!(tested, vec!["h264_nvenc"]);
   }
 
   #[test]
-  fn picks_qsv_when_only_qsv_is_available() {
-    assert_eq!(pick_h264_encoder(&["h264_qsv"]), "h264_qsv");
+  fn picks_qsv_when_only_qsv_works() {
+    assert_eq!(pick_h264_encoder(|e| e == "h264_qsv"), "h264_qsv");
   }
 
   #[test]
   fn falls_back_to_libx264_without_gpu_encoder() {
-    assert_eq!(pick_h264_encoder(&[]), "libx264");
+    assert_eq!(pick_h264_encoder(|_| false), "libx264");
   }
 
   #[test]
