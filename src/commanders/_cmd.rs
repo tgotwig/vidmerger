@@ -126,14 +126,26 @@ pub fn convert_for_merge(
   profile: Option<AudioProfile>,
   silent_audio: bool,
 ) -> Output {
-  let encoder = h264_encoder();
-  let result = run_convert(input, output, profile, silent_audio, encoder);
-  if result.status.success() || encoder == "libx264" {
+  convert_with_cpu_fallback(
+    h264_encoder(),
+    |result: &Output| result.status.success(),
+    |encoder| run_convert(input, output, profile, silent_audio, encoder),
+  )
+}
+
+/// Runs `convert` with `encoder`. If that fails and `encoder` is not `libx264`, runs it again
+/// with `libx264`. A GPU encoder can pass the test frame but still fail on a real input.
+fn convert_with_cpu_fallback<T>(
+  encoder: &str,
+  succeeded: impl Fn(&T) -> bool,
+  convert: impl Fn(&str) -> T,
+) -> T {
+  let result = convert(encoder);
+  if succeeded(&result) || encoder == "libx264" {
     return result;
   }
-  // A GPU encoder can pass the test frame but still fail on a real input, so retry on the CPU.
   println!("⚠️  {encoder} failed, retrying with libx264");
-  run_convert(input, output, profile, silent_audio, "libx264")
+  convert("libx264")
 }
 
 /// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
@@ -454,7 +466,53 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
+  use super::{convert_with_cpu_fallback, h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
+  use std::cell::RefCell;
+
+  #[test]
+  fn fallback_keeps_result_when_encoder_succeeds() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "h264_nvenc",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        true
+      },
+    );
+    assert!(ok);
+    assert_eq!(*calls.borrow(), vec!["h264_nvenc"]);
+  }
+
+  #[test]
+  fn fallback_retries_gpu_failure_with_libx264() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "h264_nvenc",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        encoder == "libx264"
+      },
+    );
+    assert!(ok);
+    assert_eq!(*calls.borrow(), vec!["h264_nvenc", "libx264"]);
+  }
+
+  #[test]
+  fn fallback_does_not_retry_when_libx264_fails() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "libx264",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        false
+      },
+    );
+    assert!(!ok);
+    assert_eq!(*calls.borrow(), vec!["libx264"]);
+  }
 
   #[test]
   fn picks_nvenc_first_and_stops_testing() {
