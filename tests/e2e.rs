@@ -108,7 +108,6 @@ mod e2e {
         .success(),
     );
 
-    assert!(res.contains("⚠️  Unsupported stream found"));
     assert!(res.contains("🐣 Generated"));
     let probe = Command::new("ffprobe")
       .args([

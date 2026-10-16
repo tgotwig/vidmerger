@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).
 - Chapter start times no longer drift earlier with each episode (#48). Chapter times are now stored in milliseconds, and each boundary is calculated from the running total of clip durations instead of whole seconds per clip.
 - Merging `.mov` inputs with a `tmcd` timecode stream no longer fails (#53). The timecode track is dropped with `-write_tmcd 0`, and if the merge still fails, each input is converted to MP4 and the merge is retried (#100).
 - Merging into MP4-family outputs no longer fails when an input has `pcm_alaw` audio (#17). The audio is re-encoded to AAC (`-c:a aac`) during the merge, because MP4 containers cannot store `pcm_alaw`.
