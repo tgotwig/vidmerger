@@ -437,13 +437,13 @@ mod test_h264_encoder {
 
   #[test]
   fn picks_nvenc_first_and_stops_testing() {
-    let mut tested = Vec::new();
+    let tested = std::cell::RefCell::new(Vec::new());
     let picked = pick_h264_encoder(|encoder| {
-      tested.push(encoder.to_string());
+      tested.borrow_mut().push(encoder.to_string());
       true
     });
     assert_eq!(picked, "h264_nvenc");
-    assert_eq!(tested, vec!["h264_nvenc"]);
+    assert_eq!(*tested.borrow(), vec!["h264_nvenc"]);
   }
 
   #[test]
