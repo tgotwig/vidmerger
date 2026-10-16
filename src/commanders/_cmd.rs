@@ -65,11 +65,12 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
 /// GPU H.264 encoders for Linux and Windows, in order of preference.
 const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
 
-/// Returns the first GPU encoder for which `works` is true, or `libx264` (CPU) if none is.
-/// Stops at the first success, so later encoders are not tested.
-fn pick_h264_encoder(works: impl Fn(&str) -> bool) -> &'static str {
-  GPU_H264_ENCODERS
-    .into_iter()
+/// Returns the first candidate for which `works` is true, or `libx264` (CPU) if none is.
+/// Stops at the first success, so later candidates are not tested.
+fn pick_h264_encoder(candidates: &[&'static str], works: impl Fn(&str) -> bool) -> &'static str {
+  candidates
+    .iter()
+    .copied()
     .find(|encoder| works(encoder))
     .unwrap_or("libx264")
 }
@@ -99,15 +100,17 @@ fn encoder_works(encoder: &str) -> bool {
 }
 
 /// Returns the H.264 encoder to use. The result is found once per run.
-/// macOS uses VideoToolbox. Linux and Windows use a working GPU encoder (NVIDIA, Intel or AMD),
-/// or `libx264` on the CPU when none works.
+/// macOS tries VideoToolbox. Linux and Windows try the GPU encoders (NVIDIA, Intel or AMD).
+/// Each candidate is tested first. If none works, `libx264` (CPU) is used.
 pub fn h264_encoder() -> &'static str {
   static ENCODER: OnceLock<&'static str> = OnceLock::new();
   ENCODER.get_or_init(|| {
-    if cfg!(target_os = "macos") {
-      return "h264_videotoolbox";
-    }
-    pick_h264_encoder(encoder_works)
+    let candidates: &[&'static str] = if cfg!(target_os = "macos") {
+      &["h264_videotoolbox"]
+    } else {
+      &GPU_H264_ENCODERS
+    };
+    pick_h264_encoder(candidates, encoder_works)
   })
 }
 
@@ -123,6 +126,24 @@ pub fn convert_for_merge(
   profile: Option<AudioProfile>,
   silent_audio: bool,
 ) -> Output {
+  let encoder = h264_encoder();
+  let result = run_convert(input, output, profile, silent_audio, encoder);
+  if result.status.success() || encoder == "libx264" {
+    return result;
+  }
+  // A GPU encoder can pass the test frame but still fail on a real input, so retry on the CPU.
+  println!("⚠️  {encoder} failed, retrying with libx264");
+  run_convert(input, output, profile, silent_audio, "libx264")
+}
+
+/// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
+fn run_convert(
+  input: &str,
+  output: &str,
+  profile: Option<AudioProfile>,
+  silent_audio: bool,
+  encoder: &str,
+) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
   let audio_map = if silent_audio {
     let profile = profile.expect("silent audio needs an audio profile");
@@ -133,7 +154,7 @@ pub fn convert_for_merge(
     "0:a?"
   };
   args.extend(["-map", "0:v?", "-map", audio_map, "-c:v"].map(String::from));
-  args.push(h264_encoder().to_string());
+  args.push(encoder.to_string());
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
@@ -433,12 +454,12 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{h264_encoder, pick_h264_encoder};
+  use super::{h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
 
   #[test]
   fn picks_nvenc_first_and_stops_testing() {
     let tested = std::cell::RefCell::new(Vec::new());
-    let picked = pick_h264_encoder(|encoder| {
+    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |encoder| {
       tested.borrow_mut().push(encoder.to_string());
       true
     });
@@ -448,12 +469,13 @@ mod test_h264_encoder {
 
   #[test]
   fn picks_qsv_when_only_qsv_works() {
-    assert_eq!(pick_h264_encoder(|e| e == "h264_qsv"), "h264_qsv");
+    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |e| e == "h264_qsv");
+    assert_eq!(picked, "h264_qsv");
   }
 
   #[test]
   fn falls_back_to_libx264_without_gpu_encoder() {
-    assert_eq!(pick_h264_encoder(|_| false), "libx264");
+    assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
   }
 
   #[test]
