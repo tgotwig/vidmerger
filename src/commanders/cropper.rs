@@ -1,6 +1,6 @@
 use crate::commanders::_cmd::{get_media_seconds, h264_encoder, probe_streams};
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
-use std::{collections::BTreeMap, fs, path::Path, process::Command};
+use std::{fs, path::Path, process::Command};
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
 
@@ -69,7 +69,7 @@ fn detect_black_bars(file: &str) -> Option<String> {
     ])
     .output()
     .ok()?;
-  let crop = most_common(&parse_crop_values(&String::from_utf8_lossy(&output.stderr)))?;
+  let crop = uniform_crop(&parse_crop_values(&String::from_utf8_lossy(&output.stderr)))?;
 
   if is_full_frame(&crop, width, height) {
     None
@@ -157,16 +157,15 @@ fn parse_crop_values(log: &str) -> Vec<String> {
     .collect()
 }
 
-/// Returns the value that appears most often. Ties go to the smaller value (BTreeMap order).
-fn most_common(values: &[String]) -> Option<String> {
-  let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
-  for value in values {
-    *counts.entry(value.as_str()).or_default() += 1;
-  }
-  counts
-    .into_iter()
-    .max_by_key(|(_, count)| *count)
-    .map(|(value, _)| value.to_string())
+/// Returns the crop value only when every sampled frame agrees on it. A clip that mixes
+/// letterboxed and full-frame scenes (e.g. a cutscene) gives different values, so it returns
+/// `None` and is left uncropped. This keeps the picture from being cut.
+fn uniform_crop(values: &[String]) -> Option<String> {
+  let first = values.first()?;
+  values
+    .iter()
+    .all(|value| value == first)
+    .then(|| first.clone())
 }
 
 /// The FFmpeg arguments that crop `input` to `crop` and write `output`.
@@ -294,20 +293,25 @@ mod test_parse_crop_values {
 }
 
 #[cfg(test)]
-mod test_most_common {
-  use super::most_common;
+mod test_uniform_crop {
+  use super::uniform_crop;
 
   #[test]
-  fn picks_the_most_frequent_value() {
-    let values: Vec<String> = ["1920:688:0:16", "1920:696:0:0", "1920:688:0:16"]
-      .map(String::from)
-      .to_vec();
-    assert_eq!(most_common(&values), Some("1920:688:0:16".to_string()));
+  fn returns_the_crop_when_every_frame_agrees() {
+    let values: Vec<String> = ["320:180:0:30", "320:180:0:30"].map(String::from).to_vec();
+    assert_eq!(uniform_crop(&values), Some("320:180:0:30".to_string()));
+  }
+
+  #[test]
+  fn returns_none_when_frames_disagree() {
+    // A cutscene: some frames letterboxed, some full frame.
+    let values: Vec<String> = ["320:180:0:30", "320:240:0:0"].map(String::from).to_vec();
+    assert_eq!(uniform_crop(&values), None);
   }
 
   #[test]
   fn returns_none_for_no_values() {
-    assert_eq!(most_common(&[]), None);
+    assert_eq!(uniform_crop(&[]), None);
   }
 }
 
