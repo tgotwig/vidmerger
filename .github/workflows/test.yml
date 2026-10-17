@@ -2,9 +2,8 @@ name: 🧪 Running e2e tests
 
 on:
   push:
-    branches-ignore:
-      - 'renovate/**'
-      - 'coderabbitai/**'
+    branches:
+      - main
     paths-ignore:
       - '**.md'
   pull_request:
