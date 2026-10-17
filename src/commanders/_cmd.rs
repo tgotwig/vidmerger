@@ -8,6 +8,7 @@ use std::{
   io::{BufRead, BufReader, Error, Read},
   path::PathBuf,
   process::{Child, Command, Output, Stdio},
+  sync::OnceLock,
 };
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
@@ -61,6 +62,58 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
   run_with_progress(&args, "Merging videos", total_seconds)
 }
 
+/// GPU H.264 encoders for Linux and Windows, in order of preference.
+const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
+
+/// Returns the first candidate for which `works` is true, or `libx264` (CPU) if none is.
+/// Stops at the first success, so later candidates are not tested.
+fn pick_h264_encoder(candidates: &[&'static str], works: impl Fn(&str) -> bool) -> &'static str {
+  candidates
+    .iter()
+    .copied()
+    .find(|encoder| works(encoder))
+    .unwrap_or("libx264")
+}
+
+/// Returns true if FFmpeg can encode one test frame with `encoder`.
+/// FFmpeg can list a GPU encoder even when no GPU is present, so a real test encode is used.
+fn encoder_works(encoder: &str) -> bool {
+  Command::new("ffmpeg")
+    .args([
+      "-v",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "nullsrc=s=256x256",
+      "-frames:v",
+      "1",
+      "-c:v",
+      encoder,
+      "-f",
+      "null",
+      "-",
+    ])
+    .output()
+    .map(|output| output.status.success())
+    .unwrap_or(false)
+}
+
+/// Returns the H.264 encoder to use. The result is found once per run.
+/// macOS tries VideoToolbox. Linux and Windows try the GPU encoders (NVIDIA, Intel or AMD).
+/// Each candidate is tested first. If none works, `libx264` (CPU) is used.
+pub fn h264_encoder() -> &'static str {
+  static ENCODER: OnceLock<&'static str> = OnceLock::new();
+  ENCODER.get_or_init(|| {
+    let candidates: &[&'static str] = if cfg!(target_os = "macos") {
+      &["h264_videotoolbox"]
+    } else {
+      &GPU_H264_ENCODERS
+    };
+    pick_h264_encoder(candidates, encoder_works)
+  })
+}
+
 /// Converts one input to an MP4 file that is safe to merge.
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
@@ -73,6 +126,36 @@ pub fn convert_for_merge(
   profile: Option<AudioProfile>,
   silent_audio: bool,
 ) -> Output {
+  convert_with_cpu_fallback(
+    h264_encoder(),
+    |result: &Output| result.status.success(),
+    |encoder| run_convert(input, output, profile, silent_audio, encoder),
+  )
+}
+
+/// Runs `convert` with `encoder`. If that fails and `encoder` is not `libx264`, runs it again
+/// with `libx264`. A GPU encoder can pass the test frame but still fail on a real input.
+fn convert_with_cpu_fallback<T>(
+  encoder: &str,
+  succeeded: impl Fn(&T) -> bool,
+  convert: impl Fn(&str) -> T,
+) -> T {
+  let result = convert(encoder);
+  if succeeded(&result) || encoder == "libx264" {
+    return result;
+  }
+  println!("⚠️  {encoder} failed, retrying with libx264");
+  convert("libx264")
+}
+
+/// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
+fn run_convert(
+  input: &str,
+  output: &str,
+  profile: Option<AudioProfile>,
+  silent_audio: bool,
+  encoder: &str,
+) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
   let audio_map = if silent_audio {
     let profile = profile.expect("silent audio needs an audio profile");
@@ -82,12 +165,9 @@ pub fn convert_for_merge(
   } else {
     "0:a?"
   };
-  args.extend(
-    [
-      "-map", "0:v?", "-map", audio_map, "-c:v", "libx264", "-c:a", "aac",
-    ]
-    .map(String::from),
-  );
+  args.extend(["-map", "0:v?", "-map", audio_map, "-c:v"].map(String::from));
+  args.push(encoder.to_string());
+  args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
     args.extend(["-ac".to_string(), profile.channels.to_string()]);
@@ -381,6 +461,91 @@ mod test_parse_flat_streams {
   fn rejects_audio_stream_without_numbers() {
     let text = "streams.stream.0.codec_name=\"aac\"\nstreams.stream.0.codec_type=\"audio\"\n";
     assert!(parse_flat_streams(text).is_err());
+  }
+}
+
+#[cfg(test)]
+mod test_h264_encoder {
+  use super::{convert_with_cpu_fallback, h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
+  use std::cell::RefCell;
+
+  #[test]
+  fn fallback_keeps_result_when_encoder_succeeds() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "h264_nvenc",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        true
+      },
+    );
+    assert!(ok);
+    assert_eq!(*calls.borrow(), vec!["h264_nvenc"]);
+  }
+
+  #[test]
+  fn fallback_retries_gpu_failure_with_libx264() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "h264_nvenc",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        encoder == "libx264"
+      },
+    );
+    assert!(ok);
+    assert_eq!(*calls.borrow(), vec!["h264_nvenc", "libx264"]);
+  }
+
+  #[test]
+  fn fallback_does_not_retry_when_libx264_fails() {
+    let calls = RefCell::new(Vec::new());
+    let ok = convert_with_cpu_fallback(
+      "libx264",
+      |ok: &bool| *ok,
+      |encoder| {
+        calls.borrow_mut().push(encoder.to_string());
+        false
+      },
+    );
+    assert!(!ok);
+    assert_eq!(*calls.borrow(), vec!["libx264"]);
+  }
+
+  #[test]
+  fn picks_nvenc_first_and_stops_testing() {
+    let tested = std::cell::RefCell::new(Vec::new());
+    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |encoder| {
+      tested.borrow_mut().push(encoder.to_string());
+      true
+    });
+    assert_eq!(picked, "h264_nvenc");
+    assert_eq!(*tested.borrow(), vec!["h264_nvenc"]);
+  }
+
+  #[test]
+  fn picks_qsv_when_only_qsv_works() {
+    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |e| e == "h264_qsv");
+    assert_eq!(picked, "h264_qsv");
+  }
+
+  #[test]
+  fn falls_back_to_libx264_without_gpu_encoder() {
+    assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
+  }
+
+  #[test]
+  fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
+    // The probe can fail on a supported system, so the CPU fallback is also valid.
+    let encoder = h264_encoder();
+    let allowed: &[&str] = if cfg!(target_os = "macos") {
+      &["h264_videotoolbox", "libx264"]
+    } else {
+      &["h264_nvenc", "h264_qsv", "h264_amf", "libx264"]
+    };
+    assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
   }
 }
 

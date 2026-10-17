@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
+
 ### Fixed
 
 - Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).
