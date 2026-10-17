@@ -130,7 +130,7 @@ fn parse_frame_size(text: &str) -> Option<(u32, u32)> {
 
 /// Number of frames to sample across the whole clip. Sampling the full length means a black
 /// opening (or any black section) cannot hide the bars.
-const SAMPLES_PER_CLIP: f64 = 60.0;
+const SAMPLES_PER_CLIP: f64 = 66.0;
 
 /// Returns the `fps` plus `cropdetect` filter that samples about `SAMPLES_PER_CLIP` frames
 /// spread evenly over `duration_seconds`. Clips shorter than that get one frame per second.
@@ -268,8 +268,8 @@ mod test_parse_crop_values {
   }
 
   #[test]
-  fn samples_long_clips_about_sixty_times() {
-    assert_eq!(sampling_filter(600.0), "fps=0.1,cropdetect=round=2:skip=0");
+  fn samples_long_clips_about_sixty_six_times() {
+    assert_eq!(sampling_filter(600.0), "fps=0.11,cropdetect=round=2:skip=0");
   }
 
   #[test]
