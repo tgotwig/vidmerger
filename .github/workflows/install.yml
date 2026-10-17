@@ -13,6 +13,7 @@ jobs:
       - name: Install Vidmerger
         run: |
           brew tap tgotwig/vidmerger
+          brew trust --formula tgotwig/vidmerger/vidmerger
           brew install vidmerger
       - name: Verify installation
         run: |
@@ -33,6 +34,7 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew --help
           brew tap tgotwig/homebrew-linux-vidmerger
+          brew trust --formula tgotwig/homebrew-linux-vidmerger/vidmerger
           brew install vidmerger
       - name: Verify installation
         run: |
@@ -77,6 +79,7 @@ jobs:
       - name: Install Vidmerger
         run: |
           brew tap tgotwig/vidmerger
+          brew trust --formula tgotwig/vidmerger/vidmerger
           brew install vidmerger
       - name: Verify installation
         run: |
