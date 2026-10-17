@@ -6,21 +6,6 @@ on:
 jobs:
   # --- ❗️ X64 ---
 
-  install-x64-macos-homebrew:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install Vidmerger
-        run: |
-          brew tap tgotwig/vidmerger
-          brew install vidmerger
-      - name: Verify installation
-        run: |
-          ffmpeg -version
-          vidmerger --version
-          # 🔎 Check if version from Cargo.toml matches with binary
-          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
-
   install-x64-linux-homebrew:
     runs-on: ubuntu-latest
     steps:
@@ -32,7 +17,8 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew --help
-          brew tap tgotwig/linux-vidmerger
+          brew tap tgotwig/homebrew-linux-vidmerger
+          brew trust --formula tgotwig/homebrew-linux-vidmerger/vidmerger
           brew install vidmerger
       - name: Verify installation
         run: |
@@ -71,12 +57,13 @@ jobs:
   # --- ❗️ ARM64 ---
 
   install-arm64-macos-homebrew:
-    runs-on: ARM64
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
       - name: Install Vidmerger
         run: |
           brew tap tgotwig/vidmerger
+          brew trust --formula tgotwig/vidmerger/vidmerger
           brew install vidmerger
       - name: Verify installation
         run: |
@@ -92,8 +79,9 @@ jobs:
       - uses: pguyot/arm-runner-action@v2
         with:
           base_image: raspios_lite_arm64:latest
+          bind_mount_repository: true
           commands: |
-            sudo curl -L https://github.com/tgotwig/vidmerger/releases/download/0.4.1/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
+            sudo curl -fL https://github.com/tgotwig/vidmerger/releases/latest/download/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
             vidmerger --version
             # 🔎 Check if version from Cargo.toml matches with binary
             version_cargo=$(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') && version_vidmerger=$(vidmerger -V | awk '{print $2}') && [ "$version_cargo" = "$version_vidmerger" ] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
