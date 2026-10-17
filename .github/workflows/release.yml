@@ -44,6 +44,8 @@ jobs:
     uses: ./.github/workflows/release-linux.yml
     with:
       tag: ${{ github.ref_name }}
+    secrets:
+      VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
 
   release-macos:
     name: 🍎 Release on MacOS
@@ -51,6 +53,8 @@ jobs:
     uses: ./.github/workflows/release-macos.yml
     with:
       tag: ${{ github.ref_name }}
+    secrets:
+      VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
 
   release-windows:
     name: 🏳️ Release on Windows and Chocolatey

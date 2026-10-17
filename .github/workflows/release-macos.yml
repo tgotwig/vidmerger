@@ -7,6 +7,10 @@ on:
         description: "Release tag, for example 0.4.2"
         required: true
         type: string
+    secrets:
+      VIDMERGER_TAPS_SECRET:
+        description: "Token that can push to the Homebrew tap"
+        required: true
     outputs:
       version:
         description: "Version from the tag"
@@ -65,3 +69,29 @@ jobs:
           mkdir -p "$dir"
           gh release download "$TAG" --pattern vidmerger-mac.tar.gz --dir "$dir" --clobber
           echo "sha=$(shasum -a 256 "$dir/vidmerger-mac.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: 🍺 Bump Brew
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+          SHA: ${{ steps.shasum.outputs.sha }}
+        run: |
+          brew tap tgotwig/homebrew-vidmerger
+          # Skip when master or this version's bump branch (open PR) already has this sha256
+          branch="bump-vidmerger-$VERSION"
+          already=""
+          for ref in master "$branch"; do
+            f="$RUNNER_TEMP/formula-$ref.rb"
+            if curl -fsSL -o "$f" "https://raw.githubusercontent.com/tgotwig/homebrew-vidmerger/$ref/vidmerger.rb" && grep -q "$SHA" "$f"; then
+              already=1
+            fi
+          done
+          if [ -n "$already" ]; then
+            echo "Formula already has this release's sha256 (master or $branch), skipping bump"
+            exit 0
+          fi
+          brew trust --formula tgotwig/homebrew-vidmerger/vidmerger
+          brew bump-formula-pr -f --version="$VERSION" --no-browse --no-audit \
+          --sha256="$SHA" \
+          --url="https://github.com/tgotwig/vidmerger/releases/download/$VERSION/vidmerger-mac.tar.gz" \
+          tgotwig/homebrew-vidmerger/vidmerger

@@ -7,6 +7,10 @@ on:
         description: "Release tag, for example 0.4.2"
         required: true
         type: string
+    secrets:
+      VIDMERGER_TAPS_SECRET:
+        description: "Token that can push to the Homebrew tap"
+        required: true
     outputs:
       version:
         description: "Version from the tag"
@@ -37,7 +41,7 @@ jobs:
       - name: ⬇️ Install arm64 cross linker
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           rustup target add aarch64-unknown-linux-gnu
 
       - name: 🧑‍🔧 Build Release arm64
@@ -91,3 +95,39 @@ jobs:
           mkdir -p "$dir"
           gh release download "$TAG" --pattern vidmerger-linux.tar.gz --dir "$dir" --clobber
           echo "sha=$(sha256sum "$dir/vidmerger-linux.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: 🏝 Set git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 🔄 Install Linuxbrew
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" < /dev/null
+
+      - name: 🍺 Bump Brew
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+          SHA: ${{ steps.shasum.outputs.sha }}
+        run: |
+          brew=/home/linuxbrew/.linuxbrew/bin/brew
+          $brew tap tgotwig/homebrew-linux-vidmerger
+          # Skip when master or this version's bump branch (open PR) already has this sha256
+          branch="bump-vidmerger-$VERSION"
+          already=""
+          for ref in master "$branch"; do
+            f="$RUNNER_TEMP/formula-$ref.rb"
+            if curl -fsSL -o "$f" "https://raw.githubusercontent.com/tgotwig/homebrew-linux-vidmerger/$ref/vidmerger.rb" && grep -q "$SHA" "$f"; then
+              already=1
+            fi
+          done
+          if [ -n "$already" ]; then
+            echo "Formula already has this release's sha256 (master or $branch), skipping bump"
+            exit 0
+          fi
+          $brew trust --formula tgotwig/homebrew-linux-vidmerger/vidmerger
+          $brew bump-formula-pr -f --version="$VERSION" --no-browse --no-audit \
+          --sha256="$SHA" \
+          --url="https://github.com/tgotwig/vidmerger/releases/download/$VERSION/vidmerger-linux.tar.gz" \
+          tgotwig/homebrew-linux-vidmerger/vidmerger

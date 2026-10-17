@@ -19,17 +19,36 @@ jobs:
   docker:
     name: 🐳 Build and push Docker image
     runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.check.outputs.exists }}
     steps:
+      - name: Check if this version is already on Docker Hub
+        id: check
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ github.repository }}/tags/$TAG")
+          if [ "$code" = "200" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "$TAG is already on Docker Hub, skipping build and push"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout repository
+        if: steps.check.outputs.exists != 'true'
         uses: actions/checkout@v7
 
       - name: Set up QEMU
+        if: steps.check.outputs.exists != 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
+        if: steps.check.outputs.exists != 'true'
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
+        if: steps.check.outputs.exists != 'true'
         uses: docker/login-action@v4
         env:
           # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
@@ -39,6 +58,7 @@ jobs:
           password: ${{ env.DOCKERHUB_SECRET }}
 
       - name: Build and push Docker image
+        if: steps.check.outputs.exists != 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
