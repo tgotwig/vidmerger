@@ -58,7 +58,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" target/release/vidmerger-mac.tar.gz --clobber
+        run: |
+          asset=vidmerger-mac.tar.gz
+          if gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$GITHUB_REF_NAME" "target/release/$asset"
+          fi
 
   release-linux:
     name: 🐧 Release on Linux
@@ -93,7 +99,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" target/aarch64-unknown-linux-gnu/release/vidmerger-linux-arm64.tar.gz --clobber
+        run: |
+          asset=vidmerger-linux-arm64.tar.gz
+          if gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$GITHUB_REF_NAME" "target/aarch64-unknown-linux-gnu/release/$asset"
+          fi
 
       - name: ⬆️ Get version
         id: get_version
@@ -108,7 +120,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" target/release/vidmerger-linux.tar.gz --clobber
+        run: |
+          asset=vidmerger-linux.tar.gz
+          if gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$GITHUB_REF_NAME" "target/release/$asset"
+          fi
 
   publish:
     name: 🌍 Publish release
@@ -201,7 +219,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-        run: gh release upload "$GITHUB_REF_NAME" tools/vidmerger.exe --clobber
+        run: |
+          asset=vidmerger.exe
+          if gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$GITHUB_REF_NAME" "tools/$asset"
+          fi
       - name: Create nuspec, LICENSE and VERIFICATION files
         shell: bash
         env:
