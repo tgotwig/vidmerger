@@ -49,11 +49,6 @@ jobs:
         id: get_version
         run: echo "version=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
 
-      - name: 🧮 Set SHA
-        id: shasum
-        run: |
-          echo "sha=$(shasum -a 256 target/release/vidmerger-mac.tar.gz | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
-
       - name: 🚀 Upload Release Asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,6 +60,18 @@ jobs:
           else
             gh release upload "$GITHUB_REF_NAME" "target/release/$asset"
           fi
+
+      - name: 🧮 Set SHA
+        id: shasum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Hash the asset as published, so reused and new uploads give the same checksum
+          dir="$RUNNER_TEMP/published-mac"
+          mkdir -p "$dir"
+          gh release download "$GITHUB_REF_NAME" --pattern vidmerger-mac.tar.gz --dir "$dir" --clobber
+          echo "sha=$(shasum -a 256 "$dir/vidmerger-mac.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
 
   release-linux:
     name: 🐧 Release on Linux
@@ -111,11 +118,6 @@ jobs:
         id: get_version
         run: echo "version=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
 
-      - name: 🧮 Set SHA
-        id: shasum
-        run: |
-          echo "sha=$(shasum -a 256 target/release/vidmerger-linux.tar.gz | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
-
       - name: 🚀 Upload Release Asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -127,6 +129,18 @@ jobs:
           else
             gh release upload "$GITHUB_REF_NAME" "target/release/$asset"
           fi
+
+      - name: 🧮 Set SHA
+        id: shasum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Hash the asset as published, so reused and new uploads give the same checksum
+          dir="$RUNNER_TEMP/published-linux"
+          mkdir -p "$dir"
+          gh release download "$GITHUB_REF_NAME" --pattern vidmerger-linux.tar.gz --dir "$dir" --clobber
+          echo "sha=$(sha256sum "$dir/vidmerger-linux.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
 
   publish:
     name: 🌍 Publish release
@@ -216,6 +230,7 @@ jobs:
           mkdir tools
           mv target\release\vidmerger.exe tools
       - name: 🚀 Upload Release Asset
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -226,6 +241,24 @@ jobs:
           else
             gh release upload "$GITHUB_REF_NAME" "tools/$asset"
           fi
+
+  publish-chocolatey:
+    name: 🍫 Publish on Chocolatey
+    runs-on: windows-latest
+    needs: release-windows-chocolatey
+    steps:
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Download Windows asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir tools
+          gh release download "$GITHUB_REF_NAME" --pattern vidmerger.exe --dir tools --clobber
       - name: Create nuspec, LICENSE and VERIFICATION files
         shell: bash
         env:
