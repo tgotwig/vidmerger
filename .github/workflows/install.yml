@@ -71,7 +71,7 @@ jobs:
   # --- ❗️ ARM64 ---
 
   install-arm64-macos-homebrew:
-    runs-on: ARM64
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
       - name: Install Vidmerger
