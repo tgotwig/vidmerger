@@ -129,10 +129,6 @@ The primary requirements are rust, ffmpeg, and go-task. The devcontainer provide
 
 If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨
 
-### Deploying / Publishing
-
-For details on how to publish a new version, you can look up the [Publish new version](https://github.com/tgotwig/vidmerger/wiki#-publish-new-version) wiki page 📖
-
 ## 🧪 Tests
 
 - For major tests: `task test`
