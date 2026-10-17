@@ -367,6 +367,33 @@ mod e2e {
   // ----------------------------------------------------------------
 
   #[test]
+  fn call_merger_with_skip_cropper_keeps_black_bars() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_black_bars(test_name);
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .arg("--skip-cropper")
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    // The cropper is skipped, so it never runs and no crop is printed.
+    assert!(!res.contains("✂️"));
+    let probe = Command::new("ffprobe")
+      .args(["-v", "error", "-select_streams", "v:0", "-show_entries"])
+      .args(["stream=width,height", "-of", "csv=p=0"])
+      .arg(format!("data/{}/output.mp4", test_name))
+      .output()
+      .unwrap();
+    // The bars are kept, so the output is the full 320x240 stored size.
+    assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "320,240");
+  }
+
+  #[test]
   fn call_merger_crops_black_bars() {
     let test_name = function_name!().split("::").last().unwrap();
     prep_with_black_bars(test_name);
