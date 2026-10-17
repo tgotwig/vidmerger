@@ -92,12 +92,15 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
   MergePlan { profile, actions }
 }
 
+/// `force_convert` is set when some inputs were cropped. Cropped files are H.264, so every
+/// input is converted to keep the video codec the same for the stream-copy merge.
 pub fn merge(
   input: String,
   output: String,
   files_to_merge_as_strings: Vec<String>,
   file_format: &str,
   tmp_dir: PathBuf,
+  force_convert: bool,
 ) {
   // Probe every input once. The plan decides which inputs can be copied as they are.
   let probes: Vec<Vec<MediaStream>> = files_to_merge_as_strings
@@ -135,7 +138,7 @@ pub fn merge(
   let output_str = output.clone();
   let chapters = file_path.to_string_lossy().to_string();
   // First try: copy inputs that already fit and convert the rest.
-  let plan = plan_merge(&probes, file_format, false);
+  let plan = plan_merge(&probes, file_format, force_convert);
   let mut res = run_plan(
     &plan,
     &files_to_merge_as_strings,

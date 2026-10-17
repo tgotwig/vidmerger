@@ -27,9 +27,13 @@ fn command() -> Command {
             "           ├─> Vidmerger ─┬─ no FPS mismatch ─────────────┐\n",
             "  Video B ─┘              └─ FPS mismatch -> FPS changer ─┤\n",
             "                                                          ↓\n",
-            "                                                        Merger\n",
-            "                                                          ↓\n",
-            "                                           Video A + B + chapters\n",
+            "                                                    (( A+B_SAME_FPS ))\n",
+            "                                                          ├─ black bars detected ─> Cropper ─┐\n",
+            "                                                          └─ no black bars detected ─────────┤\n",
+            "                                                                                             ↓\n",
+            "                                                                                          Merger\n",
+            "                                                                                             ↓\n",
+            "                                                                                  A+B+Chapters\n",
         ))
         .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
@@ -57,6 +61,11 @@ fn command() -> Command {
             .help("Skips the fps changer")
             .action(ArgAction::SetTrue)
         )
+        .arg(Arg::new("skip-cropper")
+            .long("skip-cropper")
+            .help("Skips the cropper that removes black bars")
+            .action(ArgAction::SetTrue)
+        )
         .arg(Arg::new("yes")
             .long("yes")
             .short('y')
@@ -82,6 +91,7 @@ mod tests {
     assert!(help.contains("Workflow:"));
     assert!(help.contains("no FPS mismatch"));
     assert!(help.contains("FPS mismatch -> FPS changer"));
-    assert!(help.contains("Video A + B + chapters"));
+    assert!(help.contains("A+B_SAME_FPS"));
+    assert!(help.contains("A+B+Chapters"));
   }
 }

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cropper** which removes black bars from the videos before the merge (#50). It runs after the FPS changer and only when at least one video has bars. It samples about 66 frames spread over each video, so a black opening does not hide the bars, and it crops only where the bars are found. Videos without bars are copied unchanged, and when any video is cropped, all videos are converted so they can be merged. Rotated videos are compared in their displayed orientation. Can be skipped by `--skip-cropper`.
 - GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
 
 ### Fixed
