@@ -67,7 +67,7 @@ fn detect_black_bars(file: &str) -> Option<String> {
       "-i",
       file,
       "-vf",
-      "fps=1,cropdetect=round=2",
+      "fps=1,cropdetect=round=2:skip=0",
       "-an",
       "-f",
       "null",
