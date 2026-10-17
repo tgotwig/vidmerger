@@ -27,13 +27,13 @@ fn command() -> Command {
             "           ├─> Vidmerger ─┬─ no FPS mismatch ─────────────┐\n",
             "  Video B ─┘              └─ FPS mismatch -> FPS changer ─┤\n",
             "                                                          ↓\n",
-            "                                                       Same FPS\n",
+            "                                                    (( A+B_SAME_FPS ))\n",
             "                                                          ├─ black bars detected ─> Cropper ─┐\n",
             "                                                          └─ no black bars detected ─────────┤\n",
             "                                                                                             ↓\n",
             "                                                                                          Merger\n",
             "                                                                                             ↓\n",
-            "                                                                                  Video A + B + Chapters\n",
+            "                                                                                  A+B+Chapters\n",
         ))
         .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
@@ -91,6 +91,7 @@ mod tests {
     assert!(help.contains("Workflow:"));
     assert!(help.contains("no FPS mismatch"));
     assert!(help.contains("FPS mismatch -> FPS changer"));
-    assert!(help.contains("Video A + B + chapters"));
+    assert!(help.contains("A+B_SAME_FPS"));
+    assert!(help.contains("A+B+Chapters"));
   }
 }

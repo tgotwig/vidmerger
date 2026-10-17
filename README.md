@@ -72,12 +72,12 @@ Options:
 graph LR;
 VideoA((Video_A))-->Vidmerger;
 VideoB((Video_B))-->Vidmerger;
-Vidmerger-->|no fps mismatch detected| Same_FPS;
-Vidmerger-->FPS_Changer-->Same_FPS;
-Same_FPS-->|black bars detected| Cropper;
-Same_FPS-->|no black bars detected| Merger;
+Vidmerger-->|no fps mismatch detected| A_B_SAME_FPS((("A+B_SAME_FPS")));
+Vidmerger-->FPS_Changer-->A_B_SAME_FPS;
+A_B_SAME_FPS-->|black bars detected| Cropper;
+A_B_SAME_FPS-->|no black bars detected| Merger;
 Cropper-->Merger;
-Merger-->Output((Video_A+B+Chapters));
+Merger-->Output((A+B+Chapters));
 ```
 
 | Feature     | Description                                                                                                                                                                                                                                     |
