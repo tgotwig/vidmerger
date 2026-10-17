@@ -7,6 +7,10 @@ on:
         description: "Release tag, for example 0.4.2"
         required: true
         type: string
+    secrets:
+      VIDMERGER_CHOCO_SECRET:
+        description: "Chocolatey API key for pushing the package"
+        required: true
 
 permissions:
   contents: write

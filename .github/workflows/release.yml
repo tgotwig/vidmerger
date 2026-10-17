@@ -35,7 +35,8 @@ jobs:
     uses: ./.github/workflows/release-docker.yml
     with:
       tag: ${{ github.ref_name }}
-    secrets: inherit
+    secrets:
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
 
   release-linux:
     name: 🐧 Release on Linux
@@ -57,4 +58,5 @@ jobs:
     uses: ./.github/workflows/release-windows.yml
     with:
       tag: ${{ github.ref_name }}
-    secrets: inherit
+    secrets:
+      VIDMERGER_CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
