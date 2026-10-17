@@ -71,11 +71,23 @@ fn detect_black_bars(file: &str) -> Option<String> {
     .ok()?;
   let crop = most_common(&parse_crop_values(&String::from_utf8_lossy(&output.stderr)))?;
 
-  if crop == format!("{width}:{height}:0:0") {
+  if is_full_frame(&crop, width, height) {
     None
   } else {
     Some(crop)
   }
+}
+
+/// True when `crop` (`w:h:x:y`) is the whole frame, allowing one pixel of rounding per side.
+/// `cropdetect` rounds to even sizes, so a bar-free 321x181 frame can report 320:180:0:0.
+fn is_full_frame(crop: &str, width: u32, height: u32) -> bool {
+  let parts: Vec<i64> = crop.split(':').filter_map(|p| p.parse().ok()).collect();
+  if parts.len() != 4 {
+    return false;
+  }
+  let (w, h, x, y) = (parts[0], parts[1], parts[2], parts[3]);
+  let (width, height) = (i64::from(width), i64::from(height));
+  (width - w) <= 1 && (height - h) <= 1 && x <= 1 && y <= 1
 }
 
 /// Returns the width and height of the first video stream, as FFmpeg sees the frames.
@@ -184,6 +196,32 @@ fn video_encoder_for(output: &str) -> Option<&'static str> {
     .to_str()?
     .to_ascii_lowercase();
   matches!(extension.as_str(), "mp4" | "m4v" | "mov" | "mkv").then(h264_encoder)
+}
+
+#[cfg(test)]
+mod test_is_full_frame {
+  use super::is_full_frame;
+
+  #[test]
+  fn rounding_to_even_size_is_full_frame() {
+    // A bar-free 321x181 frame can be reported as 320:180:0:0.
+    assert!(is_full_frame("320:180:0:0", 321, 181));
+  }
+
+  #[test]
+  fn exact_full_frame_is_full_frame() {
+    assert!(is_full_frame("320:240:0:0", 320, 240));
+  }
+
+  #[test]
+  fn real_bars_are_not_full_frame() {
+    assert!(!is_full_frame("320:180:0:30", 320, 240));
+  }
+
+  #[test]
+  fn garbage_is_not_full_frame() {
+    assert!(!is_full_frame("not-a-crop", 320, 240));
+  }
 }
 
 #[cfg(test)]
