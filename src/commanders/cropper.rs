@@ -78,7 +78,9 @@ fn detect_black_bars(file: &str) -> Option<String> {
   }
 }
 
-/// Returns the width and height of the first video stream.
+/// Returns the width and height of the first video stream, as FFmpeg sees the frames.
+/// A stream rotated by a quarter turn (90 or 270 degrees) is swapped, because `cropdetect`
+/// works on the rotated frames.
 fn frame_size(file: &str) -> Option<(u32, u32)> {
   let output = Command::new("ffprobe")
     .args([
@@ -87,16 +89,31 @@ fn frame_size(file: &str) -> Option<(u32, u32)> {
       "-select_streams",
       "v:0",
       "-show_entries",
-      "stream=width,height",
+      "stream=width,height:stream_side_data=rotation",
       "-of",
       "csv=p=0",
       file,
     ])
     .output()
     .ok()?;
-  let text = String::from_utf8_lossy(&output.stdout);
-  let (width, height) = text.trim().split_once(',')?;
-  Some((width.parse().ok()?, height.parse().ok()?))
+  parse_frame_size(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Reads ffprobe's csv output: `width,height[,rotation]`. Rotation is only printed for rotated
+/// streams, which leaves a trailing comma (e.g. "320,180,-90"). Empty fields are skipped.
+fn parse_frame_size(text: &str) -> Option<(u32, u32)> {
+  let mut fields = text.trim().split(',').filter(|field| !field.is_empty());
+  let width: u32 = fields.next()?.parse().ok()?;
+  let height: u32 = fields.next()?.parse().ok()?;
+  let quarter_turn = fields
+    .next()
+    .and_then(|angle| angle.parse::<f64>().ok())
+    .is_some_and(|angle| (angle.abs() % 180.0 - 90.0).abs() < 1.0);
+  Some(if quarter_turn {
+    (height, width)
+  } else {
+    (width, height)
+  })
 }
 
 /// Number of frames to sample across the whole clip. Sampling the full length means a black
@@ -167,6 +184,32 @@ fn video_encoder_for(output: &str) -> Option<&'static str> {
     .to_str()?
     .to_ascii_lowercase();
   matches!(extension.as_str(), "mp4" | "m4v" | "mov" | "mkv").then(h264_encoder)
+}
+
+#[cfg(test)]
+mod test_frame_size_fields {
+  use super::parse_frame_size;
+
+  #[test]
+  fn reads_plain_size() {
+    assert_eq!(parse_frame_size("320,240\n"), Some((320, 240)));
+  }
+
+  #[test]
+  fn reads_size_with_trailing_comma_from_rotation() {
+    assert_eq!(parse_frame_size("320,180,\n"), Some((320, 180)));
+  }
+
+  #[test]
+  fn swaps_size_for_a_quarter_turn() {
+    assert_eq!(parse_frame_size("320,180,-90\n"), Some((180, 320)));
+    assert_eq!(parse_frame_size("320,180,90\n"), Some((180, 320)));
+  }
+
+  #[test]
+  fn keeps_size_for_a_half_turn() {
+    assert_eq!(parse_frame_size("320,180,180\n"), Some((320, 180)));
+  }
 }
 
 #[cfg(test)]
