@@ -77,7 +77,7 @@ Vidmerger-->FPS_Changer-->Same_FPS;
 Same_FPS-->|black bars detected| Cropper;
 Same_FPS-->|no black bars detected| Merger;
 Cropper-->Merger;
-Merger-->Video_A+B_and_chapters;
+Merger-->Output((Video_A+B+Chapters));
 ```
 
 | Feature     | Description                                                                                                                                                                                                                                     |

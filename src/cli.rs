@@ -33,7 +33,7 @@ fn command() -> Command {
             "                                                                                             ↓\n",
             "                                                                                          Merger\n",
             "                                                                                             ↓\n",
-            "                                                                                  Video A + B + chapters\n",
+            "                                                                                  Video A + B + Chapters\n",
         ))
         .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
