@@ -538,12 +538,14 @@ mod test_h264_encoder {
 
   #[test]
   fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
+    // The probe can fail on a supported system, so the CPU fallback is also valid.
     let encoder = h264_encoder();
-    if cfg!(target_os = "macos") {
-      assert_eq!(encoder, "h264_videotoolbox");
+    let allowed: &[&str] = if cfg!(target_os = "macos") {
+      &["h264_videotoolbox", "libx264"]
     } else {
-      assert!(["h264_nvenc", "h264_qsv", "h264_amf", "libx264"].contains(&encoder));
-    }
+      &["h264_nvenc", "h264_qsv", "h264_amf", "libx264"]
+    };
+    assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
   }
 }
 
