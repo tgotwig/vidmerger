@@ -57,21 +57,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release upload "$GITHUB_REF_NAME" target/release/vidmerger-mac.tar.gz --clobber
 
-      - name: 🍺 Bump Brew
-        env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
-        run: |
-          brew tap tgotwig/homebrew-vidmerger
-          if curl -fsSL https://raw.githubusercontent.com/tgotwig/homebrew-vidmerger/master/vidmerger.rb | grep -q '${{ steps.shasum.outputs.sha }}'; then
-            echo "Formula already has this release's sha256, skipping bump"
-            exit 0
-          fi
-          brew trust --formula tgotwig/vidmerger/vidmerger
-          brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-          --sha256=${{ steps.shasum.outputs.sha }} \
-          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-mac.tar.gz' \
-          tgotwig/homebrew-vidmerger/vidmerger
-
   release-linux:
     name: 🐧 Release on Linux
     runs-on: ubuntu-latest
@@ -124,27 +109,78 @@ jobs:
           git config --global user.email "github@tomasu.mozmail.com"
           git config --global user.name "Thomas Gotwig"
 
-      - name: 🔄 Install Linuxbrew
-        run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)" < /dev/null
+  publish:
+    name: 🌍 Publish release
+    runs-on: ubuntu-latest
+    needs: [release-osx, release-linux]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
 
-      - name: 🍺 Bump Brew
+      - name: 🚀 Publish draft release
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false
+
+      - name: 🍺 Bump Brew (macOS)
+        env:
+          # https://github.com/settings/tokens
+          TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+          VERSION: ${{ needs.release-osx.outputs.version }}
+          SHA: ${{ needs.release-osx.outputs.sha }}
         run: |
-          /home/linuxbrew/.linuxbrew/bin/brew tap tgotwig/homebrew-linux-vidmerger
-          if curl -fsSL https://raw.githubusercontent.com/tgotwig/homebrew-linux-vidmerger/master/vidmerger.rb | grep -q '${{ steps.shasum.outputs.sha }}'; then
+          tap=submodules/homebrew-vidmerger
+          tap_url="https://x-access-token:${TAPS_SECRET}@github.com/tgotwig/homebrew-vidmerger.git"
+          git -C "$tap" fetch -q "$tap_url" master
+          git -C "$tap" checkout -q -B master FETCH_HEAD
+          formula="$tap/vidmerger.rb"
+          if grep -q "$SHA" "$formula"; then
             echo "Formula already has this release's sha256, skipping bump"
             exit 0
           fi
-          /home/linuxbrew/.linuxbrew/bin/brew trust --formula tgotwig/homebrew-linux-vidmerger/vidmerger
-          /home/linuxbrew/.linuxbrew/bin/brew bump-formula-pr -f --version=${{ steps.get_version.outputs.version }} --no-browse --no-audit \
-          --sha256=${{ steps.shasum.outputs.sha }} \
-          --url='https://github.com/tgotwig/vidmerger/releases/download/${{ steps.get_version.outputs.version }}/vidmerger-linux.tar.gz' \
-          tgotwig/homebrew-linux-vidmerger/vidmerger
+          sed -i.bak \
+            -e "s|^  version \".*\"|  version \"$VERSION\"|" \
+            -e "s|^  sha256 \".*\"|  sha256 \"$SHA\"|" \
+            -e "s|releases/download/[^/]*/vidmerger-mac.tar.gz|releases/download/$VERSION/vidmerger-mac.tar.gz|" \
+            "$formula"
+          rm -f "$formula.bak"
+          git -C "$tap" config user.name "github-actions[bot]"
+          git -C "$tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$tap" add vidmerger.rb
+          git -C "$tap" commit -m "vidmerger $VERSION"
+          git -C "$tap" push "$tap_url" HEAD:master
 
-  # todo: fix hard coded version number `0.4.1`
-  # todo: upload `vidmerger.exe` to github
+      - name: 🍺 Bump Brew (Linux)
+        env:
+          # https://github.com/settings/tokens
+          TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+          VERSION: ${{ needs.release-linux.outputs.version }}
+          SHA: ${{ needs.release-linux.outputs.sha }}
+        run: |
+          tap=submodules/homebrew-linux-vidmerger
+          tap_url="https://x-access-token:${TAPS_SECRET}@github.com/tgotwig/homebrew-linux-vidmerger.git"
+          git -C "$tap" fetch -q "$tap_url" master
+          git -C "$tap" checkout -q -B master FETCH_HEAD
+          formula="$tap/vidmerger.rb"
+          if grep -q "$SHA" "$formula"; then
+            echo "Formula already has this release's sha256, skipping bump"
+            exit 0
+          fi
+          sed -i.bak \
+            -e "s|^  version \".*\"|  version \"$VERSION\"|" \
+            -e "s|^  sha256 \".*\"|  sha256 \"$SHA\"|" \
+            -e "s|releases/download/[^/]*/vidmerger-linux.tar.gz|releases/download/$VERSION/vidmerger-linux.tar.gz|" \
+            "$formula"
+          rm -f "$formula.bak"
+          git -C "$tap" config user.name "github-actions[bot]"
+          git -C "$tap" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$tap" add vidmerger.rb
+          git -C "$tap" commit -m "vidmerger $VERSION"
+          git -C "$tap" push "$tap_url" HEAD:master
+
   release-windows-chocolatey:
     runs-on: windows-latest
     steps:
