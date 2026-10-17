@@ -394,6 +394,57 @@ mod e2e {
   }
 
   #[test]
+  fn call_merger_with_skip_cropper_and_mixed_bars_keeps_everything() {
+    let test_name = function_name!().split("::").last().unwrap();
+    fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
+    // Clip 1 has bars. Clip 2 has no bars.
+    Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("color=c=white:s=320x180:d=10:r=25")
+      .args([
+        "-vf",
+        "pad=320:240:0:30:black",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-an",
+      ])
+      .arg(format!("data/{}/1 - Clip A.mp4", test_name))
+      .assert()
+      .success();
+    Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("color=c=blue:s=320x240:d=10:r=25")
+      .args(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-an"])
+      .arg(format!("data/{}/2 - Clip B.mp4", test_name))
+      .assert()
+      .success();
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .arg("--skip-cropper")
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    // Nothing is cropped, not even the clip that has bars.
+    assert!(!res.contains("✂️"));
+    let probe = Command::new("ffprobe")
+      .args(["-v", "error", "-select_streams", "v:0", "-show_entries"])
+      .args(["stream=width,height", "-of", "csv=p=0"])
+      .arg(format!("data/{}/output.mp4", test_name))
+      .output()
+      .unwrap();
+    // The merge converts the clips to the first clip's size, so the output keeps the stored
+    // size of the barred clip (320x240), which is what skipping the cropper must preserve.
+    assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "320,240");
+  }
+
+  #[test]
   fn call_merger_crops_black_bars() {
     let test_name = function_name!().split("::").last().unwrap();
     prep_with_black_bars(test_name);
