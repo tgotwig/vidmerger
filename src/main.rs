@@ -2,6 +2,7 @@
 mod cli;
 mod commanders;
 mod helpers;
+use crate::commanders::cropper::crop_black_bars;
 use crate::commanders::fps_changer::change_fps;
 use crate::commanders::selector::select;
 use crate::helpers::str_helper::create_order_of_merging;
@@ -42,6 +43,7 @@ fn main() -> Result<(), Error> {
         .to_string();
   let should_shutdown = matches.get_flag("shutdown");
   let skip_fps_changer = matches.get_flag("skip-fps-changer");
+  let skip_cropper = matches.get_flag("skip-cropper");
   let yes = matches.get_flag("yes");
   let fps_from_cli = matches
     .get_one::<String>("fps")
@@ -70,6 +72,15 @@ fn main() -> Result<(), Error> {
       if !skip_fps_changer {
         (_, files_to_merge_as_strings, ffmpeg_input_content) =
           change_fps(files_to_merge, &tmp_dir, fps_from_cli);
+      }
+
+      if !skip_cropper {
+        if let Some((cropped_files, cropped_content)) =
+          crop_black_bars(&files_to_merge_as_strings, &tmp_dir)
+        {
+          files_to_merge_as_strings = cropped_files;
+          ffmpeg_input_content = cropped_content;
+        }
       }
 
       let ffmpeg_input_file = tmp_dir.join("ffmpeg_input_file.txt");

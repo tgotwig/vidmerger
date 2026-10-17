@@ -1,5 +1,6 @@
 mod _cmd;
 
+pub mod cropper;
 pub mod fps_adjuster;
 pub mod fps_changer;
 pub mod fps_reader;

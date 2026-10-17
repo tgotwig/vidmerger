@@ -58,6 +58,7 @@ Options:
       --fps <fps>         Generates videos inside a temporary folder with this fps value and merges them
       --shutdown          For doing a shutdown at the end (needs sudo)
       --skip-fps-changer  Skips the fps changer
+      --skip-cropper      Skips the cropper that removes black bars
   -y, --yes               Skips confirmation of merge order
       --verbose           Prints detailed logs
   -h, --help              Print help
@@ -71,8 +72,11 @@ Options:
 graph LR;
 VideoA((Video_A))-->Vidmerger;
 VideoB((Video_B))-->Vidmerger;
-Vidmerger-->|no fps mismatch detected| Merger;
-Vidmerger-->FPS_Changer-->Merger;
+Vidmerger-->|no fps mismatch detected| Same_FPS;
+Vidmerger-->FPS_Changer-->Same_FPS;
+Same_FPS-->|black bars detected| Cropper;
+Same_FPS-->|no black bars detected| Merger;
+Cropper-->Merger;
 Merger-->Video_A+B_and_chapters;
 ```
 
@@ -80,6 +84,7 @@ Merger-->Video_A+B_and_chapters;
 | :---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Selector    | Iterates through [this list of file endings](src/main.rs#L34), selects all files which matches with the current file ending except ones which start with a dot. The list can be overwritten by `--format` or `-f`, example: `--format mp4,mkv`. |
 | FPS_Changer | After detecting not matching fps values, it scales all the higher fps videos down to the lowest detecting fps value. Can be skipped by `--skip-fps-changer`. The desired fps value can be set by `--fps`, example: `--fps 23.976`.              |
+| Cropper     | Detects black bars on each video and crops them away before the merge. Videos without bars are not re-encoded. Can be skipped by `--skip-cropper`. |
 | Merger      | Finally, it merges the videos and adds chapters. Chapter titles are automatically extracted from the input file names — specifically, the text between the first dash and the file extension. Example: `Video_A - Chapter 1.mp4`. |
 
 ## ✨ Installing / Getting started

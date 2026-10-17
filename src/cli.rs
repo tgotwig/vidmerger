@@ -27,9 +27,13 @@ fn command() -> Command {
             "           ├─> Vidmerger ─┬─ no FPS mismatch ─────────────┐\n",
             "  Video B ─┘              └─ FPS mismatch -> FPS changer ─┤\n",
             "                                                          ↓\n",
-            "                                                        Merger\n",
-            "                                                          ↓\n",
-            "                                           Video A + B + chapters\n",
+            "                                                       Same FPS\n",
+            "                                                          ├─ black bars detected ─> Cropper ─┐\n",
+            "                                                          └─ no black bars detected ─────────┤\n",
+            "                                                                                             ↓\n",
+            "                                                                                          Merger\n",
+            "                                                                                             ↓\n",
+            "                                                                                  Video A + B + chapters\n",
         ))
         .arg(Arg::new("TARGET_DIR")
             .help("Sets the input file to use")
@@ -55,6 +59,11 @@ fn command() -> Command {
         .arg(Arg::new("skip-fps-changer")
             .long("skip-fps-changer")
             .help("Skips the fps changer")
+            .action(ArgAction::SetTrue)
+        )
+        .arg(Arg::new("skip-cropper")
+            .long("skip-cropper")
+            .help("Skips the cropper that removes black bars")
             .action(ArgAction::SetTrue)
         )
         .arg(Arg::new("yes")
