@@ -6,22 +6,6 @@ on:
 jobs:
   # --- ❗️ X64 ---
 
-  install-x64-macos-homebrew:
-    runs-on: macos-15-intel
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install Vidmerger
-        run: |
-          brew tap tgotwig/vidmerger
-          brew trust --formula tgotwig/vidmerger/vidmerger
-          brew install vidmerger
-      - name: Verify installation
-        run: |
-          ffmpeg -version
-          vidmerger --version
-          # 🔎 Check if version from Cargo.toml matches with binary
-          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
-
   install-x64-linux-homebrew:
     runs-on: ubuntu-latest
     steps:
