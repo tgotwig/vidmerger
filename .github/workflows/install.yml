@@ -7,7 +7,7 @@ jobs:
   # --- ❗️ X64 ---
 
   install-x64-macos-homebrew:
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v7
       - name: Install Vidmerger
