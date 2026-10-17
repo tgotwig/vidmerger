@@ -167,7 +167,10 @@ jobs:
       - name: Create chocolatey package
         run: choco pack vidmerger.nuspec
       - name: Publish on chocolatey
-        run: choco push vidmerger.0.4.1.nupkg -s https://push.chocolatey.org/ --api-key=${{ secrets.CHOCO_API_KEY }}
+        env:
+          # https://community.chocolatey.org/account
+          CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
+        run: choco push vidmerger.0.4.1.nupkg -s https://push.chocolatey.org/ --api-key="$CHOCO_SECRET"
 
   release-docker:
     runs-on: ubuntu-latest
@@ -180,9 +183,12 @@ jobs:
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
+        env:
+          # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
+          DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
         with:
           username: tgotwig
-          password: ${{ secrets.DOCKERHUB_VIDMERGER_SECRET }}
+          password: ${{ env.DOCKERHUB_SECRET }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
