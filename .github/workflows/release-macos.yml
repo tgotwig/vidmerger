@@ -1,0 +1,67 @@
+name: 🍎 Release on MacOS
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag, for example 0.4.2"
+        required: true
+        type: string
+    outputs:
+      version:
+        description: "Version from the tag"
+        value: ${{ jobs.build.outputs.version }}
+      sha:
+        description: "SHA-256 of the published macOS archive"
+        value: ${{ jobs.build.outputs.sha }}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 🍎 Build and upload macOS asset
+    runs-on: macos-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      sha: ${{ steps.shasum.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: 🧑‍🔧 Build Release
+        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-mac.tar.gz vidmerger
+
+      - name: ⬆️ Get version
+        id: get_version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Upload Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          asset=vidmerger-mac.tar.gz
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$TAG" "target/release/$asset"
+          fi
+
+      - name: 🧮 Set SHA
+        id: shasum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # Hash the asset as published, so reused and new uploads give the same checksum
+          dir="$RUNNER_TEMP/published-mac"
+          mkdir -p "$dir"
+          gh release download "$TAG" --pattern vidmerger-mac.tar.gz --dir "$dir" --clobber
+          echo "sha=$(shasum -a 256 "$dir/vidmerger-mac.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"

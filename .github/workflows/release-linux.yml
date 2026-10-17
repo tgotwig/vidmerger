@@ -1,0 +1,93 @@
+name: 🐧 Release on Linux
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag, for example 0.4.2"
+        required: true
+        type: string
+    outputs:
+      version:
+        description: "Version from the tag"
+        value: ${{ jobs.build.outputs.version }}
+      sha:
+        description: "SHA-256 of the published Linux amd64 archive"
+        value: ${{ jobs.build.outputs.sha }}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 🐧 Build and upload Linux assets
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      sha: ${{ steps.shasum.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: 🧑‍🔧 Build Release
+        run: cargo build --release && tar -C target/release -czf target/release/vidmerger-linux.tar.gz vidmerger
+
+      - name: ⬇️ Install arm64 cross linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+
+      - name: 🧑‍🔧 Build Release arm64
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          cargo build --release --target aarch64-unknown-linux-gnu
+          tar -C target/aarch64-unknown-linux-gnu/release -czf target/aarch64-unknown-linux-gnu/release/vidmerger-linux-arm64.tar.gz vidmerger
+
+      - name: 🚀 Upload arm64 Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          asset=vidmerger-linux-arm64.tar.gz
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$TAG" "target/aarch64-unknown-linux-gnu/release/$asset"
+          fi
+
+      - name: ⬆️ Get version
+        id: get_version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Upload Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          asset=vidmerger-linux.tar.gz
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$TAG" "target/release/$asset"
+          fi
+
+      - name: 🧮 Set SHA
+        id: shasum
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # Hash the asset as published, so reused and new uploads give the same checksum
+          dir="$RUNNER_TEMP/published-linux"
+          mkdir -p "$dir"
+          gh release download "$TAG" --pattern vidmerger-linux.tar.gz --dir "$dir" --clobber
+          echo "sha=$(sha256sum "$dir/vidmerger-linux.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
