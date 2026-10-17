@@ -204,24 +204,28 @@ jobs:
         run: gh release upload "$GITHUB_REF_NAME" tools/vidmerger.exe --clobber
       - name: Create nuspec, LICENSE and VERIFICATION files
         shell: bash
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          cat > vidmerger.nuspec <<EOF
+          cat > vidmerger.nuspec <<'EOF'
           <?xml version="1.0"?>
           <package>
             <metadata>
               <id>vidmerger</id>
-              <version>${{ steps.get_version.outputs.version }}</version>
+              <version>${VERSION}</version>
               <title>vidmerger</title>
               <authors>Thomas Gotwig</authors>
               <projectUrl>https://github.com/tgotwig/vidmerger</projectUrl>
-              <description>Vidmerger is a command-line-tool which uses \`ffmpeg\` to merge multiple video-files with the same file-extension together into one file called \`output.FORMAT\`. It includes a usage help which you can print out by \`vidmerger --help\` 😃</description>
+              <description>Vidmerger is a command-line-tool which uses `ffmpeg` to merge multiple video-files with the same file-extension together into one file called `output.FORMAT`. It includes a usage help which you can print out by `vidmerger --help` 😃</description>
               <tags>video cli rust</tags>
             </metadata>
             <files>
-              <file src="tools\\**" target="tools" />
+              <file src="tools\**" target="tools" />
             </files>
           </package>
           EOF
+          nuspec=$(cat vidmerger.nuspec)
+          printf '%s\n' "${nuspec//\$\{VERSION\}/$VERSION}" > vidmerger.nuspec
           cat > tools/LICENSE.txt <<'EOF'
           Copyright 2023 Thomas Gotwig
 
@@ -244,8 +248,9 @@ jobs:
         env:
           # https://community.chocolatey.org/account
           CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          version="${{ steps.get_version.outputs.version }}"
+          version="$VERSION"
           if curl -fsSL -o /dev/null "https://community.chocolatey.org/api/v2/Packages(Id='vidmerger',Version='${version}')"; then
             echo "vidmerger ${version} is already published on Chocolatey, skipping push"
             exit 0
