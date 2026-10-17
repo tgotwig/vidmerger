@@ -79,6 +79,7 @@ jobs:
       - uses: pguyot/arm-runner-action@v2
         with:
           base_image: raspios_lite_arm64:latest
+          bind_mount_repository: true
           commands: |
             sudo curl -fL https://github.com/tgotwig/vidmerger/releases/latest/download/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
             vidmerger --version
