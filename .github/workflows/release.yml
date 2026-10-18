@@ -38,14 +38,21 @@ jobs:
     secrets:
       VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
 
-  release-linux:
-    name: 🐧 Release on Linux
+  release-linux-x64:
+    name: 🐧 Release on Linux x64
     needs: prepare
-    uses: ./.github/workflows/release-linux.yml
+    uses: ./.github/workflows/release-linux-x64.yml
     with:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+
+  release-linux-arm:
+    name: 🐧 Release on Linux arm64
+    needs: prepare
+    uses: ./.github/workflows/release-linux-arm.yml
+    with:
+      tag: ${{ github.ref_name }}
 
   release-macos:
     name: 🍎 Release on MacOS

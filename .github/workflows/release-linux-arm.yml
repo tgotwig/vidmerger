@@ -1,0 +1,48 @@
+name: 🐧 Release on Linux arm64
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag, for example 0.4.2"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 🐧 Build and upload Linux arm64 asset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: ⬇️ Install arm64 cross linker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+          rustup target add aarch64-unknown-linux-gnu
+
+      - name: 🧑‍🔧 Build Release arm64
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          cargo build --release --target aarch64-unknown-linux-gnu
+          tar -C target/aarch64-unknown-linux-gnu/release -czf target/aarch64-unknown-linux-gnu/release/vidmerger-linux-arm64.tar.gz vidmerger
+
+      - name: 🚀 Upload arm64 Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          asset=vidmerger-linux-arm64.tar.gz
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$TAG" "target/aarch64-unknown-linux-gnu/release/$asset"
+          fi
