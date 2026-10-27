@@ -5,18 +5,11 @@ mod e2e {
   use stdext::function_name;
 
   static BIN: &'static str = "vidmerger";
-  static DATA_1_MP3: &'static str = "1 - Chapter 1.mp3";
-  static DATA_1_MP4: &'static str = "1 - Chapter 1.mp4";
-  static DATA_2_MP3: &'static str = "2 - Chapter 2.mp3";
-  static DATA_2_MP4: &'static str = "2 - Chapter 2.mp4";
-  static DATA_1_MOV: &'static str = "1 - Chapter 1.mov";
-  static DATA_2_MOV: &'static str = "2 - Chapter 2.mov";
-  static DATA_3_MP4: &'static str = ".3.mp4";
 
   #[cfg(test)]
   #[ctor::ctor(unsafe)]
   fn prepare() {
-    use std::fs::{self, File};
+    use std::fs;
 
     println!("👷 Doing preparations...");
 
@@ -28,14 +21,6 @@ mod e2e {
         fs::remove_dir_all(path).unwrap();
       }
     }
-
-    // Copy the sample files from the local `tests/data` folder.
-    for name in [
-      DATA_1_MP4, DATA_2_MP4, DATA_1_MP3, DATA_2_MP3, DATA_1_MOV, DATA_2_MOV,
-    ] {
-      fs::copy(format!("tests/data/{}", name), format!("data/{}", name)).unwrap();
-    }
-    File::create(format!("data/{}", DATA_3_MP4)).unwrap();
 
     println!("✅ Preparations done!");
   }

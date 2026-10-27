@@ -107,12 +107,12 @@ mod e2e_mov {
     assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "2999/100");
   }
 
-  /// Copies the two real `.mov` recordings from `tests/data` (their 30 and 29.99 fps differ).
+  /// Copies the two real `.mov` recordings from `tests/data/mov` (their 30 and 29.99 fps differ).
   fn prep_with_mov(test_name: &str) {
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     for name in [DATA_1_MOV, DATA_2_MOV] {
       fs::copy(
-        format!("tests/data/{}", name),
+        format!("tests/data/mov/{}", name),
         format!("data/{}/{}", test_name, name),
       )
       .unwrap();
