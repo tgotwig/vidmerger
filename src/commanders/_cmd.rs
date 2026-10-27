@@ -565,3 +565,164 @@ mod tests {
     assert_eq!(parse_out_time_us("progress=continue"), None);
   }
 }
+
+/// Integration tests: these call real ffmpeg and ffprobe on generated media files.
+#[cfg(test)]
+mod test_ffmpeg_integration {
+  use super::AudioProfile;
+  use super::{convert_for_merge, get_media_seconds, probe_streams, run_ffmpeg_info_command};
+  use std::path::{Path, PathBuf};
+  use std::process::Command;
+
+  /// A temp folder that is removed when the test ends, even if an assert fails.
+  struct TempDir(PathBuf);
+
+  impl TempDir {
+    fn new(name: &str) -> Self {
+      let dir = std::env::temp_dir().join(format!("vidmerger-{name}-{}", std::process::id()));
+      let _ = std::fs::remove_dir_all(&dir);
+      std::fs::create_dir_all(&dir).unwrap();
+      TempDir(dir)
+    }
+
+    fn path(&self, file: &str) -> PathBuf {
+      self.0.join(file)
+    }
+  }
+
+  impl Drop for TempDir {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_dir_all(&self.0);
+    }
+  }
+
+  /// Creates a 1-second MP4 with a video stream, and an audio stream when `audio` is true.
+  fn make_clip(path: &Path, audio: bool) {
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args([
+      "-v",
+      "error",
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc=d=1:s=160x120:r=25",
+    ]);
+    if audio {
+      cmd.args(["-f", "lavfi", "-i", "sine=f=440:d=1"]);
+    }
+    cmd.args(["-c:v", "libx264", "-pix_fmt", "yuv420p"]);
+    if audio {
+      cmd.args(["-c:a", "aac", "-shortest"]);
+    }
+    let status = cmd.arg(path).status().expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create test clip");
+  }
+
+  #[test]
+  fn run_ffmpeg_info_command_reports_stream_info() {
+    let dir = TempDir::new("info");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    let output = run_ffmpeg_info_command(&clip).unwrap();
+    let info = String::from_utf8_lossy(&output.stderr);
+    assert!(info.contains("Video:"), "no video stream in: {info}");
+    assert!(info.contains("25 fps"), "wrong fps in: {info}");
+  }
+
+  #[test]
+  fn probe_streams_lists_video_and_audio() {
+    let dir = TempDir::new("probe");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, true);
+
+    let streams = probe_streams(clip.to_str().unwrap()).unwrap();
+    let kinds: Vec<&str> = streams.iter().map(|s| s.kind.as_str()).collect();
+    assert_eq!(kinds, ["video", "audio"]);
+    let audio = &streams[1];
+    assert_eq!(audio.codec, "aac");
+    assert_eq!(audio.sample_rate, Some(44100));
+    assert_eq!(audio.channels, Some(1));
+  }
+
+  #[test]
+  fn probe_streams_fails_on_missing_file() {
+    let dir = TempDir::new("probe-missing");
+    let missing = dir.path("nope.mp4");
+    assert!(probe_streams(missing.to_str().unwrap()).is_err());
+  }
+
+  #[test]
+  fn get_media_seconds_returns_clip_length() {
+    let dir = TempDir::new("seconds");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    let seconds = get_media_seconds(clip.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 1.0).abs() < 0.1,
+      "expected about 1s, got {seconds}"
+    );
+  }
+
+  #[test]
+  fn convert_for_merge_writes_mp4_with_aac_audio() {
+    let dir = TempDir::new("convert");
+    let input = dir.path("input.mp4");
+    let output = dir.path("converted.mp4");
+    make_clip(&input, true);
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      false,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let audio = streams.iter().find(|s| s.kind == "audio").unwrap();
+    assert_eq!(audio.codec, "aac");
+    assert_eq!(audio.sample_rate, Some(48_000));
+    assert_eq!(audio.channels, Some(2));
+  }
+
+  #[test]
+  fn convert_for_merge_adds_silence_when_input_has_no_audio() {
+    let dir = TempDir::new("silent");
+    let input = dir.path("video-only.mp4");
+    let output = dir.path("with-silence.mp4");
+    make_clip(&input, false);
+
+    let profile = AudioProfile {
+      sample_rate: 44_100,
+      channels: 1,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      true,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    assert!(
+      streams.iter().any(|s| s.kind == "audio"),
+      "no silent audio added"
+    );
+  }
+}
