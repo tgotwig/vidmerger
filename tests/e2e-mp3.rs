@@ -5,8 +5,8 @@ mod e2e_mp3 {
   use stdext::function_name;
 
   static BIN: &'static str = "vidmerger";
-  static DATA_1_MP3: &'static str = "1 - Chapter 1.mp3";
-  static DATA_2_MP3: &'static str = "2 - Chapter 2.mp3";
+  static DATA_1_MP3: &'static str = "1 - chapter 1.mp3";
+  static DATA_2_MP3: &'static str = "2 - chapter 2.mp3";
 
   #[test]
   fn call_merger_on_audio_files() {

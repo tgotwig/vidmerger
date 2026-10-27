@@ -6,8 +6,8 @@ mod e2e_mp4 {
   use stdext::function_name;
 
   static BIN: &'static str = "vidmerger";
-  static DATA_1_MP4: &'static str = "1 - Chapter 1.mp4";
-  static DATA_2_MP4: &'static str = "2 - Chapter 2.mp4";
+  static DATA_1_MP4: &'static str = "1 - chapter 1.mp4";
+  static DATA_2_MP4: &'static str = "2 - chapter 2.mp4";
   static DATA_3_MP4: &'static str = ".3.mp4";
 
   #[test]

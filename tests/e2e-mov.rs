@@ -4,8 +4,8 @@ mod e2e_mov {
   use stdext::function_name;
 
   static BIN: &'static str = "vidmerger";
-  static DATA_1_MOV: &'static str = "1 - Chapter 1.mov";
-  static DATA_2_MOV: &'static str = "2 - Chapter 2.mov";
+  static DATA_1_MOV: &'static str = "1 - chapter 1.mov";
+  static DATA_2_MOV: &'static str = "2 - chapter 2.mov";
   static DATA_3_MOV: &'static str = ".3.mov";
 
   #[test]
