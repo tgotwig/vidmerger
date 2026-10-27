@@ -16,4 +16,5 @@ tasks:
   exec: docker exec -it -w /workspaces/vidmerger devcontainer-vidmerger fish
 
   test: cargo test
+  count-tests: ./script/count-tests.sh
   lint: cargo clippy
