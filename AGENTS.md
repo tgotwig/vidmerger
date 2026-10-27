@@ -7,3 +7,8 @@
     - set a scope if it fits
   - commit msg should have a max length of 72 chars
   - PR titles: <conventionalcommit msg> (<ISSUE_ID>)
+- 🧪 test handling
+  - testing pyramid: unit > integration > e2e
+    - unit: each test deals with one function, IO should be mocked.
+    - integration: each test deals with one function with real IO.
+    - e2e: each test runs vidmerger (tests/e2e*).
