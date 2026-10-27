@@ -10,6 +10,8 @@ mod e2e {
   static DATA_1_MP4: &'static str = "1 - Chapter 1.mp4";
   static DATA_2_MP3: &'static str = "2 - Chapter 2.mp3";
   static DATA_2_MP4: &'static str = "2 - Chapter 2.mp4";
+  static DATA_1_MOV: &'static str = "1 - Chapter 1.mov";
+  static DATA_2_MOV: &'static str = "2 - Chapter 2.mov";
   static DATA_3_MP4: &'static str = ".3.mp4";
 
   #[cfg(test)]
@@ -29,7 +31,9 @@ mod e2e {
     }
 
     // Copy the sample files from the local `tests/data` folder.
-    for name in [DATA_1_MP4, DATA_2_MP4, DATA_1_MP3, DATA_2_MP3] {
+    for name in [
+      DATA_1_MP4, DATA_2_MP4, DATA_1_MP3, DATA_2_MP3, DATA_1_MOV, DATA_2_MOV,
+    ] {
       fs::copy(format!("tests/data/{}", name), format!("data/{}", name)).unwrap();
     }
     File::create(format!("data/{}", DATA_3_MP4)).unwrap();
@@ -206,6 +210,38 @@ mod e2e {
       .arg(format!("data/{}", test_name))
       .assert()
       .success();
+  }
+
+  #[test]
+  fn call_merger_with_mov_files() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_mov(test_name);
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .args(["--format", "mov"])
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    assert!(res.contains("🐣 Generated"));
+    let probe = Command::new("ffprobe")
+      .args([
+        "-v",
+        "error",
+        "-show_entries",
+        "stream=codec_type",
+        "-of",
+        "csv=p=0",
+      ])
+      .arg(format!("data/{}/output.mov", test_name))
+      .output()
+      .unwrap();
+    let streams = String::from_utf8_lossy(&probe.stdout);
+    assert!(streams.contains("video") && streams.contains("audio"));
   }
 
   #[test]
@@ -545,6 +581,18 @@ mod e2e {
         .arg(format!("data/{}/{}", test_name, name))
         .assert()
         .success();
+    }
+  }
+
+  /// Copies the two real `.mov` recordings from `data` (their 30 and 29.99 fps differ).
+  fn prep_with_mov(test_name: &str) {
+    fs::create_dir(format!("data/{}", test_name)).unwrap_or_default();
+    for name in [DATA_1_MOV, DATA_2_MOV] {
+      fs::copy(
+        format!("data/{}", name),
+        format!("data/{}/{}", test_name, name),
+      )
+      .unwrap();
     }
   }
 
