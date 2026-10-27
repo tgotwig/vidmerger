@@ -3,8 +3,6 @@ mod e2e {
   use k9::assertions::{greater_than::assert_greater_than, lesser_than::assert_lesser_than};
   use regex::Regex;
   use std::fs;
-  use std::fs::File;
-  use std::io;
   use stdext::function_name;
 
   static BIN: &'static str = "vidmerger";
@@ -21,7 +19,7 @@ mod e2e {
 
     println!("👷 Doing preparations...");
 
-    // Keep the downloaded samples (the cache). Only remove the test folders inside `data`.
+    // Only remove the test folders inside `data`.
     fs::create_dir_all("data").unwrap();
     for entry in fs::read_dir("data").unwrap() {
       let path = entry.unwrap().path();
@@ -30,12 +28,11 @@ mod e2e {
       }
     }
 
-    download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp4");
-    download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp4");
+    // Copy the sample files from the local `tests/data` folder.
+    for name in [DATA_1_MP4, DATA_2_MP4, DATA_1_MP3, DATA_2_MP3] {
+      fs::copy(format!("tests/data/{}", name), format!("data/{}", name)).unwrap();
+    }
     File::create(format!("data/{}", DATA_3_MP4)).unwrap();
-
-    download("https://vidmerger.s3.eu-central-1.amazonaws.com/1+-+Chapter+1.mp3");
-    download("https://vidmerger.s3.eu-central-1.amazonaws.com/2+-+Chapter+2.mp3");
 
     println!("✅ Preparations done!");
   }
@@ -679,36 +676,6 @@ mod e2e {
 
   fn get_output_err(assert: Assert) -> String {
     String::from_utf8(assert.get_output().to_owned().stderr).unwrap()
-  }
-
-  fn download(url: &str) {
-    let filename = url.split('/').last().unwrap().replace("+", " ");
-    let out = format!("data/{}", filename);
-
-    // Only the headers are read here. The body is downloaded only if the cache is not valid.
-    let response = ureq::get(url).call().unwrap();
-    let expected_len = response
-      .headers()
-      .get("content-length")
-      .and_then(|v| v.to_str().ok())
-      .and_then(|v| v.parse::<u64>().ok());
-
-    // Cache hit: a local file with the full size is kept. A partial file from an
-    // older run has a different size, so it is downloaded again.
-    if let Some(expected_len) = expected_len {
-      if fs::metadata(&out).is_ok_and(|m| m.len() == expected_len) {
-        println!("♻️  Using cached sample: {out}");
-        return;
-      }
-    }
-
-    // Write to a temporary file first, so an interrupted download is never used as a cache hit.
-    let tmp = format!("{out}.part");
-    let mut body = response.into_body();
-    let mut reader = body.as_reader();
-    let mut file = File::create(&tmp).unwrap();
-    io::copy(&mut reader, &mut file).unwrap();
-    fs::rename(&tmp, &out).unwrap();
   }
 
   fn get_video_info(file_path: &str) -> String {

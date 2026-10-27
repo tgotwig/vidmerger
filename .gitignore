@@ -9,3 +9,6 @@ Cargo.lock
 data
 ffmpeg_input_file.txt
 vidmerger.exe
+
+!tests/data
+!tests/data/*.mp4
