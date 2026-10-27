@@ -11,4 +11,4 @@ ffmpeg_input_file.txt
 vidmerger.exe
 
 !tests/data
-!tests/data/*.mp4
+!tests/data/**/*.mp4
