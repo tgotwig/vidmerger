@@ -185,6 +185,8 @@ mod e2e_mp4 {
 
   /// Copies the two real `.mp4` samples from `tests/data/mp4`.
   fn prep(test_name: &str) {
+    // Start empty, so files from an earlier run cannot be merged again.
+    let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     for name in [DATA_1_MP4, DATA_2_MP4] {
       fs::copy(
@@ -265,6 +267,8 @@ mod e2e_mp4 {
 
   /// Clip 1 is the real 29.97 fps sample. Clip 2 is the same clip re-encoded to 28 fps.
   fn prep_with_different_fps_values(test_name: &str) {
+    // Start empty, so files from an earlier run cannot be merged again.
+    let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     fs::copy(
       format!("tests/data/mp4/{}", DATA_1_MP4),

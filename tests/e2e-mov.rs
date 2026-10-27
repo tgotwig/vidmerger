@@ -109,6 +109,8 @@ mod e2e_mov {
 
   /// Copies the two real `.mov` recordings from `tests/data/mov` (their 30 and 29.99 fps differ).
   fn prep_with_mov(test_name: &str) {
+    // Start empty, so files from an earlier run cannot be merged again.
+    let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     for name in [DATA_1_MOV, DATA_2_MOV] {
       fs::copy(
