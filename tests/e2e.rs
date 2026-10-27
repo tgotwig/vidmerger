@@ -12,6 +12,7 @@ mod e2e {
   static DATA_2_MP4: &'static str = "2 - Chapter 2.mp4";
   static DATA_1_MOV: &'static str = "1 - Chapter 1.mov";
   static DATA_2_MOV: &'static str = "2 - Chapter 2.mov";
+  static DATA_3_MOV: &'static str = ".3.mov";
   static DATA_3_MP4: &'static str = ".3.mp4";
 
   #[cfg(test)]
@@ -242,6 +243,74 @@ mod e2e {
       .unwrap();
     let streams = String::from_utf8_lossy(&probe.stdout);
     assert!(streams.contains("video") && streams.contains("audio"));
+  }
+
+  #[test]
+  fn call_merger_mov() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_mov(test_name);
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .args(["--format", "mov"])
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    assert!(res.contains("🐣 Generated"));
+    check_for_merged_file_with_size(test_name, "output.mov", 10_000_000, 13_000_000);
+  }
+
+  #[test]
+  fn call_merger_and_skip_hidden_vids_mov() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_mov(test_name);
+    fs::File::create(format!("data/{}/{}", test_name, DATA_3_MOV)).unwrap();
+
+    let res = get_output(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .arg("--verbose")
+        .args(["--format", "mov"])
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    assert!(res.contains("🐣 Generated"));
+    assert!(res.contains(DATA_1_MOV));
+    assert!(!res.contains(DATA_3_MOV));
+    check_for_merged_file_with_size(test_name, "output.mov", 10_000_000, 13_000_000);
+  }
+
+  #[test]
+  fn call_merger_with_fps_changer_mov() {
+    let test_name = function_name!().split("::").last().unwrap();
+    prep_with_mov(test_name);
+
+    let res = get_output_err(
+      Command::cargo_bin(BIN)
+        .unwrap()
+        .arg("-y")
+        .args(["--format", "mov"])
+        .arg(format!("data/{}", test_name))
+        .assert()
+        .success(),
+    );
+
+    // The 30 fps clip is scaled down to 29.99 fps, the lowest rate in the inputs.
+    assert!(!res.contains("Non-monotonous DTS"));
+    let probe = Command::new("ffprobe")
+      .args(["-v", "error", "-select_streams", "v:0"])
+      .args(["-show_entries", "stream=r_frame_rate", "-of", "csv=p=0"])
+      .arg(format!("data/{}/output.mov", test_name))
+      .output()
+      .unwrap();
+    assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "2999/100");
   }
 
   #[test]
@@ -708,6 +777,14 @@ mod e2e {
       .arg(format!("data/{}/2 - Chapter 2.mp4", test_name))
       .output()
       .unwrap();
+  }
+
+  fn check_for_merged_file_with_size(test_name: &str, merged_file_name: &str, min: u64, max: u64) {
+    let len = fs::metadata(format!("data/{}/{}", test_name, merged_file_name))
+      .unwrap()
+      .len();
+    assert_greater_than(len, min);
+    assert_lesser_than(len, max);
   }
 
   fn check_for_merged_file(test_name: &str, merged_file_name: &str) {
