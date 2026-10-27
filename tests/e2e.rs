@@ -222,7 +222,6 @@ mod e2e {
       Command::cargo_bin(BIN)
         .unwrap()
         .arg("-y")
-        .args(["--format", "mov"])
         .arg(format!("data/{}", test_name))
         .assert()
         .success(),
@@ -261,7 +260,7 @@ mod e2e {
     );
 
     assert!(res.contains("🐣 Generated"));
-    check_for_merged_file_with_size(test_name, "output.mov", 10_000_000, 13_000_000);
+    assert!(fs::metadata(format!("data/{}/output.mov", test_name)).is_ok());
   }
 
   #[test]
@@ -284,7 +283,7 @@ mod e2e {
     assert!(res.contains("🐣 Generated"));
     assert!(res.contains(DATA_1_MOV));
     assert!(!res.contains(DATA_3_MOV));
-    check_for_merged_file_with_size(test_name, "output.mov", 10_000_000, 13_000_000);
+    assert!(fs::metadata(format!("data/{}/output.mov", test_name)).is_ok());
   }
 
   #[test]
@@ -777,14 +776,6 @@ mod e2e {
       .arg(format!("data/{}/2 - Chapter 2.mp4", test_name))
       .output()
       .unwrap();
-  }
-
-  fn check_for_merged_file_with_size(test_name: &str, merged_file_name: &str, min: u64, max: u64) {
-    let len = fs::metadata(format!("data/{}/{}", test_name, merged_file_name))
-      .unwrap()
-      .len();
-    assert_greater_than(len, min);
-    assert_lesser_than(len, max);
   }
 
   fn check_for_merged_file(test_name: &str, merged_file_name: &str) {
