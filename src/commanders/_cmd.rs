@@ -18,6 +18,16 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
+/// Whether `--verbose` was given. Under `cargo test` it is always false: the process
+/// arguments belong to the test harness, and parsing them would exit the process.
+fn verbose() -> bool {
+  if cfg!(test) {
+    false
+  } else {
+    *VERBOSE
+  }
+}
+
 /// FFmpeg flags that make it write progress lines (`out_time_us=...`) to stdout
 /// and keep stderr short. Used when not in verbose mode.
 const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
@@ -42,7 +52,7 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     "-c",
     "copy",
   ];
-  if !*VERBOSE {
+  if !verbose() {
     args.extend(PROGRESS_ARGS);
   }
   args.push(output);
@@ -52,7 +62,7 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     BrightBlue.paint(describe("ffmpeg", &args))
   );
 
-  if *VERBOSE {
+  if verbose() {
     return spawn_command("ffmpeg", &args, false)
       .unwrap()
       .wait_with_output()
@@ -261,7 +271,7 @@ pub fn adjust_fps_by_ffmpeg(
     BrightBlue.paint(describe("ffmpeg", &shown))
   );
 
-  if *VERBOSE {
+  if verbose() {
     args.push(output);
     let res = spawn_command("ffmpeg", &args, false)
       .unwrap()
@@ -383,7 +393,7 @@ pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Er
     media_path,
   ];
 
-  if *VERBOSE {
+  if verbose() {
     println!(
       "📖 Getting media seconds, calling: {}",
       BrightBlue.paint(describe("ffprobe", &args))
