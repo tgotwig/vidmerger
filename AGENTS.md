@@ -1,6 +1,7 @@
 - 💬 general
   - use emojis
   - write in plain english for non-natives
+  - put temporary files (drafts, PR bodies, commit messages, scratch output) inside `temp/` at the repo root
 - 🌳 git handling
   - https://conventionalbranch.org
   - https://www.conventionalcommits.org/en/v1.0.0
