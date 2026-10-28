@@ -467,7 +467,7 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{convert_with_cpu_fallback, h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
+  use super::{convert_with_cpu_fallback, pick_h264_encoder, GPU_H264_ENCODERS};
   use std::cell::RefCell;
 
   #[test]
@@ -536,6 +536,12 @@ mod test_h264_encoder {
   fn falls_back_to_libx264_without_gpu_encoder() {
     assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
   }
+}
+
+/// Integration test: this runs real ffmpeg to test each H.264 encoder.
+#[cfg(test)]
+mod test_h264_encoder_integration {
+  use super::h264_encoder;
 
   #[test]
   fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
@@ -547,6 +553,14 @@ mod test_h264_encoder {
       &["h264_nvenc", "h264_qsv", "h264_amf", "libx264"]
     };
     assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
+  }
+
+  #[test]
+  fn ffmpeg_is_installed() {
+    assert!(
+      which::which("ffmpeg").is_ok(),
+      "ffmpeg wasn't found on the PATH"
+    );
   }
 }
 

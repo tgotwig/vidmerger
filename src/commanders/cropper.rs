@@ -407,12 +407,11 @@ mod test_cropper_integration {
   fn crop_black_bars_writes_cropped_file_and_returns_new_paths() {
     let barred = Clip::new("crop-barred", true);
     let full = Clip::new("crop-full", false);
-    let tmp = std::env::temp_dir().join(format!("vidmerger-crop-run-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&tmp);
-    std::fs::create_dir_all(&tmp).unwrap();
+    // The guard removes the folder when the test ends, even if an assert fails.
+    let tmp = TempFolder::new("crop-run");
 
     let files = vec![barred.path().to_string(), full.path().to_string()];
-    let (new_files, content) = crop_black_bars(&files, &tmp).expect("bars should be found");
+    let (new_files, content) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
 
     // The barred clip is cropped into tmp/cropper. The full-frame clip is used as it is.
     assert!(
@@ -423,7 +422,23 @@ mod test_cropper_integration {
     assert_eq!(new_files[1], files[1]);
     assert!(std::path::Path::new(&new_files[0]).exists());
     assert!(content.contains("file '"), "no concat list: {content}");
+  }
 
-    let _ = std::fs::remove_dir_all(&tmp);
+  /// A temp folder that is removed when dropped.
+  struct TempFolder(PathBuf);
+
+  impl TempFolder {
+    fn new(name: &str) -> Self {
+      let dir = std::env::temp_dir().join(format!("vidmerger-{name}-{}", std::process::id()));
+      let _ = std::fs::remove_dir_all(&dir);
+      std::fs::create_dir_all(&dir).unwrap();
+      TempFolder(dir)
+    }
+  }
+
+  impl Drop for TempFolder {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_dir_all(&self.0);
+    }
   }
 }

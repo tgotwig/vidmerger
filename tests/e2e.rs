@@ -65,13 +65,6 @@ mod e2e {
       ));
   }
 
-  #[test]
-  fn check_for_binaries() {
-    if which::which("ffmpeg").is_err() {
-      panic!("❌ ffmpeg wasn't found");
-    }
-  }
-
   #[cfg(unix)]
   #[test]
   fn call_merger_keeps_first_video_first_when_fps_changes() {
