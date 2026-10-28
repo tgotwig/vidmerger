@@ -340,7 +340,7 @@ mod test_encode_args {
 /// Integration tests: these call real ffmpeg and ffprobe on generated clips.
 #[cfg(test)]
 mod test_cropper_integration {
-  use super::{detect_black_bars, frame_size};
+  use super::{crop_black_bars, detect_black_bars, frame_size};
   use std::path::PathBuf;
   use std::process::Command;
 
@@ -401,5 +401,29 @@ mod test_cropper_integration {
   fn detect_black_bars_returns_none_for_a_full_frame_clip() {
     let clip = Clip::new("full", false);
     assert_eq!(detect_black_bars(clip.path()), None);
+  }
+
+  #[test]
+  fn crop_black_bars_writes_cropped_file_and_returns_new_paths() {
+    let barred = Clip::new("crop-barred", true);
+    let full = Clip::new("crop-full", false);
+    let tmp = std::env::temp_dir().join(format!("vidmerger-crop-run-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&tmp);
+    std::fs::create_dir_all(&tmp).unwrap();
+
+    let files = vec![barred.path().to_string(), full.path().to_string()];
+    let (new_files, content) = crop_black_bars(&files, &tmp).expect("bars should be found");
+
+    // The barred clip is cropped into tmp/cropper. The full-frame clip is used as it is.
+    assert!(
+      new_files[0].contains("cropper"),
+      "not cropped: {}",
+      new_files[0]
+    );
+    assert_eq!(new_files[1], files[1]);
+    assert!(std::path::Path::new(&new_files[0]).exists());
+    assert!(content.contains("file '"), "no concat list: {content}");
+
+    let _ = std::fs::remove_dir_all(&tmp);
   }
 }

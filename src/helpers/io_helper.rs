@@ -21,6 +21,16 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
+/// Whether `--verbose` was given. Under `cargo test` it is always false: the process
+/// arguments belong to the test harness, and parsing them would exit the process.
+pub fn verbose() -> bool {
+  if cfg!(test) {
+    false
+  } else {
+    *VERBOSE
+  }
+}
+
 pub fn exit_when_ffmpeg_not_available() {
   if which::which("ffmpeg").is_err() {
     eprintln!("❌ ffmpeg is not available. Please install it first.");
@@ -30,7 +40,7 @@ pub fn exit_when_ffmpeg_not_available() {
 
 pub fn remove_file(path: &Path) -> Result<()> {
   if Path::new(path).exists() {
-    if *VERBOSE {
+    if verbose() {
       print!(
         "🗑️  Removing old data: `{}`",
         path.file_name().unwrap().to_string_lossy()
@@ -191,5 +201,101 @@ mod tests {
     let mut names = vec!["10.mp4", "1.mp4", "3.mp4", "2.mp4", "11.mp4"];
     names.sort_by(|a, b| natural_cmp(a, b));
     assert_eq!(names, ["1.mp4", "2.mp4", "3.mp4", "10.mp4", "11.mp4"]);
+  }
+}
+
+/// Integration tests: these use the real file system in a temp folder.
+#[cfg(test)]
+mod test_io_integration {
+  use super::*;
+
+  /// A temp folder that is removed when the test ends, even if an assert fails.
+  struct TempDir(PathBuf);
+
+  impl TempDir {
+    fn new(name: &str) -> Self {
+      let dir = temp_dir().join(format!("vidmerger-io-{name}-{}", process::id()));
+      let _ = fs::remove_dir_all(&dir);
+      fs::create_dir_all(&dir).unwrap();
+      TempDir(dir)
+    }
+  }
+
+  impl Drop for TempDir {
+    fn drop(&mut self) {
+      let _ = fs::remove_dir_all(&self.0);
+    }
+  }
+
+  #[test]
+  fn create_writes_the_content_to_the_file() {
+    let dir = TempDir::new("create");
+    let path = dir.0.join("list.txt");
+    create(&path, "file 'a.mp4'\n".to_string());
+    assert_eq!(fs::read_to_string(&path).unwrap(), "file 'a.mp4'\n");
+  }
+
+  #[test]
+  fn remove_file_deletes_an_existing_file() {
+    let dir = TempDir::new("remove");
+    let path = dir.0.join("output.mp4");
+    fs::write(&path, b"x").unwrap();
+    remove_file(&path).unwrap();
+    assert!(!path.exists());
+  }
+
+  #[test]
+  fn remove_file_is_ok_when_the_file_is_missing() {
+    let dir = TempDir::new("remove-missing");
+    assert!(remove_file(&dir.0.join("nope.mp4")).is_ok());
+  }
+
+  #[test]
+  fn read_dir_lists_every_entry_in_the_folder() {
+    let dir = TempDir::new("read-dir");
+    fs::write(dir.0.join("a.mp4"), b"").unwrap();
+    fs::write(dir.0.join("b.mp4"), b"").unwrap();
+    let mut names: Vec<String> = read_dir(&dir.0)
+      .unwrap()
+      .iter()
+      .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+      .collect();
+    names.sort();
+    assert_eq!(names, ["a.mp4", "b.mp4"]);
+  }
+
+  #[test]
+  fn read_dir_fails_on_a_missing_folder() {
+    let dir = TempDir::new("read-dir-missing");
+    assert!(read_dir(&dir.0.join("missing")).is_err());
+  }
+
+  #[test]
+  fn create_tmp_dir_makes_a_new_folder_in_the_system_temp_dir() {
+    let path = create_tmp_dir();
+    assert!(path.is_dir());
+    assert!(path.starts_with(temp_dir()));
+    let _ = fs::remove_dir_all(&path);
+  }
+
+  #[test]
+  fn create_dir_for_fps_changer_makes_the_subfolder() {
+    let dir = TempDir::new("fps-dir");
+    let created = create_dir_for_fps_changer(&dir.0).unwrap();
+    assert_eq!(created, dir.0.join("fps_changer"));
+    assert!(created.is_dir());
+  }
+
+  #[test]
+  fn path_bufs_to_sorted_strings_returns_sorted_absolute_paths() {
+    let dir = TempDir::new("sorted");
+    fs::write(dir.0.join("b.mp4"), b"").unwrap();
+    fs::write(dir.0.join("a.mp4"), b"").unwrap();
+    let paths = vec![dir.0.join("b.mp4"), dir.0.join("a.mp4")];
+    let strings = path_bufs_to_sorted_strings(&paths);
+    assert_eq!(strings.len(), 2);
+    assert!(strings[0].ends_with("a.mp4"));
+    assert!(strings[1].ends_with("b.mp4"));
+    assert!(Path::new(&strings[0]).is_absolute());
   }
 }

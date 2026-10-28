@@ -1,4 +1,5 @@
 use crate::cli::Cli;
+use crate::helpers::io_helper::verbose;
 use crate::helpers::progress_helper::ProgressBar;
 use clap::ArgMatches;
 use lazy_static::lazy_static;
@@ -16,16 +17,6 @@ use term_painter::ToStyle;
 lazy_static! {
   static ref MATCHES: ArgMatches = Cli::init().get_matches();
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
-}
-
-/// Whether `--verbose` was given. Under `cargo test` it is always false: the process
-/// arguments belong to the test harness, and parsing them would exit the process.
-fn verbose() -> bool {
-  if cfg!(test) {
-    false
-  } else {
-    *VERBOSE
-  }
 }
 
 /// FFmpeg flags that make it write progress lines (`out_time_us=...`) to stdout
@@ -580,7 +571,10 @@ mod tests {
 #[cfg(test)]
 mod test_ffmpeg_integration {
   use super::AudioProfile;
-  use super::{convert_for_merge, get_media_seconds, probe_streams, run_ffmpeg_info_command};
+  use super::{
+    adjust_fps_by_ffmpeg, convert_for_merge, get_media_seconds, merge, probe_streams,
+    run_ffmpeg_info_command,
+  };
   use std::path::{Path, PathBuf};
   use std::process::Command;
 
@@ -704,6 +698,75 @@ mod test_ffmpeg_integration {
     assert_eq!(audio.codec, "aac");
     assert_eq!(audio.sample_rate, Some(48_000));
     assert_eq!(audio.channels, Some(2));
+  }
+
+  /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
+  fn make_clip_with_fps(path: &Path, fps: u32) {
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg(format!("testsrc=d=1:s=160x120:r={fps}"))
+      .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
+      .arg(path)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create test clip");
+  }
+
+  #[test]
+  fn merge_joins_two_clips_into_one_file() {
+    let dir = TempDir::new("merge");
+    let first = dir.path("1 - first.mp4");
+    let second = dir.path("2 - second.mp4");
+    make_clip(&first, false);
+    make_clip(&second, false);
+
+    // The concat list and the chapter file that `merge` reads.
+    let list = dir.path("list.txt");
+    std::fs::write(
+      &list,
+      format!(
+        "file '{}'\nfile '{}'\n",
+        first.to_str().unwrap(),
+        second.to_str().unwrap()
+      ),
+    )
+    .unwrap();
+    let chapters = dir.path("chapters.txt");
+    std::fs::write(&chapters, ";FFMETADATA1\n").unwrap();
+    let output = dir.path("merged.mp4");
+
+    let result = merge(
+      list.to_str().unwrap().to_string(),
+      output.to_str().unwrap(),
+      chapters.to_str().unwrap(),
+      2.0,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 2.0).abs() < 0.2,
+      "expected about 2s, got {seconds}"
+    );
+  }
+
+  #[test]
+  fn adjust_fps_by_ffmpeg_changes_the_frame_rate() {
+    let dir = TempDir::new("fps");
+    let input = dir.path("30fps.mp4");
+    let output = dir.path("25fps.mp4");
+    make_clip_with_fps(&input, 30);
+
+    let written = adjust_fps_by_ffmpeg(input.clone(), &25.0, output.clone());
+    assert_eq!(written, output);
+
+    let info = run_ffmpeg_info_command(&output).unwrap();
+    let text = String::from_utf8_lossy(&info.stderr);
+    assert!(text.contains("25 fps"), "expected 25 fps in: {text}");
   }
 
   #[test]
