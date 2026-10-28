@@ -8,6 +8,7 @@ mod e2e {
 
   #[cfg(test)]
   #[ctor::ctor(unsafe)]
+  #[allow(rust_analyzer::inactive_code)]
   fn prepare() {
     use std::fs;
 
