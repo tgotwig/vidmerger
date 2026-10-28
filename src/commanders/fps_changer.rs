@@ -19,6 +19,9 @@ lazy_static! {
   static ref VERBOSE: bool = MATCHES.get_flag("verbose");
 }
 
+/// Makes every input the same frame rate before the merge. The goal is `fps_from_cli` when set
+/// (not 0), otherwise the lowest fps found. Inputs at other rates are re-encoded into `tmp_dir`.
+/// Returns the new input paths, their strings, and the concat list for them.
 pub fn change_fps(
   files_to_merge: Vec<PathBuf>,
   tmp_dir: &Path,

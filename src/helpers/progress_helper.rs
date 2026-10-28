@@ -12,6 +12,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
+  /// Creates a progress bar with `label` and draws it at 0%.
   pub fn start(label: &str) -> Self {
     let mut bar = ProgressBar {
       animate: stdout().is_terminal(),

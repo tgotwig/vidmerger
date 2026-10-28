@@ -240,6 +240,9 @@ fn convert_inputs(files: &[String], plan: &MergePlan, tmp_dir: &Path) -> Vec<Str
     .collect()
 }
 
+/// Returns the chapter title from a file name: the text after the first `-`, up to the extension.
+/// Returns an empty string when the name has no `-`. If the extension is missing, the rest of
+/// the name is returned.
 fn extract_title(path: &str, file_format: &str) -> String {
   let file_name = path.split('/').next_back().unwrap_or("");
   let mut parts = file_name.splitn(2, '-');

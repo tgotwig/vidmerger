@@ -239,12 +239,15 @@ fn parse_out_time_us(line: &str) -> Option<i64> {
     .ok()
 }
 
+/// Runs `ffmpeg -i <file>` and returns its output. FFmpeg prints stream info to stderr.
 pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error> {
   Command::new("ffmpeg")
     .args(["-i", &file_to_merge.to_slash().unwrap()])
     .output()
 }
 
+/// Changes the frame rate of `file_to_merge` to `fps_goal` and writes the result to
+/// `new_file_location`. Panics if FFmpeg fails. Returns the new file's path.
 pub fn adjust_fps_by_ffmpeg(
   file_to_merge: PathBuf,
   fps_goal: &f32,
@@ -373,6 +376,8 @@ fn stream_from_fields(fields: &BTreeMap<&str, &str>) -> Result<MediaStream, Stri
   })
 }
 
+/// Returns the length of a media file in seconds, read with ffprobe.
+/// Returns `Err` if ffprobe output is not a number.
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Error>> {
   let args = [
     "-v",
