@@ -12,7 +12,8 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
-  /// Creates a progress bar with `label` and draws it at 0%.
+  /// Creates a progress bar with `label`. It draws the 0% bar only when stdout is a terminal.
+  /// When stdout is piped, nothing is drawn, but the returned bar still tracks progress.
   pub fn start(label: &str) -> Self {
     let mut bar = ProgressBar {
       animate: stdout().is_terminal(),

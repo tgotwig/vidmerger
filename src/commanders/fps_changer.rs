@@ -22,6 +22,8 @@ lazy_static! {
 /// Makes every input the same frame rate before the merge. The goal is `fps_from_cli` when set
 /// (not 0), otherwise the lowest fps found. Inputs at other rates are re-encoded into `tmp_dir`.
 /// Returns the new input paths, their strings, and the concat list for them.
+/// Panics if `tmp_dir/fps_changer` cannot be created, if FFmpeg cannot be run to read an fps,
+/// or if `files_to_merge` is empty while `fps_from_cli` is 0 (there is no lowest fps to use).
 pub fn change_fps(
   files_to_merge: Vec<PathBuf>,
   tmp_dir: &Path,

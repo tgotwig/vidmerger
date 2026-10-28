@@ -240,6 +240,7 @@ fn parse_out_time_us(line: &str) -> Option<i64> {
 }
 
 /// Runs `ffmpeg -i <file>` and returns its output. FFmpeg prints stream info to stderr.
+/// Returns `Err` if FFmpeg cannot be started. Panics if the path is not valid UTF-8.
 pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error> {
   Command::new("ffmpeg")
     .args(["-i", &file_to_merge.to_slash().unwrap()])
@@ -247,7 +248,8 @@ pub fn run_ffmpeg_info_command(file_to_merge: &PathBuf) -> Result<Output, Error>
 }
 
 /// Changes the frame rate of `file_to_merge` to `fps_goal` and writes the result to
-/// `new_file_location`. Panics if FFmpeg fails. Returns the new file's path.
+/// `new_file_location`. Returns the new file's path. In normal (non-verbose) mode it panics if
+/// FFmpeg fails. In verbose mode it prints FFmpeg's result and returns the path even on failure.
 pub fn adjust_fps_by_ffmpeg(
   file_to_merge: PathBuf,
   fps_goal: &f32,
@@ -377,7 +379,8 @@ fn stream_from_fields(fields: &BTreeMap<&str, &str>) -> Result<MediaStream, Stri
 }
 
 /// Returns the length of a media file in seconds, read with ffprobe.
-/// Returns `Err` if ffprobe output is not a number.
+/// Returns `Err` if ffprobe cannot be started or waited on, if its output is not valid UTF-8,
+/// or if its output is not a number.
 pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Error>> {
   let args = [
     "-v",

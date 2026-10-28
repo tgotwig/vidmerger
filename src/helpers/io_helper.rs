@@ -31,7 +31,8 @@ pub fn verbose() -> bool {
   }
 }
 
-/// Exits the program with an error message if `ffmpeg` is not on the PATH.
+/// Exits the program with status 1 and an error message if `ffmpeg` is not on the PATH.
+/// Returns `()` only when `ffmpeg` is found; otherwise it does not return.
 pub fn exit_when_ffmpeg_not_available() {
   if which::which("ffmpeg").is_err() {
     eprintln!("❌ ffmpeg is not available. Please install it first.");
@@ -40,6 +41,7 @@ pub fn exit_when_ffmpeg_not_available() {
 }
 
 /// Deletes `path` if it exists. Does nothing and returns `Ok` when it is missing.
+/// Returns `Err` if the file exists but cannot be removed.
 pub fn remove_file(path: &Path) -> Result<()> {
   if Path::new(path).exists() {
     if verbose() {
@@ -53,7 +55,8 @@ pub fn remove_file(path: &Path) -> Result<()> {
   Ok(())
 }
 
-/// Lists the paths of every entry in a folder. Returns `Err` if the folder cannot be read.
+/// Lists the paths of every entry in a folder. Returns `Err` if the folder cannot be opened or
+/// if reading any of its entries fails.
 pub fn read_dir(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
   fs::read_dir(input_vids_path)?
     .map(|res| res.map(|e| e.path()))
@@ -61,6 +64,7 @@ pub fn read_dir(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
 }
 
 /// Creates a new folder with a random name in the system temp directory and returns its path.
+/// Panics if the folder cannot be created.
 pub fn create_tmp_dir() -> PathBuf {
   let dir = temp_dir().join(nanoid!(8));
   fs::create_dir(&dir).unwrap();
@@ -68,6 +72,7 @@ pub fn create_tmp_dir() -> PathBuf {
 }
 
 /// Creates the `fps_changer` subfolder inside `base_path` and returns its path.
+/// Returns `Err` if the folder cannot be created.
 pub fn create_dir_for_fps_changer(base_path: &Path) -> io::Result<PathBuf> {
   let mut new_path = base_path.to_path_buf();
   new_path.push("fps_changer");
@@ -76,6 +81,7 @@ pub fn create_dir_for_fps_changer(base_path: &Path) -> io::Result<PathBuf> {
 }
 
 /// Writes `buf` to the file at `path`, replacing any existing content. Returns `path`.
+/// Panics if the file cannot be created or written.
 pub fn create(path: &PathBuf, buf: String) -> &PathBuf {
   File::create(path)
     .unwrap()
@@ -131,6 +137,7 @@ fn take_digits(chars: &mut Peekable<Chars>) -> String {
 }
 
 /// Returns the canonical (absolute) paths as strings, sorted by file name in natural order.
+/// Panics if a path is not valid UTF-8 or cannot be canonicalized.
 pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
   let mut sorted_path_bufs = path_bufs.to_vec();
   // FPS-adjusted clips live in a different directory, so sort by filename rather than full path.
@@ -153,7 +160,8 @@ pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
     .collect()
 }
 
-/// Waits for the user to press ENTER (continue) or ESC (exit the program).
+/// Waits for the user to press ENTER (continue) or ESC (exit the program with status 0).
+/// Panics if the terminal's raw mode or key reading fails.
 pub fn wait_for_enter_or_esc_key() {
   println!("❓ Press ENTER to continue or ESC to cancel...");
   enable_raw_mode().unwrap();
