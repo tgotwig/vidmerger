@@ -3,7 +3,7 @@ use crate::{
   cli::Cli,
   commanders,
   helpers::{
-    io_helper::{create_dir_for_fps_changer, path_bufs_to_sorted_strings},
+    io_helper::{create_dir_for_fps_changer, path_bufs_to_sorted_strings, verbose},
     str_helper::gen_input_file_content_for_ffmpeg,
   },
 };
@@ -76,7 +76,7 @@ pub fn change_fps(
       set.len()
     );
 
-    if *VERBOSE {
+    if verbose() {
       println!();
       println!("Will be merged directly: \n");
       for line in output_directly {

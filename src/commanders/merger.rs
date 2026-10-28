@@ -524,3 +524,131 @@ mod test_extract_title {
     assert_eq!(extract_title(path, "mp4"), "Title");
   }
 }
+
+/// Integration tests: these run real ffmpeg and ffprobe on generated clips.
+#[cfg(test)]
+mod test_merge_integration {
+  use super::{convert_inputs, run_plan, InputAction, MergePlan};
+  use crate::commanders::_cmd::{get_media_seconds, probe_streams, AudioProfile};
+  use std::fs;
+  use std::path::{Path, PathBuf};
+  use std::process::Command;
+
+  /// A temp folder that is removed when the test ends, even if an assert fails.
+  struct TempDir(PathBuf);
+
+  impl TempDir {
+    fn new(name: &str) -> Self {
+      let dir = std::env::temp_dir().join(format!("vidmerger-merge-{name}-{}", std::process::id()));
+      let _ = fs::remove_dir_all(&dir);
+      fs::create_dir_all(&dir).unwrap();
+      TempDir(dir)
+    }
+  }
+
+  impl Drop for TempDir {
+    fn drop(&mut self) {
+      let _ = fs::remove_dir_all(&self.0);
+    }
+  }
+
+  /// Creates a 1-second video. With `audio`, it also has a 440 Hz tone.
+  fn make_clip(path: &Path, audio: bool) {
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-v", "error", "-y", "-f", "lavfi", "-i"]);
+    cmd.arg("testsrc=d=1:s=160x120:r=25");
+    if audio {
+      cmd.args(["-f", "lavfi", "-i", "sine=f=440:d=1"]);
+    }
+    cmd.args(["-c:v", "libx264", "-pix_fmt", "yuv420p"]);
+    if audio {
+      cmd.args(["-c:a", "aac", "-shortest"]);
+    }
+    let status = cmd.arg(path).status().expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create test clip");
+  }
+
+  #[test]
+  fn convert_inputs_turns_a_silent_clip_into_a_clip_with_audio() {
+    let dir = TempDir::new("convert");
+    let input = dir.0.join("silent.mp4");
+    make_clip(&input, false);
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let plan = MergePlan {
+      profile: Some(profile),
+      actions: vec![InputAction::Convert { silent_audio: true }],
+    };
+    let files = vec![input.to_str().unwrap().to_string()];
+
+    let converted = convert_inputs(&files, &plan, &dir.0);
+
+    assert_eq!(converted.len(), 1);
+    assert!(
+      converted[0].ends_with("converted_0.mp4"),
+      "{}",
+      converted[0]
+    );
+    let streams = probe_streams(&converted[0]).unwrap();
+    let audio = streams
+      .iter()
+      .find(|s| s.kind == "audio")
+      .expect("no audio");
+    assert_eq!(audio.codec, "aac");
+    assert_eq!(audio.sample_rate, Some(48_000));
+    assert_eq!(audio.channels, Some(2));
+  }
+
+  #[test]
+  fn run_plan_merges_two_clips_into_one_output() {
+    let dir = TempDir::new("plan");
+    let first = dir.0.join("1 - first.mp4");
+    let second = dir.0.join("2 - second.mp4");
+    make_clip(&first, false);
+    make_clip(&second, false);
+
+    let plan = MergePlan {
+      profile: Some(AudioProfile {
+        sample_rate: 44_100,
+        channels: 1,
+      }),
+      actions: vec![
+        InputAction::Convert { silent_audio: true },
+        InputAction::Convert { silent_audio: true },
+      ],
+    };
+    let files = vec![
+      first.to_str().unwrap().to_string(),
+      second.to_str().unwrap().to_string(),
+    ];
+
+    let concat_list = dir.0.join("list.txt");
+    let chapters = dir.0.join("chapters.txt");
+    fs::write(&chapters, ";FFMETADATA1\n").unwrap();
+    let output = dir.0.join("merged.mp4");
+
+    let result = run_plan(
+      &plan,
+      &files,
+      &dir.0,
+      concat_list.to_str().unwrap(),
+      output.to_str().unwrap(),
+      chapters.to_str().unwrap(),
+      2.0,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 2.0).abs() < 0.3,
+      "expected about 2s, got {seconds}"
+    );
+  }
+}

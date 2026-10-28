@@ -1,4 +1,5 @@
 use crate::cli::Cli;
+use crate::helpers::io_helper::verbose;
 use crate::helpers::progress_helper::ProgressBar;
 use clap::ArgMatches;
 use lazy_static::lazy_static;
@@ -42,7 +43,7 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     "-c",
     "copy",
   ];
-  if !*VERBOSE {
+  if !verbose() {
     args.extend(PROGRESS_ARGS);
   }
   args.push(output);
@@ -52,7 +53,7 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     BrightBlue.paint(describe("ffmpeg", &args))
   );
 
-  if *VERBOSE {
+  if verbose() {
     return spawn_command("ffmpeg", &args, false)
       .unwrap()
       .wait_with_output()
@@ -261,7 +262,7 @@ pub fn adjust_fps_by_ffmpeg(
     BrightBlue.paint(describe("ffmpeg", &shown))
   );
 
-  if *VERBOSE {
+  if verbose() {
     args.push(output);
     let res = spawn_command("ffmpeg", &args, false)
       .unwrap()
@@ -383,7 +384,7 @@ pub fn get_media_seconds(media_path: &str) -> Result<f64, Box<dyn std::error::Er
     media_path,
   ];
 
-  if *VERBOSE {
+  if verbose() {
     println!(
       "📖 Getting media seconds, calling: {}",
       BrightBlue.paint(describe("ffprobe", &args))
@@ -466,7 +467,7 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{convert_with_cpu_fallback, h264_encoder, pick_h264_encoder, GPU_H264_ENCODERS};
+  use super::{convert_with_cpu_fallback, pick_h264_encoder, GPU_H264_ENCODERS};
   use std::cell::RefCell;
 
   #[test]
@@ -535,6 +536,12 @@ mod test_h264_encoder {
   fn falls_back_to_libx264_without_gpu_encoder() {
     assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
   }
+}
+
+/// Integration test: this runs real ffmpeg to test each H.264 encoder.
+#[cfg(test)]
+mod test_h264_encoder_integration {
+  use super::h264_encoder;
 
   #[test]
   fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
@@ -546,6 +553,14 @@ mod test_h264_encoder {
       &["h264_nvenc", "h264_qsv", "h264_amf", "libx264"]
     };
     assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
+  }
+
+  #[test]
+  fn ffmpeg_is_installed() {
+    assert!(
+      which::which("ffmpeg").is_ok(),
+      "ffmpeg wasn't found on the PATH"
+    );
   }
 }
 
@@ -563,5 +578,238 @@ mod tests {
     assert_eq!(parse_out_time_us("out_time=00:00:01.500000"), None);
     assert_eq!(parse_out_time_us("out_time_us=N/A"), None);
     assert_eq!(parse_out_time_us("progress=continue"), None);
+  }
+}
+
+/// Integration tests: these call real ffmpeg and ffprobe on generated media files.
+#[cfg(test)]
+mod test_ffmpeg_integration {
+  use super::AudioProfile;
+  use super::{
+    adjust_fps_by_ffmpeg, convert_for_merge, get_media_seconds, merge, probe_streams,
+    run_ffmpeg_info_command,
+  };
+  use std::path::{Path, PathBuf};
+  use std::process::Command;
+
+  /// A temp folder that is removed when the test ends, even if an assert fails.
+  struct TempDir(PathBuf);
+
+  impl TempDir {
+    fn new(name: &str) -> Self {
+      let dir = std::env::temp_dir().join(format!("vidmerger-{name}-{}", std::process::id()));
+      let _ = std::fs::remove_dir_all(&dir);
+      std::fs::create_dir_all(&dir).unwrap();
+      TempDir(dir)
+    }
+
+    fn path(&self, file: &str) -> PathBuf {
+      self.0.join(file)
+    }
+  }
+
+  impl Drop for TempDir {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_dir_all(&self.0);
+    }
+  }
+
+  /// Creates a 1-second MP4 with a video stream, and an audio stream when `audio` is true.
+  fn make_clip(path: &Path, audio: bool) {
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args([
+      "-v",
+      "error",
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc=d=1:s=160x120:r=25",
+    ]);
+    if audio {
+      cmd.args(["-f", "lavfi", "-i", "sine=f=440:d=1"]);
+    }
+    cmd.args(["-c:v", "libx264", "-pix_fmt", "yuv420p"]);
+    if audio {
+      cmd.args(["-c:a", "aac", "-shortest"]);
+    }
+    let status = cmd.arg(path).status().expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create test clip");
+  }
+
+  #[test]
+  fn run_ffmpeg_info_command_reports_stream_info() {
+    let dir = TempDir::new("info");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    let output = run_ffmpeg_info_command(&clip).unwrap();
+    let info = String::from_utf8_lossy(&output.stderr);
+    assert!(info.contains("Video:"), "no video stream in: {info}");
+    assert!(info.contains("25 fps"), "wrong fps in: {info}");
+  }
+
+  #[test]
+  fn probe_streams_lists_video_and_audio() {
+    let dir = TempDir::new("probe");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, true);
+
+    let streams = probe_streams(clip.to_str().unwrap()).unwrap();
+    let kinds: Vec<&str> = streams.iter().map(|s| s.kind.as_str()).collect();
+    assert_eq!(kinds, ["video", "audio"]);
+    let audio = &streams[1];
+    assert_eq!(audio.codec, "aac");
+    assert_eq!(audio.sample_rate, Some(44100));
+    assert_eq!(audio.channels, Some(1));
+  }
+
+  #[test]
+  fn probe_streams_fails_on_missing_file() {
+    let dir = TempDir::new("probe-missing");
+    let missing = dir.path("nope.mp4");
+    assert!(probe_streams(missing.to_str().unwrap()).is_err());
+  }
+
+  #[test]
+  fn get_media_seconds_returns_clip_length() {
+    let dir = TempDir::new("seconds");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    let seconds = get_media_seconds(clip.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 1.0).abs() < 0.1,
+      "expected about 1s, got {seconds}"
+    );
+  }
+
+  #[test]
+  fn convert_for_merge_writes_mp4_with_aac_audio() {
+    let dir = TempDir::new("convert");
+    let input = dir.path("input.mp4");
+    let output = dir.path("converted.mp4");
+    make_clip(&input, true);
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      false,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let audio = streams.iter().find(|s| s.kind == "audio").unwrap();
+    assert_eq!(audio.codec, "aac");
+    assert_eq!(audio.sample_rate, Some(48_000));
+    assert_eq!(audio.channels, Some(2));
+  }
+
+  /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
+  fn make_clip_with_fps(path: &Path, fps: u32) {
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg(format!("testsrc=d=1:s=160x120:r={fps}"))
+      .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
+      .arg(path)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create test clip");
+  }
+
+  #[test]
+  fn merge_joins_two_clips_into_one_file() {
+    let dir = TempDir::new("merge");
+    let first = dir.path("1 - first.mp4");
+    let second = dir.path("2 - second.mp4");
+    make_clip(&first, false);
+    make_clip(&second, false);
+
+    // The concat list and the chapter file that `merge` reads.
+    let list = dir.path("list.txt");
+    std::fs::write(
+      &list,
+      format!(
+        "file '{}'\nfile '{}'\n",
+        first.to_str().unwrap(),
+        second.to_str().unwrap()
+      ),
+    )
+    .unwrap();
+    let chapters = dir.path("chapters.txt");
+    std::fs::write(&chapters, ";FFMETADATA1\n").unwrap();
+    let output = dir.path("merged.mp4");
+
+    let result = merge(
+      list.to_str().unwrap().to_string(),
+      output.to_str().unwrap(),
+      chapters.to_str().unwrap(),
+      2.0,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 2.0).abs() < 0.2,
+      "expected about 2s, got {seconds}"
+    );
+  }
+
+  #[test]
+  fn adjust_fps_by_ffmpeg_changes_the_frame_rate() {
+    let dir = TempDir::new("fps");
+    let input = dir.path("30fps.mp4");
+    let output = dir.path("25fps.mp4");
+    make_clip_with_fps(&input, 30);
+
+    let written = adjust_fps_by_ffmpeg(input.clone(), &25.0, output.clone());
+    assert_eq!(written, output);
+
+    let info = run_ffmpeg_info_command(&output).unwrap();
+    let text = String::from_utf8_lossy(&info.stderr);
+    assert!(text.contains("25 fps"), "expected 25 fps in: {text}");
+  }
+
+  #[test]
+  fn convert_for_merge_adds_silence_when_input_has_no_audio() {
+    let dir = TempDir::new("silent");
+    let input = dir.path("video-only.mp4");
+    let output = dir.path("with-silence.mp4");
+    make_clip(&input, false);
+
+    let profile = AudioProfile {
+      sample_rate: 44_100,
+      channels: 1,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      true,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    assert!(
+      streams.iter().any(|s| s.kind == "audio"),
+      "no silent audio added"
+    );
   }
 }

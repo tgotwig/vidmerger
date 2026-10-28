@@ -58,8 +58,9 @@ impl ProgressBar {
   }
 }
 
+/// Integration test: this draws to the real terminal and takes a few seconds.
 #[cfg(test)]
-mod tests {
+mod test_progress_integration {
   use super::*;
   use std::thread;
   use std::time::Duration;

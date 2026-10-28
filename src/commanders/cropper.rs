@@ -336,3 +336,109 @@ mod test_encode_args {
     assert!(!args.contains(&"-c:v".to_string()));
   }
 }
+
+/// Integration tests: these call real ffmpeg and ffprobe on generated clips.
+#[cfg(test)]
+mod test_cropper_integration {
+  use super::{crop_black_bars, detect_black_bars, frame_size};
+  use std::path::PathBuf;
+  use std::process::Command;
+
+  /// A generated clip that is removed when dropped.
+  struct Clip(PathBuf);
+
+  impl Clip {
+    /// Creates a 2-second 320x240 clip. With `bars`, a white 320x180 picture sits between
+    /// 30 px black bars at the top and bottom. Without it, the picture fills the frame.
+    fn new(name: &str, bars: bool) -> Self {
+      let path =
+        std::env::temp_dir().join(format!("vidmerger-crop-{name}-{}.mp4", std::process::id()));
+      let mut cmd = Command::new("ffmpeg");
+      cmd.args(["-v", "error", "-y", "-f", "lavfi", "-i"]);
+      if bars {
+        cmd.arg("color=c=white:s=320x180:d=2:r=25");
+        cmd.args(["-vf", "pad=320:240:0:30:black"]);
+      } else {
+        cmd.arg("color=c=white:s=320x240:d=2:r=25");
+      }
+      let status = cmd
+        .args(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-an"])
+        .arg(&path)
+        .status()
+        .expect("ffmpeg must be installed");
+      assert!(status.success(), "failed to create test clip");
+      Clip(path)
+    }
+
+    fn path(&self) -> &str {
+      self.0.to_str().unwrap()
+    }
+  }
+
+  impl Drop for Clip {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_file(&self.0);
+    }
+  }
+
+  #[test]
+  fn frame_size_reads_the_real_clip_size() {
+    let clip = Clip::new("size", false);
+    assert_eq!(frame_size(clip.path()), Some((320, 240)));
+  }
+
+  #[test]
+  fn detect_black_bars_finds_the_bars_on_a_real_clip() {
+    let clip = Clip::new("bars", true);
+    // The 320x180 picture between the bars is cropped out of 320x240.
+    assert_eq!(
+      detect_black_bars(clip.path()),
+      Some("320:180:0:30".to_string())
+    );
+  }
+
+  #[test]
+  fn detect_black_bars_returns_none_for_a_full_frame_clip() {
+    let clip = Clip::new("full", false);
+    assert_eq!(detect_black_bars(clip.path()), None);
+  }
+
+  #[test]
+  fn crop_black_bars_writes_cropped_file_and_returns_new_paths() {
+    let barred = Clip::new("crop-barred", true);
+    let full = Clip::new("crop-full", false);
+    // The guard removes the folder when the test ends, even if an assert fails.
+    let tmp = TempFolder::new("crop-run");
+
+    let files = vec![barred.path().to_string(), full.path().to_string()];
+    let (new_files, content) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
+
+    // The barred clip is cropped into tmp/cropper. The full-frame clip is used as it is.
+    assert!(
+      new_files[0].contains("cropper"),
+      "not cropped: {}",
+      new_files[0]
+    );
+    assert_eq!(new_files[1], files[1]);
+    assert!(std::path::Path::new(&new_files[0]).exists());
+    assert!(content.contains("file '"), "no concat list: {content}");
+  }
+
+  /// A temp folder that is removed when dropped.
+  struct TempFolder(PathBuf);
+
+  impl TempFolder {
+    fn new(name: &str) -> Self {
+      let dir = std::env::temp_dir().join(format!("vidmerger-{name}-{}", std::process::id()));
+      let _ = std::fs::remove_dir_all(&dir);
+      std::fs::create_dir_all(&dir).unwrap();
+      TempFolder(dir)
+    }
+  }
+
+  impl Drop for TempFolder {
+    fn drop(&mut self) {
+      let _ = std::fs::remove_dir_all(&self.0);
+    }
+  }
+}
