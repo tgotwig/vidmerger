@@ -1,3 +1,6 @@
+[submodule "submodules/agents"]
+	path = submodules/agents
+	url = git@github.com:tgotwig/agents.git
 [submodule "submodules/homebrew-linux-vidmerger"]
 	path = submodules/homebrew-linux-vidmerger
 	url = git@github.com:tgotwig/homebrew-linux-vidmerger.git
