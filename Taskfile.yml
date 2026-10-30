@@ -8,7 +8,7 @@ tasks:
         rustup component add clippy
         rustup component add rustfmt
 
-  run: cargo run -- data/call_merger -y
+  run: cargo run -- {{.CLI_ARGS | default "data/call_merger"}} -y
   run-docker:
     - |
       docker build -t vidmerger .
