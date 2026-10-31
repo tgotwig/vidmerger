@@ -1,4 +1,6 @@
-use crate::commanders::_cmd::{get_media_seconds, h264_encoder, probe_streams};
+use crate::commanders::_cmd::{
+  get_media_seconds, h264_encoder, is_hevc, probe_streams, video_bit_rate,
+};
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use std::{fs, path::Path, process::Command};
 use term_painter::Color::BrightBlue;
@@ -59,17 +61,21 @@ fn detect_black_bars(file: &str) -> Option<String> {
   }
   let (width, height) = frame_size(file)?;
 
-  let filter = sampling_filter(get_media_seconds(file).ok()?);
-  // `round=2` keeps the exact bar size. The default (16) can cut into the picture.
-  // `skip=0` checks every sampled frame. The default (2) skips the first ones, so short clips
-  // could give no crop value at all.
-  let output = Command::new("ffmpeg")
-    .args([
-      "-v", "info", "-i", file, "-vf", &filter, "-an", "-f", "null", "-",
-    ])
-    .output()
-    .ok()?;
-  let crop = uniform_crop(&parse_crop_values(&String::from_utf8_lossy(&output.stderr)))?;
+  let duration = get_media_seconds(file).ok()?;
+  // Seek to each sample time and read a few frames there. Decoding the whole file this way
+  // takes far too long on long 4K files, so only the frames at the seek points are read.
+  // `round=2` keeps the exact bar size. `skip=0` checks every sampled frame.
+  let mut crops = Vec::new();
+  for time in seek_times(duration) {
+    let output = Command::new("ffmpeg")
+      .args(["-v", "info", "-ss", &format!("{time:.3}"), "-i", file])
+      .args(["-frames:v", &FRAMES_PER_SEEK.to_string()])
+      .args(["-vf", "cropdetect=round=2:skip=0", "-an", "-f", "null", "-"])
+      .output()
+      .ok()?;
+    crops.extend(parse_crop_values(&String::from_utf8_lossy(&output.stderr)));
+  }
+  let crop = majority_crop(&crops)?;
 
   if is_full_frame(&crop, width, height) {
     None
@@ -132,11 +138,16 @@ fn parse_frame_size(text: &str) -> Option<(u32, u32)> {
 /// opening (or any black section) cannot hide the bars.
 const SAMPLES_PER_CLIP: f64 = 66.0;
 
-/// Returns the `fps` plus `cropdetect` filter that samples about `SAMPLES_PER_CLIP` frames
-/// spread evenly over `duration_seconds`. Clips shorter than that get one frame per second.
-fn sampling_filter(duration_seconds: f64) -> String {
-  let fps = (SAMPLES_PER_CLIP / duration_seconds.max(1.0)).min(1.0);
-  format!("fps={fps},cropdetect=round=2:skip=0")
+/// Number of frames read at each seek point. Two frames avoid relying on a single frame.
+const FRAMES_PER_SEEK: u32 = 2;
+
+/// Returns `SAMPLES_PER_CLIP` evenly spaced times (in seconds) across `duration_seconds`.
+/// Each time is a seek point, so FFmpeg jumps there instead of decoding the whole file.
+fn seek_times(duration_seconds: f64) -> Vec<f64> {
+  let points = SAMPLES_PER_CLIP as u32;
+  (0..points)
+    .map(|index| duration_seconds * (f64::from(index) + 0.5) / f64::from(points))
+    .collect()
 }
 
 /// True for a `w:h:x:y` value with a positive width and height. Black frames can make
@@ -158,14 +169,25 @@ fn parse_crop_values(log: &str) -> Vec<String> {
 }
 
 /// Returns the crop value only when every sampled frame agrees on it. A clip that mixes
-/// letterboxed and full-frame scenes (e.g. a cutscene) gives different values, so it returns
-/// `None` and is left uncropped. This keeps the picture from being cut.
-fn uniform_crop(values: &[String]) -> Option<String> {
-  let first = values.first()?;
-  values
-    .iter()
-    .all(|value| value == first)
-    .then(|| first.clone())
+/// Share of sampled frames that must agree on the same bars before the video is cropped.
+/// Most of a film can be letterboxed while a few scenes are full frame, so requiring every frame
+/// to agree would skip the whole film. The few full-frame scenes are the minority and are not
+/// the majority value, so they are not what decides the crop.
+const MIN_AGREEING_SHARE: f64 = 0.6;
+
+/// Returns the crop value that at least `MIN_AGREEING_SHARE` of the sampled frames agree on, or
+/// `None` when no value is that common (e.g. a clip with an even mix of framings).
+fn majority_crop(values: &[String]) -> Option<String> {
+  if values.is_empty() {
+    return None;
+  }
+  let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+  for value in values {
+    *counts.entry(value.as_str()).or_default() += 1;
+  }
+  let (crop, count) = counts.into_iter().max_by_key(|(_, count)| *count)?;
+  let share = count as f64 / values.len() as f64;
+  (share >= MIN_AGREEING_SHARE).then(|| crop.to_string())
 }
 
 /// The FFmpeg arguments that crop `input` to `crop` and write `output`.
@@ -173,7 +195,7 @@ fn uniform_crop(values: &[String]) -> Option<String> {
 /// Chapters and metadata are copied from the input by FFmpeg's defaults.
 fn encode_args(input: &str, crop: &str, output: &str) -> Vec<String> {
   let mut args: Vec<String> = [
-    "-y", "-v", "error", "-i", input, "-map", "0:v", "-map", "0:a?", "-map", "0:s?",
+    "-y", "-v", "error", "-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?",
   ]
   .map(String::from)
   .to_vec();
@@ -181,7 +203,20 @@ fn encode_args(input: &str, crop: &str, output: &str) -> Vec<String> {
   args.extend(["-c:s", "copy", "-vf"].map(String::from));
   args.push(format!("crop={crop}"));
   if let Some(encoder) = video_encoder_for(output) {
+    // Keep HEVC input as HEVC (VideoToolbox on macOS), instead of re-encoding it to H.264.
+    let encoder = if is_hevc(input) && cfg!(target_os = "macos") {
+      "hevc_videotoolbox"
+    } else {
+      encoder
+    };
     args.extend(["-c:v".to_string(), encoder.to_string()]);
+    if encoder.starts_with("hevc") {
+      args.extend(["-tag:v", "hvc1"].map(String::from));
+    }
+    // Keep the source's video bitrate, otherwise the encoder's default can be much larger.
+    if let Some(bit_rate) = video_bit_rate(input) {
+      args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+    }
   }
   args.push(output.to_string());
   args
@@ -251,7 +286,7 @@ mod test_frame_size_fields {
 
 #[cfg(test)]
 mod test_parse_crop_values {
-  use super::{is_valid_crop, parse_crop_values, sampling_filter};
+  use super::{is_valid_crop, parse_crop_values, seek_times};
 
   #[test]
   fn ignores_negative_sizes_from_black_frames() {
@@ -267,13 +302,19 @@ mod test_parse_crop_values {
   }
 
   #[test]
-  fn samples_long_clips_about_sixty_six_times() {
-    assert_eq!(sampling_filter(600.0), "fps=0.11,cropdetect=round=2:skip=0");
+  fn seek_times_are_spread_across_the_whole_clip() {
+    let times = seek_times(100.0);
+    assert_eq!(times.len(), 66);
+    assert!(
+      times.first().unwrap() < &1.0,
+      "first sample is near the start"
+    );
+    assert!(times.last().unwrap() > &99.0, "last sample is near the end");
   }
 
   #[test]
-  fn samples_short_clips_once_per_second() {
-    assert_eq!(sampling_filter(10.0), "fps=1,cropdetect=round=2:skip=0");
+  fn seek_times_stay_inside_the_clip() {
+    assert!(seek_times(8552.32).iter().all(|t| *t > 0.0 && *t < 8552.32));
   }
 
   #[test]
@@ -293,25 +334,40 @@ mod test_parse_crop_values {
 }
 
 #[cfg(test)]
-mod test_uniform_crop {
-  use super::uniform_crop;
+mod test_majority_crop {
+  use super::majority_crop;
 
   #[test]
   fn returns_the_crop_when_every_frame_agrees() {
     let values: Vec<String> = ["320:180:0:30", "320:180:0:30"].map(String::from).to_vec();
-    assert_eq!(uniform_crop(&values), Some("320:180:0:30".to_string()));
+    assert_eq!(majority_crop(&values), Some("320:180:0:30".to_string()));
   }
 
   #[test]
-  fn returns_none_when_frames_disagree() {
-    // A cutscene: some frames letterboxed, some full frame.
+  fn letterboxed_film_with_a_few_full_frame_scenes_is_cropped() {
+    // 9 letterboxed samples and 1 full-frame sample: 90% agree, so the bars are cropped.
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 9];
+    values.push("3840:2160:0:0".to_string());
+    assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
+  }
+
+  #[test]
+  fn a_letterboxed_film_with_many_offset_frames_is_still_cropped() {
+    // Measured on a 2h22m film: 136 of 198 readings were the letterbox (about 69%).
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 136];
+    values.extend(vec!["3828:1608:12:276".to_string(); 62]);
+    assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
+  }
+
+  #[test]
+  fn an_even_mix_is_not_cropped() {
     let values: Vec<String> = ["320:180:0:30", "320:240:0:0"].map(String::from).to_vec();
-    assert_eq!(uniform_crop(&values), None);
+    assert_eq!(majority_crop(&values), None);
   }
 
   #[test]
   fn returns_none_for_no_values() {
-    assert_eq!(uniform_crop(&[]), None);
+    assert_eq!(majority_crop(&[]), None);
   }
 }
 
@@ -330,7 +386,7 @@ mod test_encode_args {
     assert!(args
       .windows(2)
       .any(|pair| pair == ["-vf", "crop=1920:688:0:16"]));
-    assert!(args.windows(2).any(|pair| pair == ["-map", "0:v"]));
+    assert!(args.windows(2).any(|pair| pair == ["-map", "0:v:0"]));
     assert!(args.windows(2).any(|pair| pair == ["-map", "0:s?"]));
     assert!(args.windows(2).any(|pair| pair == ["-c:s", "copy"]));
     assert!(!args.contains(&"-c:v".to_string()));

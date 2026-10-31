@@ -127,11 +127,69 @@ pub fn convert_for_merge(
   profile: Option<AudioProfile>,
   silent_audio: bool,
 ) -> Output {
+  // HEVC input stays HEVC when the OS has a hardware HEVC encoder (VideoToolbox on macOS).
+  // Other input is converted to H.264.
+  let hevc = is_hevc(input) && cfg!(target_os = "macos");
+  let encoder = if hevc {
+    "hevc_videotoolbox"
+  } else {
+    h264_encoder()
+  };
   convert_with_cpu_fallback(
-    h264_encoder(),
+    encoder,
     |result: &Output| result.status.success(),
     |encoder| run_convert(input, output, profile, silent_audio, encoder),
   )
+}
+
+/// True when the input's first video stream is HEVC (H.265).
+pub fn is_hevc(input: &str) -> bool {
+  Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=codec_name",
+      "-of",
+      "csv=p=0",
+      input,
+    ])
+    .output()
+    .map(|output| is_hevc_codec_output(&String::from_utf8_lossy(&output.stdout)))
+    .unwrap_or(false)
+}
+
+/// Reads ffprobe's `codec_name` output. ffprobe can print a trailing comma (e.g. "hevc,"), so
+/// only the first field is the codec.
+fn is_hevc_codec_output(text: &str) -> bool {
+  text
+    .trim()
+    .split(',')
+    .next()
+    .is_some_and(|codec| codec == "hevc")
+}
+
+#[cfg(test)]
+mod test_is_hevc_codec_output {
+  use super::is_hevc_codec_output;
+
+  #[test]
+  fn accepts_plain_hevc() {
+    assert!(is_hevc_codec_output("hevc\n"));
+  }
+
+  #[test]
+  fn accepts_hevc_with_trailing_comma() {
+    assert!(is_hevc_codec_output("hevc,\n"));
+  }
+
+  #[test]
+  fn rejects_other_codecs() {
+    assert!(!is_hevc_codec_output("h264,\n"));
+    assert!(!is_hevc_codec_output(""));
+  }
 }
 
 /// Runs `convert` with `encoder`. If that fails and `encoder` is not `libx264`, runs it again
@@ -147,6 +205,30 @@ fn convert_with_cpu_fallback<T>(
   }
   println!("⚠️  {encoder} failed, retrying with libx264");
   convert("libx264")
+}
+
+/// Returns the video stream's bitrate in bits per second, or `None` when the file does not
+/// report one (e.g. some containers only report the format bitrate).
+pub fn video_bit_rate(input: &str) -> Option<u64> {
+  let output = Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=bit_rate",
+      "-of",
+      "csv=p=0",
+      input,
+    ])
+    .output()
+    .ok()?;
+  String::from_utf8_lossy(&output.stdout)
+    .trim()
+    .parse::<u64>()
+    .ok()
+    .filter(|bit_rate| *bit_rate > 0)
 }
 
 /// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
@@ -166,8 +248,19 @@ fn run_convert(
   } else {
     "0:a?"
   };
-  args.extend(["-map", "0:v?", "-map", audio_map, "-c:v"].map(String::from));
+  // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
+  // cover image) that MP4 cannot hold.
+  args.extend(["-map", "0:v:0?", "-map", audio_map, "-c:v"].map(String::from));
   args.push(encoder.to_string());
+  // Apple players only open HEVC in MP4 when it is tagged `hvc1`.
+  if encoder.starts_with("hevc") {
+    args.extend(["-tag:v", "hvc1"].map(String::from));
+  }
+  // Keep the source's video bitrate. Without it the encoder picks its own, which can be much
+  // larger (a 14 GB HEVC film came out at about 2.7 times the source bitrate).
+  if let Some(bit_rate) = video_bit_rate(input) {
+    args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+  }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
