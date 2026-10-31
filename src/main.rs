@@ -74,8 +74,9 @@ fn main() -> Result<(), Error> {
           change_fps(files_to_merge, &tmp_dir, fps_from_cli);
       }
 
-      // Cropped files are re-encoded, so the other inputs must be converted too (for matching
-      // codecs in the concat step). See `merge` in merger.rs.
+      // Cropped files are re-encoded, so with more than one input the others must be converted
+      // too (for matching codecs in the concat step). See `merge` in merger.rs. A single input
+      // has nothing to match, so it is not forced to convert.
       let mut any_cropped = false;
       if !skip_cropper {
         if let Some((cropped_files, cropped_content)) =
@@ -83,7 +84,7 @@ fn main() -> Result<(), Error> {
         {
           files_to_merge_as_strings = cropped_files;
           ffmpeg_input_content = cropped_content;
-          any_cropped = true;
+          any_cropped = files_to_merge_as_strings.len() > 1;
         }
       }
 
