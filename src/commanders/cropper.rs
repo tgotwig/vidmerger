@@ -1,5 +1,5 @@
 use crate::commanders::_cmd::{
-  get_media_seconds, h264_encoder, is_hevc, probe_streams, video_bit_rate,
+  get_media_seconds, h264_encoder, is_hevc, keep_source_bit_rate, probe_streams,
 };
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use std::{fs, path::Path, process::Command};
@@ -234,8 +234,8 @@ fn encode_args(
     if encoder.starts_with("hevc") {
       args.extend(["-tag:v", "hvc1"].map(String::from));
     }
-    // Keep the source's video bitrate, otherwise the encoder's default can be much larger.
-    if let Some(bit_rate) = video_bit_rate(input) {
+    // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
+    if let Some(bit_rate) = keep_source_bit_rate(input) {
       args.extend(["-b:v".to_string(), bit_rate.to_string()]);
     }
   }

@@ -207,6 +207,21 @@ fn convert_with_cpu_fallback<T>(
   convert("libx264")
 }
 
+/// Inputs shorter than this keep the encoder's own bitrate. Forcing a bitrate on very short clips
+/// is not needed to control the size of a long film, and it changed the length of short clips.
+const MIN_SECONDS_FOR_SOURCE_BIT_RATE: f64 = 60.0;
+
+/// The bitrate to pass to the encoder for `input`, or `None` to let the encoder choose. Only
+/// long inputs get the source bitrate, which is what keeps a film's output size close to its source.
+pub fn keep_source_bit_rate(input: &str) -> Option<u64> {
+  let long_enough = get_media_seconds(input).is_ok_and(|s| s >= MIN_SECONDS_FOR_SOURCE_BIT_RATE);
+  if long_enough {
+    video_bit_rate(input)
+  } else {
+    None
+  }
+}
+
 /// Returns the video stream's bitrate in bits per second, or `None` when the file does not
 /// report one (e.g. some containers only report the format bitrate).
 pub fn video_bit_rate(input: &str) -> Option<u64> {
@@ -256,9 +271,8 @@ fn run_convert(
   if encoder.starts_with("hevc") {
     args.extend(["-tag:v", "hvc1"].map(String::from));
   }
-  // Keep the source's video bitrate. Without it the encoder picks its own, which can be much
-  // larger (a 14 GB HEVC film came out at about 2.7 times the source bitrate).
-  if let Some(bit_rate) = video_bit_rate(input) {
+  // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
+  if let Some(bit_rate) = keep_source_bit_rate(input) {
     args.extend(["-b:v".to_string(), bit_rate.to_string()]);
   }
   args.extend(["-c:a", "aac"].map(String::from));
