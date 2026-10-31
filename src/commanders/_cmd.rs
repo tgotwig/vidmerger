@@ -239,11 +239,40 @@ pub fn video_bit_rate(input: &str) -> Option<u64> {
     ])
     .output()
     .ok()?;
-  String::from_utf8_lossy(&output.stdout)
+  parse_bit_rate(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Reads ffprobe's bitrate output. ffprobe can print a trailing comma (e.g. "12345,"), so only
+/// the first field is the bitrate. A zero or missing value is `None`.
+fn parse_bit_rate(text: &str) -> Option<u64> {
+  text
     .trim()
-    .parse::<u64>()
-    .ok()
+    .split(',')
+    .next()
+    .and_then(|field| field.parse::<u64>().ok())
     .filter(|bit_rate| *bit_rate > 0)
+}
+
+#[cfg(test)]
+mod test_parse_bit_rate {
+  use super::parse_bit_rate;
+
+  #[test]
+  fn reads_a_plain_bitrate() {
+    assert_eq!(parse_bit_rate("12345\n"), Some(12345));
+  }
+
+  #[test]
+  fn reads_a_bitrate_with_a_trailing_comma() {
+    assert_eq!(parse_bit_rate("12345,\n"), Some(12345));
+  }
+
+  #[test]
+  fn ignores_missing_or_zero_bitrate() {
+    assert_eq!(parse_bit_rate(""), None);
+    assert_eq!(parse_bit_rate("N/A\n"), None);
+    assert_eq!(parse_bit_rate("0\n"), None);
+  }
 }
 
 /// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
