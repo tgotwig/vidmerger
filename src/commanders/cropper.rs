@@ -31,10 +31,7 @@ pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>,
       let output = dir.join(file_name.as_ref()).to_string_lossy().to_string();
       println!("✂️  Removing black bars from {file}, calling: crop={crop}");
 
-      let res = Command::new("ffmpeg")
-        .args(encode_args(file, &crop, &output))
-        .output()
-        .unwrap();
+      let res = crop_with_cpu_fallback(file, &crop, &output);
       if !res.status.success() {
         panic!(
           "❌ Cropping {} failed (exit code: {:?}):{}",
@@ -190,10 +187,33 @@ fn majority_crop(values: &[String]) -> Option<String> {
   (share >= MIN_AGREEING_SHARE).then(|| crop.to_string())
 }
 
+/// Crops `input` with the normal encoder. If that fails (e.g. `hevc_videotoolbox` rejects the
+/// input), crops again with the CPU encoder `libx264`, so the crop step does not panic on a
+/// hardware encoder error.
+fn crop_with_cpu_fallback(input: &str, crop: &str, output: &str) -> std::process::Output {
+  let run = |encoder_override: Option<&str>| {
+    Command::new("ffmpeg")
+      .args(encode_args(input, crop, output, encoder_override))
+      .output()
+      .unwrap()
+  };
+  let res = run(None);
+  if res.status.success() {
+    return res;
+  }
+  println!("⚠️  Cropping with the default encoder failed, retrying with libx264");
+  run(Some("libx264"))
+}
+
 /// The FFmpeg arguments that crop `input` to `crop` and write `output`.
 /// Video, audio and subtitles are mapped. Data streams such as `tmcd` are dropped.
 /// Chapters and metadata are copied from the input by FFmpeg's defaults.
-fn encode_args(input: &str, crop: &str, output: &str) -> Vec<String> {
+fn encode_args(
+  input: &str,
+  crop: &str,
+  output: &str,
+  encoder_override: Option<&str>,
+) -> Vec<String> {
   let mut args: Vec<String> = [
     "-y", "-v", "error", "-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?",
   ]
@@ -202,9 +222,10 @@ fn encode_args(input: &str, crop: &str, output: &str) -> Vec<String> {
   // Subtitles are copied unchanged, so they are kept as they are.
   args.extend(["-c:s", "copy", "-vf"].map(String::from));
   args.push(format!("crop={crop}"));
-  if let Some(encoder) = video_encoder_for(output) {
+  if let Some(encoder) = encoder_override.or_else(|| video_encoder_for(output)) {
     // Keep HEVC input as HEVC (VideoToolbox on macOS), instead of re-encoding it to H.264.
-    let encoder = if is_hevc(input) && cfg!(target_os = "macos") {
+    // A retry passes `encoder_override`, which replaces this choice.
+    let encoder = if encoder_override.is_none() && is_hevc(input) && cfg!(target_os = "macos") {
       "hevc_videotoolbox"
     } else {
       encoder
@@ -382,7 +403,7 @@ mod test_encode_args {
 
   #[test]
   fn crops_and_keeps_video_audio_and_subtitles() {
-    let args = encode_args("in.webm", "1920:688:0:16", "out.webm");
+    let args = encode_args("in.webm", "1920:688:0:16", "out.webm", None);
     assert!(args
       .windows(2)
       .any(|pair| pair == ["-vf", "crop=1920:688:0:16"]));
