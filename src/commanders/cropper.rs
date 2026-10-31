@@ -1,6 +1,8 @@
 use crate::commanders::_cmd::{
-  get_media_seconds, h264_encoder, is_hevc, keep_source_bit_rate, probe_streams,
+  get_media_seconds, h264_encoder, is_hevc, keep_source_bit_rate, probe_streams, run_with_progress,
+  PROGRESS_ARGS,
 };
+use crate::helpers::io_helper::verbose;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use std::{fs, path::Path, process::Command};
 use term_painter::Color::BrightBlue;
@@ -237,16 +239,21 @@ fn crop_with_cpu_fallback(
   duration_seconds: f64,
 ) -> std::process::Output {
   let run = |encoder_override: Option<&str>| {
-    Command::new("ffmpeg")
-      .args(encode_args(
-        input,
-        crop,
-        output,
-        encoder_override,
-        duration_seconds,
-      ))
-      .output()
-      .unwrap()
+    let mut args = encode_args(input, crop, output, encoder_override, duration_seconds);
+    // The output path is always the last argument. The progress flags go before it.
+    let output_arg = args
+      .pop()
+      .expect("encode_args always ends with the output path");
+    if !verbose() {
+      args.extend(PROGRESS_ARGS.map(String::from));
+    }
+    args.push(output_arg);
+    let refs: Vec<&str> = args.iter().map(String::as_str).collect();
+    if verbose() {
+      Command::new("ffmpeg").args(&refs).output().unwrap()
+    } else {
+      run_with_progress(&refs, "Removing black bars", duration_seconds)
+    }
   };
   let res = run(None);
   if res.status.success() {
