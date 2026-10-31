@@ -126,12 +126,70 @@ pub fn convert_for_merge(
   output: &str,
   profile: Option<AudioProfile>,
   silent_audio: bool,
+  hevc: bool,
 ) -> Output {
+  // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
+  // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
+  let encoder = if hevc {
+    "hevc_videotoolbox"
+  } else {
+    h264_encoder()
+  };
   convert_with_cpu_fallback(
-    h264_encoder(),
+    encoder,
     |result: &Output| result.status.success(),
     |encoder| run_convert(input, output, profile, silent_audio, encoder),
   )
+}
+
+/// True when the input's first video stream is HEVC (H.265).
+pub fn is_hevc(input: &str) -> bool {
+  Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=codec_name",
+      "-of",
+      "csv=p=0",
+      input,
+    ])
+    .output()
+    .map(|output| is_hevc_codec_output(&String::from_utf8_lossy(&output.stdout)))
+    .unwrap_or(false)
+}
+
+/// Reads ffprobe's `codec_name` output. ffprobe can print a trailing comma (e.g. "hevc,"), so
+/// only the first field is the codec.
+fn is_hevc_codec_output(text: &str) -> bool {
+  text
+    .trim()
+    .split(',')
+    .next()
+    .is_some_and(|codec| codec == "hevc")
+}
+
+#[cfg(test)]
+mod test_is_hevc_codec_output {
+  use super::is_hevc_codec_output;
+
+  #[test]
+  fn accepts_plain_hevc() {
+    assert!(is_hevc_codec_output("hevc\n"));
+  }
+
+  #[test]
+  fn accepts_hevc_with_trailing_comma() {
+    assert!(is_hevc_codec_output("hevc,\n"));
+  }
+
+  #[test]
+  fn rejects_other_codecs() {
+    assert!(!is_hevc_codec_output("h264,\n"));
+    assert!(!is_hevc_codec_output(""));
+  }
 }
 
 /// Runs `convert` with `encoder`. If that fails and `encoder` is not `libx264`, runs it again
@@ -147,6 +205,74 @@ fn convert_with_cpu_fallback<T>(
   }
   println!("⚠️  {encoder} failed, retrying with libx264");
   convert("libx264")
+}
+
+/// Inputs shorter than this keep the encoder's own bitrate. Forcing a bitrate on very short clips
+/// is not needed to control the size of a long film, and it changed the length of short clips.
+const MIN_SECONDS_FOR_SOURCE_BIT_RATE: f64 = 60.0;
+
+/// The bitrate to pass to the encoder for `input`, or `None` to let the encoder choose. Only
+/// long inputs get the source bitrate, which is what keeps a film's output size close to its source.
+pub fn keep_source_bit_rate(input: &str) -> Option<u64> {
+  let long_enough = get_media_seconds(input).is_ok_and(|s| s >= MIN_SECONDS_FOR_SOURCE_BIT_RATE);
+  if long_enough {
+    video_bit_rate(input)
+  } else {
+    None
+  }
+}
+
+/// Returns the video stream's bitrate in bits per second, or `None` when the file does not
+/// report one (e.g. some containers only report the format bitrate).
+pub fn video_bit_rate(input: &str) -> Option<u64> {
+  let output = Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=bit_rate",
+      "-of",
+      "csv=p=0",
+      input,
+    ])
+    .output()
+    .ok()?;
+  parse_bit_rate(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Reads ffprobe's bitrate output. ffprobe can print a trailing comma (e.g. "12345,"), so only
+/// the first field is the bitrate. A zero or missing value is `None`.
+fn parse_bit_rate(text: &str) -> Option<u64> {
+  text
+    .trim()
+    .split(',')
+    .next()
+    .and_then(|field| field.parse::<u64>().ok())
+    .filter(|bit_rate| *bit_rate > 0)
+}
+
+#[cfg(test)]
+mod test_parse_bit_rate {
+  use super::parse_bit_rate;
+
+  #[test]
+  fn reads_a_plain_bitrate() {
+    assert_eq!(parse_bit_rate("12345\n"), Some(12345));
+  }
+
+  #[test]
+  fn reads_a_bitrate_with_a_trailing_comma() {
+    assert_eq!(parse_bit_rate("12345,\n"), Some(12345));
+  }
+
+  #[test]
+  fn ignores_missing_or_zero_bitrate() {
+    assert_eq!(parse_bit_rate(""), None);
+    assert_eq!(parse_bit_rate("N/A\n"), None);
+    assert_eq!(parse_bit_rate("0\n"), None);
+  }
 }
 
 /// Runs one conversion with the given H.264 `encoder`. See `convert_for_merge`.
@@ -166,8 +292,18 @@ fn run_convert(
   } else {
     "0:a?"
   };
-  args.extend(["-map", "0:v?", "-map", audio_map, "-c:v"].map(String::from));
+  // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
+  // cover image) that MP4 cannot hold.
+  args.extend(["-map", "0:v:0?", "-map", audio_map, "-c:v"].map(String::from));
   args.push(encoder.to_string());
+  // Apple players only open HEVC in MP4 when it is tagged `hvc1`.
+  if encoder.starts_with("hevc") {
+    args.extend(["-tag:v", "hvc1"].map(String::from));
+  }
+  // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
+  if let Some(bit_rate) = keep_source_bit_rate(input) {
+    args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+  }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
@@ -708,6 +844,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       Some(profile),
       false,
+      false,
     );
     assert!(
       result.status.success(),
@@ -807,6 +944,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       Some(profile),
       true,
+      false,
     );
     assert!(
       result.status.success(),
