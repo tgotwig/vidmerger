@@ -21,7 +21,7 @@ lazy_static! {
 
 /// FFmpeg flags that make it write progress lines (`out_time_us=...`) to stdout
 /// and keep stderr short. Used when not in verbose mode.
-const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
+pub const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
 
 /// Merges the files with stream copy and shows a 0–100% progress bar.
 /// `total_seconds` is the combined length of all input files.
@@ -337,7 +337,7 @@ fn run_convert(
 
 /// Runs FFmpeg (which must have the `PROGRESS_ARGS` set) and shows a 0–100% bar.
 /// `total_seconds` is the length of the input. If it is 0, the bar only jumps to 100% at the end.
-fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
+pub fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
   let mut child = Command::new("ffmpeg")
     .args(args)
     .stdout(Stdio::piped())
