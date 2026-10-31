@@ -61,6 +61,13 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         Some(p.sample_rate) == stream.sample_rate && Some(p.channels) == stream.channels
       })
   };
+  // The video codec every input must share for `-c copy` concatenation: the first input's.
+  // An input with a different video codec must be converted, even if its audio already fits.
+  let video_codec = probes
+    .iter()
+    .flatten()
+    .find(|s| s.kind == "video")
+    .map(|s| s.codec.as_str());
   // Per input: (needs conversion, silent audio needed).
   let decisions: Vec<(bool, bool)> = probes
     .iter()
@@ -74,9 +81,15 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         .iter()
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
+      let video_differs = streams
+        .iter()
+        .any(|s| s.kind == "video" && Some(s.codec.as_str()) != video_codec);
       // Silence is only added when there is video, because `-shortest` ends the output with it.
       let silent_audio = profile.is_some() && !has_audio && has_video;
-      (has_extra || !audio_fits || silent_audio, silent_audio)
+      (
+        has_extra || !audio_fits || video_differs || silent_audio,
+        silent_audio,
+      )
     })
     .collect();
   // Converted inputs always get H.264 video, so copied inputs could have a different video
@@ -224,9 +237,38 @@ fn run_plan(
   total_seconds: f64,
 ) -> Output {
   let inputs = convert_inputs(files, plan, tmp_dir);
+  // If a HEVC conversion fell back to H.264 (libx264), the converted inputs no longer share one
+  // codec. Redo every conversion with H.264, so the concat step sees a single codec.
+  let inputs = if plan.hevc && inputs.iter().any(|path| !is_hevc_file(path)) {
+    println!("⚠️  A HEVC conversion fell back to H.264, converting every input to H.264");
+    let h264_plan = MergePlan {
+      profile: plan.profile,
+      hevc: false,
+      actions: plan
+        .actions
+        .iter()
+        .map(|action| match action {
+          InputAction::Copy => InputAction::Convert {
+            silent_audio: false,
+          },
+          InputAction::Convert { silent_audio } => InputAction::Convert {
+            silent_audio: *silent_audio,
+          },
+        })
+        .collect(),
+    };
+    convert_inputs(files, &h264_plan, tmp_dir)
+  } else {
+    inputs
+  };
   fs::write(concat_list, gen_input_file_content_for_ffmpeg(&inputs))
     .expect("Failed to write the concat list");
   _cmd::merge(concat_list.to_string(), output, chapters, total_seconds)
+}
+
+/// True when the file's first video stream is HEVC. A file that cannot be probed is not HEVC.
+fn is_hevc_file(path: &str) -> bool {
+  _cmd::is_hevc(path)
 }
 
 /// Returns the path to merge for each input, in the same order as the inputs. Copied inputs
@@ -472,6 +514,29 @@ mod test_plan_merge {
       vec![video(), aac_stereo_48k()],
     ];
     assert!(!plan_merge(&probes, false).hevc);
+  }
+
+  #[test]
+  fn mixed_video_codecs_are_converted_not_copied() {
+    // Matching AAC audio would normally allow a copy. The video codecs differ, so `-c copy`
+    // concatenation would mix them. Both inputs must be converted.
+    let probes = vec![
+      vec![hevc_video(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert!(!plan.hevc);
+    assert_eq!(
+      plan.actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
+    );
   }
 
   #[test]
