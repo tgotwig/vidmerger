@@ -66,7 +66,7 @@ fn detect_black_bars(file: &str) -> Option<(String, f64)> {
   // A few spread-out samples first. If every one is the full frame, the file almost certainly
   // has no bars, so the full check (about 66 seeks, several seconds per file) is skipped.
   let quick = sample_crops(file, &seek_times_for(duration, PRE_CHECK_POINTS))?;
-  if quick.iter().all(|crop| is_full_frame(crop, width, height)) {
+  if all_full_frame(&quick, width, height) {
     return None;
   }
   let crops = sample_crops(file, &seek_times(duration))?;
@@ -77,6 +77,12 @@ fn detect_black_bars(file: &str) -> Option<(String, f64)> {
   } else {
     Some((crop, duration))
   }
+}
+
+/// True only when there is at least one reading and every reading is the full frame. An empty
+/// list is not evidence of "no bars", so it returns false and the full check still runs.
+fn all_full_frame(crops: &[String], width: u32, height: u32) -> bool {
+  !crops.is_empty() && crops.iter().all(|crop| is_full_frame(crop, width, height))
 }
 
 /// True when `crop` (`w:h:x:y`) is the whole frame, allowing one pixel of rounding per side.
@@ -285,6 +291,28 @@ fn video_encoder_for(output: &str) -> Option<&'static str> {
     .to_str()?
     .to_ascii_lowercase();
   matches!(extension.as_str(), "mp4" | "m4v" | "mov" | "mkv").then(h264_encoder)
+}
+
+#[cfg(test)]
+mod test_all_full_frame {
+  use super::all_full_frame;
+
+  #[test]
+  fn empty_readings_do_not_count_as_no_bars() {
+    assert!(!all_full_frame(&[], 320, 240));
+  }
+
+  #[test]
+  fn every_full_frame_reading_skips_the_file() {
+    let readings = vec!["320:240:0:0".to_string(); 5];
+    assert!(all_full_frame(&readings, 320, 240));
+  }
+
+  #[test]
+  fn one_bar_reading_keeps_the_file_for_the_full_check() {
+    let readings = vec!["320:240:0:0".to_string(), "320:180:0:30".to_string()];
+    assert!(!all_full_frame(&readings, 320, 240));
+  }
 }
 
 #[cfg(test)]
