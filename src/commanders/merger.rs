@@ -61,13 +61,16 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         Some(p.sample_rate) == stream.sample_rate && Some(p.channels) == stream.channels
       })
   };
-  // The video codec every input must share for `-c copy` concatenation: the first input's.
-  // An input with a different video codec must be converted, even if its audio already fits.
-  let video_codec = probes
-    .iter()
-    .flatten()
-    .find(|s| s.kind == "video")
-    .map(|s| s.codec.as_str());
+  // The ordered video codecs of the first input. For `-c copy` concatenation every input must
+  // have the same video streams in the same order. An input that differs must be converted.
+  let video_layout = |streams: &[MediaStream]| -> Vec<String> {
+    streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .map(|s| s.codec.clone())
+      .collect()
+  };
+  let reference_layout = probes.first().map(|streams| video_layout(streams));
   // Per input: (needs conversion, silent audio needed).
   let decisions: Vec<(bool, bool)> = probes
     .iter()
@@ -81,9 +84,7 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         .iter()
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
-      let video_differs = streams
-        .iter()
-        .any(|s| s.kind == "video" && Some(s.codec.as_str()) != video_codec);
+      let video_differs = reference_layout.as_ref() != Some(&video_layout(streams));
       // Silence is only added when there is video, because `-shortest` ends the output with it.
       let silent_audio = profile.is_some() && !has_audio && has_video;
       (
@@ -536,6 +537,20 @@ mod test_plan_merge {
           silent_audio: false
         },
       ]
+    );
+  }
+
+  #[test]
+  fn matching_secondary_video_streams_are_copied() {
+    // Both inputs have the same video streams in the same order (H.264 then HEVC), so they can
+    // be copied. Converting would drop the second video stream, since only the first is mapped.
+    let probes = vec![
+      vec![video(), hevc_video(), aac_stereo_48k()],
+      vec![video(), hevc_video(), aac_stereo_48k()],
+    ];
+    assert_eq!(
+      plan_merge(&probes, false).actions,
+      vec![InputAction::Copy, InputAction::Copy]
     );
   }
 
