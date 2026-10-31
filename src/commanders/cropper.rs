@@ -479,7 +479,7 @@ mod test_encode_args {
 /// Integration tests: these call real ffmpeg and ffprobe on generated clips.
 #[cfg(test)]
 mod test_cropper_integration {
-  use super::{crop_black_bars, detect_black_bars, frame_size};
+  use super::{crop_black_bars, detect_black_bars, frame_size, sample_crops};
   use std::path::PathBuf;
   use std::process::Command;
 
@@ -518,6 +518,22 @@ mod test_cropper_integration {
     fn drop(&mut self) {
       let _ = std::fs::remove_file(&self.0);
     }
+  }
+
+  #[test]
+  fn sample_crops_reads_the_bars_from_a_real_clip() {
+    let clip = Clip::new("sample-bars", true);
+    let crops = sample_crops(clip.path(), &[0.5, 1.0]).expect("ffmpeg must run");
+    assert!(!crops.is_empty(), "expected crop readings from the clip");
+    assert!(crops.iter().all(|crop| crop == "320:180:0:30"), "{crops:?}");
+  }
+
+  #[test]
+  fn sample_crops_reads_only_full_frames_from_a_clean_clip() {
+    let clip = Clip::new("sample-clean", false);
+    let crops = sample_crops(clip.path(), &[0.5, 1.0]).expect("ffmpeg must run");
+    assert!(!crops.is_empty(), "expected crop readings from the clip");
+    assert!(crops.iter().all(|crop| crop == "320:240:0:0"), "{crops:?}");
   }
 
   #[test]
