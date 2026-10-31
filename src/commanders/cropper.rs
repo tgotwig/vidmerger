@@ -65,8 +65,11 @@ fn detect_black_bars(file: &str) -> Option<(String, f64)> {
   let duration = get_media_seconds(file).ok()?;
   // A few spread-out samples first. If every one is the full frame, the file almost certainly
   // has no bars, so the full check (about 66 seeks, several seconds per file) is skipped.
-  let quick = sample_crops(file, &seek_times_for(duration, PRE_CHECK_POINTS))?;
-  if all_full_frame(&quick, width, height) {
+  let quick: Vec<Vec<String>> = seek_times_for(duration, PRE_CHECK_POINTS)
+    .into_iter()
+    .map(|time| sample_crops(file, &[time]))
+    .collect::<Option<_>>()?;
+  if quick_check_is_clean(&quick, width, height) {
     return None;
   }
   let crops = sample_crops(file, &seek_times(duration))?;
@@ -83,6 +86,15 @@ fn detect_black_bars(file: &str) -> Option<(String, f64)> {
 /// list is not evidence of "no bars", so it returns false and the full check still runs.
 fn all_full_frame(crops: &[String], width: u32, height: u32) -> bool {
   !crops.is_empty() && crops.iter().all(|crop| is_full_frame(crop, width, height))
+}
+
+/// True when there is at least one quick seek and every seek is clean (see `all_full_frame`).
+/// A seek with no readings proves nothing, so one empty seek keeps the file for the full check.
+fn quick_check_is_clean(seeks: &[Vec<String>], width: u32, height: u32) -> bool {
+  !seeks.is_empty()
+    && seeks
+      .iter()
+      .all(|readings| all_full_frame(readings, width, height))
 }
 
 /// True when `crop` (`w:h:x:y`) is the whole frame, allowing one pixel of rounding per side.
@@ -312,6 +324,26 @@ mod test_all_full_frame {
   fn one_bar_reading_keeps_the_file_for_the_full_check() {
     let readings = vec!["320:240:0:0".to_string(), "320:180:0:30".to_string()];
     assert!(!all_full_frame(&readings, 320, 240));
+  }
+}
+
+#[cfg(test)]
+mod test_quick_check_is_clean {
+  use super::quick_check_is_clean;
+
+  #[test]
+  fn a_seek_without_readings_keeps_the_file_for_the_full_check() {
+    let seeks = vec![vec!["320:240:0:0".to_string()], vec![]];
+    assert!(!quick_check_is_clean(&seeks, 320, 240));
+  }
+
+  #[test]
+  fn every_seek_full_frame_skips_the_file() {
+    let seeks = vec![
+      vec!["320:240:0:0".to_string()],
+      vec!["320:240:0:0".to_string()],
+    ];
+    assert!(quick_check_is_clean(&seeks, 320, 240));
   }
 }
 
