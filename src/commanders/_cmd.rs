@@ -126,10 +126,10 @@ pub fn convert_for_merge(
   output: &str,
   profile: Option<AudioProfile>,
   silent_audio: bool,
+  hevc: bool,
 ) -> Output {
-  // HEVC input stays HEVC when the OS has a hardware HEVC encoder (VideoToolbox on macOS).
-  // Other input is converted to H.264.
-  let hevc = is_hevc(input) && cfg!(target_os = "macos");
+  // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
+  // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
   let encoder = if hevc {
     "hevc_videotoolbox"
   } else {
@@ -801,6 +801,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       Some(profile),
       false,
+      false,
     );
     assert!(
       result.status.success(),
@@ -900,6 +901,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       Some(profile),
       true,
+      false,
     );
     assert!(
       result.status.success(),
