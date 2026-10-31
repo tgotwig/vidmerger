@@ -146,6 +146,12 @@ pub fn merge(
     .map(|path| _cmd::get_media_seconds(path).unwrap())
     .collect();
   let total_seconds: f64 = durations.iter().sum();
+  // Each input's path with its duration, read once above. Conversions reuse these durations.
+  let inputs_with_durations: Vec<(String, f64)> = files_to_merge_as_strings
+    .iter()
+    .cloned()
+    .zip(durations.iter().copied())
+    .collect();
   let bounds = chapter_bounds_ms(&durations);
 
   let mut metadata_string = String::from(";FFMETADATA1\n");
@@ -171,7 +177,7 @@ pub fn merge(
   let plan = plan_merge(&probes, file_format, force_convert);
   let mut res = run_plan(
     &plan,
-    &files_to_merge_as_strings,
+    &inputs_with_durations,
     &tmp_dir,
     &input,
     &output,
@@ -186,7 +192,7 @@ pub fn merge(
     let plan = plan_merge(&probes, file_format, true);
     res = run_plan(
       &plan,
-      &files_to_merge_as_strings,
+      &inputs_with_durations,
       &tmp_dir,
       &input,
       &output,
@@ -230,17 +236,26 @@ fn is_unsupported_stream_error(stderr: &[u8]) -> bool {
 /// Converts the inputs as `plan` says, rewrites the concat list to use them, and runs the merge.
 fn run_plan(
   plan: &MergePlan,
-  files: &[String],
+  inputs_with_durations: &[(String, f64)],
   tmp_dir: &Path,
   concat_list: &str,
   output: &str,
   chapters: &str,
   total_seconds: f64,
 ) -> Output {
-  let inputs = convert_inputs(files, plan, tmp_dir);
+  let inputs = convert_inputs(inputs_with_durations, plan, tmp_dir);
   // If a HEVC conversion fell back to H.264 (libx264), the converted inputs no longer share one
   // codec. Redo every conversion with H.264, so the concat step sees a single codec.
-  let inputs = if plan.hevc && inputs.iter().any(|path| !is_hevc_file(path)) {
+  // Only converted outputs can fall back. Copied inputs keep their own streams, so they are not
+  // checked. Skip the check entirely when nothing was converted.
+  let converted_outputs = plan
+    .actions
+    .iter()
+    .zip(&inputs)
+    .filter(|(action, _)| matches!(action, InputAction::Convert { .. }))
+    .map(|(_, path)| path);
+  let fell_back = plan.hevc && converted_outputs.clone().any(|path| !is_hevc_file(path));
+  let inputs = if fell_back {
     println!("⚠️  A HEVC conversion fell back to H.264, converting every input to H.264");
     let h264_plan = MergePlan {
       profile: plan.profile,
@@ -258,7 +273,7 @@ fn run_plan(
         })
         .collect(),
     };
-    convert_inputs(files, &h264_plan, tmp_dir)
+    convert_inputs(inputs_with_durations, &h264_plan, tmp_dir)
   } else {
     inputs
   };
@@ -274,17 +289,28 @@ fn is_hevc_file(path: &str) -> bool {
 
 /// Returns the path to merge for each input, in the same order as the inputs. Copied inputs
 /// keep their path. Converted inputs are written as MP4 files in `tmp_dir`.
-fn convert_inputs(files: &[String], plan: &MergePlan, tmp_dir: &Path) -> Vec<String> {
-  files
+fn convert_inputs(
+  inputs_with_durations: &[(String, f64)],
+  plan: &MergePlan,
+  tmp_dir: &Path,
+) -> Vec<String> {
+  inputs_with_durations
     .iter()
     .zip(&plan.actions)
     .enumerate()
-    .map(|(index, (input, action))| match action {
+    .map(|(index, ((input, duration), action))| match action {
       InputAction::Copy => input.clone(),
       InputAction::Convert { silent_audio } => {
         let output = tmp_dir.join(format!("converted_{index}.mp4"));
         let output = output.to_string_lossy().to_string();
-        let res = _cmd::convert_for_merge(input, &output, plan.profile, *silent_audio, plan.hevc);
+        let res = _cmd::convert_for_merge(
+          input,
+          &output,
+          plan.profile,
+          *silent_audio,
+          plan.hevc,
+          *duration,
+        );
         if !res.status.success() {
           panic!(
             "❌ Converting {} failed (exit code: {:?}):{}",
@@ -708,9 +734,10 @@ mod test_merge_integration {
       hevc: false,
       actions: vec![InputAction::Convert { silent_audio: true }],
     };
-    let files = vec![input.to_str().unwrap().to_string()];
+    let files = [input.to_str().unwrap().to_string()];
 
-    let converted = convert_inputs(&files, &plan, &dir.0);
+    let inputs_with_durations = vec![(files[0].clone(), 1.0)];
+    let converted = convert_inputs(&inputs_with_durations, &plan, &dir.0);
 
     assert_eq!(converted.len(), 1);
     assert!(
@@ -747,7 +774,7 @@ mod test_merge_integration {
         InputAction::Convert { silent_audio: true },
       ],
     };
-    let files = vec![
+    let files = [
       first.to_str().unwrap().to_string(),
       second.to_str().unwrap().to_string(),
     ];
@@ -757,9 +784,11 @@ mod test_merge_integration {
     fs::write(&chapters, ";FFMETADATA1\n").unwrap();
     let output = dir.0.join("merged.mp4");
 
+    let inputs_with_durations: Vec<(String, f64)> =
+      files.iter().map(|file| (file.clone(), 1.0)).collect();
     let result = run_plan(
       &plan,
-      &files,
+      &inputs_with_durations,
       &dir.0,
       concat_list.to_str().unwrap(),
       output.to_str().unwrap(),

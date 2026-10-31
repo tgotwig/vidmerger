@@ -12,10 +12,13 @@ use term_painter::ToStyle;
 /// chapter titles (taken from the file names) stay the same. Inputs without bars are used as
 /// they are. Returns the new input paths and the concat list for them.
 pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>, String)> {
-  let crops: Vec<Option<String>> = files.iter().map(|file| detect_black_bars(file)).collect();
-  if crops.iter().all(Option::is_none) {
+  // Each file's duration is read once here, and reused for the sampling and for the encode.
+  let detected: Vec<Option<(String, f64)>> =
+    files.iter().map(|file| detect_black_bars(file)).collect();
+  if detected.iter().all(Option::is_none) {
     return None;
   }
+  let crops: Vec<Option<(String, f64)>> = detected;
 
   let dir = tmp_dir.join("cropper");
   fs::create_dir_all(&dir).expect("Failed to create the cropper folder");
@@ -23,15 +26,15 @@ pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>,
   let inputs: Vec<String> = files
     .iter()
     .zip(crops)
-    .map(|(file, crop)| {
-      let Some(crop) = crop else {
+    .map(|(file, detected)| {
+      let Some((crop, duration)) = detected else {
         return file.clone();
       };
       let file_name = Path::new(file).file_name().unwrap().to_string_lossy();
       let output = dir.join(file_name.as_ref()).to_string_lossy().to_string();
       println!("✂️  Removing black bars from {file}, calling: crop={crop}");
 
-      let res = crop_with_cpu_fallback(file, &crop, &output);
+      let res = crop_with_cpu_fallback(file, &crop, &output, duration);
       if !res.status.success() {
         panic!(
           "❌ Cropping {} failed (exit code: {:?}):{}",
@@ -49,9 +52,10 @@ pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>,
   Some((inputs, content))
 }
 
-/// Returns the crop value (`w:h:x:y`) for a file that has black bars, or `None`
-/// when it has no video, has no bars, or the detection fails.
-fn detect_black_bars(file: &str) -> Option<String> {
+/// Returns the crop value (`w:h:x:y`) and the file's duration for a file that has black bars,
+/// or `None` when it has no video, has no bars, or the detection fails. The duration is returned
+/// so the encode step can reuse it instead of probing the file again.
+fn detect_black_bars(file: &str) -> Option<(String, f64)> {
   let streams = probe_streams(file).ok()?;
   if !streams.iter().any(|stream| stream.kind == "video") {
     return None;
@@ -59,25 +63,19 @@ fn detect_black_bars(file: &str) -> Option<String> {
   let (width, height) = frame_size(file)?;
 
   let duration = get_media_seconds(file).ok()?;
-  // Seek to each sample time and read a few frames there. Decoding the whole file this way
-  // takes far too long on long 4K files, so only the frames at the seek points are read.
-  // `round=2` keeps the exact bar size. `skip=0` checks every sampled frame.
-  let mut crops = Vec::new();
-  for time in seek_times(duration) {
-    let output = Command::new("ffmpeg")
-      .args(["-v", "info", "-ss", &format!("{time:.3}"), "-i", file])
-      .args(["-frames:v", &FRAMES_PER_SEEK.to_string()])
-      .args(["-vf", "cropdetect=round=2:skip=0", "-an", "-f", "null", "-"])
-      .output()
-      .ok()?;
-    crops.extend(parse_crop_values(&String::from_utf8_lossy(&output.stderr)));
+  // A few spread-out samples first. If every one is the full frame, the file almost certainly
+  // has no bars, so the full check (about 66 seeks, several seconds per file) is skipped.
+  let quick = sample_crops(file, &seek_times_for(duration, PRE_CHECK_POINTS))?;
+  if quick.iter().all(|crop| is_full_frame(crop, width, height)) {
+    return None;
   }
+  let crops = sample_crops(file, &seek_times(duration))?;
   let crop = majority_crop(&crops)?;
 
   if is_full_frame(&crop, width, height) {
     None
   } else {
-    Some(crop)
+    Some((crop, duration))
   }
 }
 
@@ -138,10 +136,34 @@ const SAMPLES_PER_CLIP: f64 = 66.0;
 /// Number of frames read at each seek point. Two frames avoid relying on a single frame.
 const FRAMES_PER_SEEK: u32 = 2;
 
+/// Runs `cropdetect` at each seek time and returns every crop value it reports. Seeking jumps
+/// straight to each point, so the whole file is not decoded. `round=2` keeps the exact bar size.
+/// `skip=0` checks every sampled frame. Returns `None` if FFmpeg cannot be run.
+fn sample_crops(file: &str, times: &[f64]) -> Option<Vec<String>> {
+  let mut crops = Vec::new();
+  for time in times {
+    let output = Command::new("ffmpeg")
+      .args(["-v", "info", "-ss", &format!("{time:.3}"), "-i", file])
+      .args(["-frames:v", &FRAMES_PER_SEEK.to_string()])
+      .args(["-vf", "cropdetect=round=2:skip=0", "-an", "-f", "null", "-"])
+      .output()
+      .ok()?;
+    crops.extend(parse_crop_values(&String::from_utf8_lossy(&output.stderr)));
+  }
+  Some(crops)
+}
+
+/// Number of seek points in the quick check that decides whether a file can be skipped.
+const PRE_CHECK_POINTS: u32 = 5;
+
 /// Returns `SAMPLES_PER_CLIP` evenly spaced times (in seconds) across `duration_seconds`.
 /// Each time is a seek point, so FFmpeg jumps there instead of decoding the whole file.
 fn seek_times(duration_seconds: f64) -> Vec<f64> {
-  let points = SAMPLES_PER_CLIP as u32;
+  seek_times_for(duration_seconds, SAMPLES_PER_CLIP as u32)
+}
+
+/// Returns `points` evenly spaced times (in seconds) across `duration_seconds`.
+fn seek_times_for(duration_seconds: f64, points: u32) -> Vec<f64> {
   (0..points)
     .map(|index| duration_seconds * (f64::from(index) + 0.5) / f64::from(points))
     .collect()
@@ -190,10 +212,21 @@ fn majority_crop(values: &[String]) -> Option<String> {
 /// Crops `input` with the normal encoder. If that fails (e.g. `hevc_videotoolbox` rejects the
 /// input), crops again with the CPU encoder `libx264`, so the crop step does not panic on a
 /// hardware encoder error.
-fn crop_with_cpu_fallback(input: &str, crop: &str, output: &str) -> std::process::Output {
+fn crop_with_cpu_fallback(
+  input: &str,
+  crop: &str,
+  output: &str,
+  duration_seconds: f64,
+) -> std::process::Output {
   let run = |encoder_override: Option<&str>| {
     Command::new("ffmpeg")
-      .args(encode_args(input, crop, output, encoder_override))
+      .args(encode_args(
+        input,
+        crop,
+        output,
+        encoder_override,
+        duration_seconds,
+      ))
       .output()
       .unwrap()
   };
@@ -213,6 +246,7 @@ fn encode_args(
   crop: &str,
   output: &str,
   encoder_override: Option<&str>,
+  duration_seconds: f64,
 ) -> Vec<String> {
   let mut args: Vec<String> = [
     "-y", "-v", "error", "-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?",
@@ -235,7 +269,7 @@ fn encode_args(
       args.extend(["-tag:v", "hvc1"].map(String::from));
     }
     // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
-    if let Some(bit_rate) = keep_source_bit_rate(input) {
+    if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
       args.extend(["-b:v".to_string(), bit_rate.to_string()]);
     }
   }
@@ -403,7 +437,7 @@ mod test_encode_args {
 
   #[test]
   fn crops_and_keeps_video_audio_and_subtitles() {
-    let args = encode_args("in.webm", "1920:688:0:16", "out.webm", None);
+    let args = encode_args("in.webm", "1920:688:0:16", "out.webm", None, 1.0);
     assert!(args
       .windows(2)
       .any(|pair| pair == ["-vf", "crop=1920:688:0:16"]));
@@ -468,10 +502,10 @@ mod test_cropper_integration {
   fn detect_black_bars_finds_the_bars_on_a_real_clip() {
     let clip = Clip::new("bars", true);
     // The 320x180 picture between the bars is cropped out of 320x240.
-    assert_eq!(
-      detect_black_bars(clip.path()),
-      Some("320:180:0:30".to_string())
-    );
+    let (crop, duration) = detect_black_bars(clip.path()).expect("bars should be found");
+    assert_eq!(crop, "320:180:0:30");
+    // The test clip is 2 seconds long.
+    assert!((duration - 2.0).abs() < 0.5, "duration was {duration}");
   }
 
   #[test]
