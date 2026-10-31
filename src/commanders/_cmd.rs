@@ -127,6 +127,7 @@ pub fn convert_for_merge(
   profile: Option<AudioProfile>,
   silent_audio: bool,
   hevc: bool,
+  duration_seconds: f64,
 ) -> Output {
   // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
   // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
@@ -138,7 +139,16 @@ pub fn convert_for_merge(
   convert_with_cpu_fallback(
     encoder,
     |result: &Output| result.status.success(),
-    |encoder| run_convert(input, output, profile, silent_audio, encoder),
+    |encoder| {
+      run_convert(
+        input,
+        output,
+        profile,
+        silent_audio,
+        encoder,
+        duration_seconds,
+      )
+    },
   )
 }
 
@@ -213,9 +223,8 @@ const MIN_SECONDS_FOR_SOURCE_BIT_RATE: f64 = 60.0;
 
 /// The bitrate to pass to the encoder for `input`, or `None` to let the encoder choose. Only
 /// long inputs get the source bitrate, which is what keeps a film's output size close to its source.
-pub fn keep_source_bit_rate(input: &str) -> Option<u64> {
-  let long_enough = get_media_seconds(input).is_ok_and(|s| s >= MIN_SECONDS_FOR_SOURCE_BIT_RATE);
-  if long_enough {
+pub fn keep_source_bit_rate(input: &str, duration_seconds: f64) -> Option<u64> {
+  if duration_seconds >= MIN_SECONDS_FOR_SOURCE_BIT_RATE {
     video_bit_rate(input)
   } else {
     None
@@ -282,6 +291,7 @@ fn run_convert(
   profile: Option<AudioProfile>,
   silent_audio: bool,
   encoder: &str,
+  duration_seconds: f64,
 ) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
   let audio_map = if silent_audio {
@@ -301,7 +311,7 @@ fn run_convert(
     args.extend(["-tag:v", "hvc1"].map(String::from));
   }
   // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
-  if let Some(bit_rate) = keep_source_bit_rate(input) {
+  if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
     args.extend(["-b:v".to_string(), bit_rate.to_string()]);
   }
   args.extend(["-c:a", "aac"].map(String::from));
@@ -845,6 +855,7 @@ mod test_ffmpeg_integration {
       Some(profile),
       false,
       false,
+      1.0,
     );
     assert!(
       result.status.success(),
@@ -945,6 +956,7 @@ mod test_ffmpeg_integration {
       Some(profile),
       true,
       false,
+      1.0,
     );
     assert!(
       result.status.success(),
