@@ -136,12 +136,20 @@ pub fn hevc_encoder() -> &'static str {
   })
 }
 
+/// The video settings of one converted input: the `(width, height)` it is scaled to (if any),
+/// and whether its second video stream (a cover image) is kept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VideoTarget {
+  pub size: Option<(u32, u32)>,
+  pub keep_cover: bool,
+}
+
 /// Converts one input to an MP4 file that is safe to merge.
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
 /// `silent_tracks` silent audio tracks are added after the input's own audio, so the output has
 /// the track count the merge needs. Each silent track lasts as long as the input. `-write_tmcd 0` stops the MP4/MOV muxer from
-/// adding a `tmcd` track again. If `size` is set, the video is scaled to fit and padded with
+/// adding a `tmcd` track again. If `video.size` is set, the video is scaled to fit and padded with
 /// black bars to that `(width, height)`, so it can be concatenated with the other inputs.
 pub fn convert_for_merge(
   input: &str,
@@ -150,7 +158,7 @@ pub fn convert_for_merge(
   silent_tracks: usize,
   hevc: bool,
   duration_seconds: f64,
-  size: Option<(u32, u32)>,
+  video: VideoTarget,
 ) -> Output {
   // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
   // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
@@ -170,7 +178,7 @@ pub fn convert_for_merge(
         silent_tracks,
         encoder,
         duration_seconds,
-        size,
+        video,
       )
     },
   )
@@ -316,7 +324,7 @@ fn run_convert(
   silent_tracks: usize,
   encoder: &str,
   duration_seconds: f64,
-  size: Option<(u32, u32)>,
+  video: VideoTarget,
 ) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
   // Each silent track gets its own silent source (input 1, 2, ...). The input's own audio
@@ -335,10 +343,13 @@ fn run_convert(
   }
   // The picture is video stream 0, which is re-encoded. A cover image (e.g. PNG) is video stream 1,
   // which is copied as it is. Video is mapped first, then the audio tracks.
-  args.extend(["-map", "0:v:0?", "-map", "0:v:1?"].map(String::from));
+  args.extend(["-map", "0:v:0?"].map(String::from));
+  if video.keep_cover {
+    args.extend(["-map", "0:v:1?"].map(String::from));
+  }
   args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
-  if let Some((width, height)) = size {
+  if let Some((width, height)) = video.size {
     args.extend([
       "-filter:v:0".to_string(),
       format!(
@@ -356,7 +367,9 @@ fn run_convert(
   if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
     args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
   }
-  args.extend(["-c:v:1", "copy"].map(String::from));
+  if video.keep_cover {
+    args.extend(["-c:v:1", "copy"].map(String::from));
+  }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
@@ -872,6 +885,7 @@ mod tests {
 #[cfg(test)]
 mod test_ffmpeg_integration {
   use super::AudioProfile;
+  use super::VideoTarget;
   use super::{
     adjust_fps_by_ffmpeg, convert_for_merge, get_media_seconds, merge, probe_streams,
     run_ffmpeg_info_command, video_frame_count,
@@ -989,7 +1003,10 @@ mod test_ffmpeg_integration {
       0,
       false,
       1.0,
-      None,
+      VideoTarget {
+        size: None,
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
@@ -1018,7 +1035,10 @@ mod test_ffmpeg_integration {
       0,
       false,
       1.0,
-      Some((160, 240)),
+      VideoTarget {
+        size: Some((160, 240)),
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
@@ -1070,7 +1090,10 @@ mod test_ffmpeg_integration {
       0,
       false,
       1.0,
-      None,
+      VideoTarget {
+        size: None,
+        keep_cover: true,
+      },
     );
     assert!(
       result.status.success(),
@@ -1174,7 +1197,10 @@ mod test_ffmpeg_integration {
       1,
       false,
       1.0,
-      None,
+      VideoTarget {
+        size: None,
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
