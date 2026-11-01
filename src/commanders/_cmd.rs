@@ -140,7 +140,7 @@ pub fn hevc_encoder() -> &'static str {
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
 /// `silent_tracks` silent audio tracks are added after the input's own audio, so the output has
-/// the track count the merge needs. With any silent track, `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
+/// the track count the merge needs. Each silent track lasts as long as the input. `-write_tmcd 0` stops the MP4/MOV muxer from
 /// adding a `tmcd` track again. If `size` is set, the video is scaled to fit and padded with
 /// black bars to that `(width, height)`, so it can be concatenated with the other inputs.
 pub fn convert_for_merge(
@@ -325,7 +325,10 @@ fn run_convert(
   if silent_tracks > 0 {
     let profile = profile.expect("silent audio needs an audio profile");
     for track in 0..silent_tracks {
-      args.extend(["-f", "lavfi", "-i"].map(String::from));
+      // `-t` cuts the silence to the input's length, so the output ends with the video.
+      args.extend(["-f", "lavfi", "-t"].map(String::from));
+      args.push(duration_seconds.to_string());
+      args.extend(["-i"].map(String::from));
       args.push(format!("anullsrc=r={}", profile.sample_rate));
       audio_maps.extend(["-map".to_string(), format!("{}:a", track + 1)]);
     }
@@ -357,9 +360,6 @@ fn run_convert(
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
     args.extend(["-ac".to_string(), profile.channels.to_string()]);
-  }
-  if silent_tracks > 0 {
-    args.push("-shortest".to_string());
   }
   args.extend(["-write_tmcd", "0"].map(String::from));
   args.push(output.to_string());
@@ -1138,6 +1138,12 @@ mod test_ffmpeg_integration {
     assert!(
       streams.iter().any(|s| s.kind == "audio"),
       "no silent audio added"
+    );
+    // The clip is 1 second, so the silence must stop there instead of running on.
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 1.0).abs() < 0.3,
+      "expected about 1s, got {seconds}"
     );
   }
 }
