@@ -114,7 +114,7 @@ fn is_full_frame(crop: &str, width: u32, height: u32) -> bool {
 /// Returns the width and height of the first video stream, as FFmpeg sees the frames.
 /// A stream rotated by a quarter turn (90 or 270 degrees) is swapped, because `cropdetect`
 /// works on the rotated frames.
-fn frame_size(file: &str) -> Option<(u32, u32)> {
+pub fn frame_size(file: &str) -> Option<(u32, u32)> {
   let output = Command::new("ffprobe")
     .args([
       "-v",

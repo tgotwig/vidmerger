@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Inputs whose video size differs from the most common size are scaled and padded to it before the merge, so cropped and uncropped files can be merged together.
 - Cropping no longer re-encodes the other inputs before the merge. Inputs are assumed to share one video codec (all H.264 or all HEVC).
 - Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).
 - Chapter start times no longer drift earlier with each episode (#48). Chapter times are now stored in milliseconds, and each boundary is calculated from the running total of clip durations instead of whole seconds per clip.
