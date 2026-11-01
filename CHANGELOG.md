@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- On macOS, the black bar crop decodes with VideoToolbox, which cuts CPU load and heat. On a 4K film test, CPU time fell from about 349 s to 52 s.
 - Subtitles no longer force every input to be re-encoded. Inputs with matching subtitles are copied.
+- On macOS, the black bar crop decodes with VideoToolbox, which cuts CPU load and heat. On a 4K film test, CPU time fell from about 349 s to 52 s.
 - Inputs whose video size differs from the most common size are scaled and padded to it before the merge, so cropped and uncropped files can be merged together.
 - Cropping no longer re-encodes the other inputs before the merge. Inputs are assumed to share one video codec (all H.264 or all HEVC).
 - Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).

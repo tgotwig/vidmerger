@@ -90,13 +90,14 @@ fn plan_merge(
         Some(p.sample_rate) == stream.sample_rate && Some(p.channels) == stream.channels
       })
   };
-  // The ordered video and subtitle codecs of an input. For `-c copy` concatenation every input
-  // must have the same streams in the same order. An input that differs must be converted.
-  let stream_layout = |streams: &[MediaStream]| -> Vec<String> {
+  // The ordered video, audio and subtitle streams (kind and codec) of an input. For `-c copy`
+  // concatenation every input must have the same streams in the same order. An input that
+  // differs must be converted.
+  let stream_layout = |streams: &[MediaStream]| -> Vec<(String, String)> {
     streams
       .iter()
-      .filter(|s| s.kind == "video" || s.kind == "subtitle")
-      .map(|s| s.codec.clone())
+      .filter(|s| matches!(s.kind.as_str(), "video" | "audio" | "subtitle"))
+      .map(|s| (s.kind.clone(), s.codec.clone()))
       .collect()
   };
   let reference_layout = probes.first().map(|streams| stream_layout(streams));
@@ -633,6 +634,27 @@ mod test_plan_merge {
     assert_eq!(
       plan_merge(&probes, false).actions,
       vec![InputAction::Copy, InputAction::Copy]
+    );
+  }
+
+  #[test]
+  fn converts_when_audio_track_counts_differ() {
+    // Both inputs have matching AAC audio, but the second has one track fewer. `-c copy`
+    // concatenation would then mix up the audio streams, so both inputs must be converted.
+    let probes = vec![
+      vec![video(), aac_stereo_48k(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k()],
+    ];
+    assert_eq!(
+      plan_merge(&probes, false).actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
     );
   }
 
