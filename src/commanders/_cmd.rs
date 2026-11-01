@@ -333,29 +333,30 @@ fn run_convert(
       audio_maps.extend(["-map".to_string(), format!("{}:a", track + 1)]);
     }
   }
-  // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
-  // cover image) that MP4 cannot hold. Video is mapped first, then the audio tracks.
-  args.extend(["-map", "0:v:0?"].map(String::from));
+  // The picture is video stream 0, which is re-encoded. A cover image (e.g. PNG) is video stream 1,
+  // which is copied as it is. Video is mapped first, then the audio tracks.
+  args.extend(["-map", "0:v:0?", "-map", "0:v:1?"].map(String::from));
   args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
   if let Some((width, height)) = size {
     args.extend([
-      "-vf".to_string(),
+      "-filter:v:0".to_string(),
       format!(
         "scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
       ),
     ]);
   }
-  args.push("-c:v".to_string());
+  args.push("-c:v:0".to_string());
   args.push(encoder.to_string());
   // Apple players only open HEVC in MP4 when it is tagged `hvc1`.
   if encoder.starts_with("hevc") {
-    args.extend(["-tag:v", "hvc1"].map(String::from));
+    args.extend(["-tag:v:0", "hvc1"].map(String::from));
   }
   // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
   if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
-    args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+    args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
   }
+  args.extend(["-c:v:1", "copy"].map(String::from));
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
@@ -1037,6 +1038,53 @@ mod test_ffmpeg_integration {
 
     // `make_clip` makes 1 second at 25 frames per second.
     assert_eq!(video_frame_count(clip.to_str().unwrap()), Some(25));
+  }
+
+  #[test]
+  fn convert_for_merge_keeps_a_cover_image_as_a_second_video_stream() {
+    let dir = TempDir::new("cover");
+    let input = dir.path("with-cover.mp4");
+    let output = dir.path("converted.mp4");
+    // A 1-second video with a single-frame PNG cover as its second video stream.
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("testsrc=d=1:s=160x120:r=25")
+      .args(["-f", "lavfi", "-i", "color=c=red:s=64x64:d=1"])
+      .args([
+        "-map", "0:v", "-map", "1:v", "-c:v:0", "libx264", "-pix_fmt", "yuv420p",
+      ])
+      .args(["-c:v:1", "png", "-frames:v:1", "1"])
+      .arg(&input)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create the cover test clip");
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      0,
+      false,
+      1.0,
+      None,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let video_codecs: Vec<&str> = streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .map(|s| s.codec.as_str())
+      .collect();
+    assert_eq!(video_codecs, vec!["h264", "png"]);
   }
 
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
