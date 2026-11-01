@@ -29,8 +29,8 @@ struct MergePlan {
   /// The `(width, height)` each input's video is scaled to when converted. `None` for inputs
   /// without video.
   video_size: Vec<Option<(u32, u32)>>,
-  /// `true` when every input has a cover image with the same codec, so covers are kept.
-  /// Otherwise covers are dropped, so the concat step sees one stream layout.
+  /// `true` when converted inputs keep their cover image. Covers are kept only when every input
+  /// has one with the same codec, and the MP4 format can hold that codec.
   keep_cover: bool,
   /// How many audio tracks each input has, in input order.
   audio_tracks: Vec<usize>,
@@ -76,6 +76,12 @@ fn most_common_size(sizes: &[Option<(u32, u32)>]) -> Option<(u32, u32)> {
     };
   }
   best.map(|(size, _)| size)
+}
+
+/// True when the MP4 format can hold a second video stream with this codec (e.g. a cover image).
+/// Converting keeps a cover only when this is true, because FFmpeg fails on other codecs.
+fn mp4_can_hold_codec(codec: &str) -> bool {
+  matches!(codec, "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1")
 }
 
 /// Returns the codec of the second video stream (a cover image), or `None` if there is none.
@@ -197,7 +203,12 @@ fn plan_merge(
     hevc,
     actions,
     video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
-    keep_cover,
+    // Converted inputs keep their cover only when the MP4 format can hold its codec.
+    keep_cover: keep_cover
+      && cover_codecs
+        .first()
+        .and_then(|codec| codec.as_deref())
+        .is_some_and(mp4_can_hold_codec),
     audio_tracks,
     target_audio_tracks,
   }
@@ -719,6 +730,18 @@ mod test_plan_merge {
         },
       ]
     );
+  }
+
+  #[test]
+  fn converted_inputs_drop_a_cover_codec_the_mp4_format_cannot_hold() {
+    // The inputs share a `gif` cover, which MP4 cannot hold. The second input's PCM audio forces
+    // a conversion, so the cover must not be copied into the converted files.
+    let probes = vec![
+      vec![video(), stream("video", "gif"), aac_stereo_48k()],
+      vec![video(), stream("video", "gif"), audio("pcm_alaw", 8_000, 1)],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert!(!plan.keep_cover);
   }
 
   #[test]
