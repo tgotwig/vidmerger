@@ -1,6 +1,6 @@
 use crate::commanders::_cmd::{
   describe, get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate,
-  probe_streams, run_with_progress, PROGRESS_ARGS,
+  probe_streams, run_with_frame_progress, run_with_progress, video_frame_count, PROGRESS_ARGS,
 };
 use crate::helpers::io_helper::verbose;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
@@ -238,6 +238,7 @@ fn crop_with_cpu_fallback(
   output: &str,
   duration_seconds: f64,
 ) -> std::process::Output {
+  let total_frames = video_frame_count(input);
   let run = |encoder_override: Option<&str>| {
     let mut args = encode_args(input, crop, output, encoder_override, duration_seconds);
     // The output path is always the last argument. The progress flags go before it.
@@ -262,7 +263,12 @@ fn crop_with_cpu_fallback(
     if verbose() {
       Command::new("ffmpeg").args(&refs).output().unwrap()
     } else {
-      run_with_progress(&refs, "Removing black bars", duration_seconds)
+      // Progress is counted in frames, because copied subtitles make FFmpeg's time jump to the end
+      // at once. Falls back to time when the frame count is unknown.
+      match total_frames {
+        Some(frames) => run_with_frame_progress(&refs, "Removing black bars", frames),
+        None => run_with_progress(&refs, "Removing black bars", duration_seconds),
+      }
     }
   };
   let res = run(None);

@@ -374,9 +374,37 @@ fn run_convert(
   Command::new("ffmpeg").args(&args).output().unwrap()
 }
 
-/// Runs FFmpeg (which must have the `PROGRESS_ARGS` set) and shows a 0–100% bar.
+/// Runs FFmpeg by the time it has written (`out_time_us`). Use it when there are no subtitle
+/// streams, because copied subtitles make FFmpeg report the end of the file at once.
 /// `total_seconds` is the length of the input. If it is 0, the bar only jumps to 100% at the end.
 pub fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
+  run_with_progress_by(args, label, |line| {
+    if total_seconds <= 0.0 {
+      return None;
+    }
+    parse_out_time_us(line).map(|micros| micros as f64 / 1_000_000.0 / total_seconds)
+  })
+}
+
+/// Runs FFmpeg by its video frame count (`frame=`), out of `total_frames`. Use it when subtitles
+/// are copied, because the time reported by FFmpeg then jumps to the end of the file at once.
+pub fn run_with_frame_progress(args: &[&str], label: &str, total_frames: u64) -> Output {
+  run_with_progress_by(args, label, |line| {
+    if total_frames == 0 {
+      return None;
+    }
+    parse_frame(line).map(|frame| frame as f64 / total_frames as f64)
+  })
+}
+
+/// Runs FFmpeg (with `PROGRESS_ARGS` set) and shows a 0–100% bar. `fraction_of` turns each
+/// progress line into a fraction of the job (0.0 to 1.0), or `None` to ignore the line.
+/// Returns FFmpeg's status and stderr. The stdout in the result is empty.
+fn run_with_progress_by(
+  args: &[&str],
+  label: &str,
+  fraction_of: impl Fn(&str) -> Option<f64>,
+) -> Output {
   let mut child = Command::new("ffmpeg")
     .args(args)
     .stdout(Stdio::piped())
@@ -394,10 +422,8 @@ pub fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Outp
   let mut bar = ProgressBar::start(label);
   if let Some(stdout) = child.stdout.take() {
     for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-      if let Some(micros) = parse_out_time_us(&line) {
-        if total_seconds > 0.0 {
-          bar.set(micros as f64 / 1_000_000.0 / total_seconds);
-        }
+      if let Some(fraction) = fraction_of(&line) {
+        bar.set(fraction);
       }
     }
   }
@@ -421,6 +447,35 @@ fn parse_out_time_us(line: &str) -> Option<i64> {
     .strip_prefix("out_time_us=")?
     .trim()
     .parse::<i64>()
+    .ok()
+}
+
+/// Reads the `frame=` value from FFmpeg's `-progress` output, the number of video frames done.
+/// Returns `None` for other lines and for values that are not numbers.
+pub fn parse_frame(line: &str) -> Option<u64> {
+  line.strip_prefix("frame=")?.trim().parse::<u64>().ok()
+}
+
+/// Returns the number of frames in the first video stream, from ffprobe's `nb_frames`.
+/// Returns `None` if ffprobe cannot be run or the container does not store a frame count.
+pub fn video_frame_count(file: &str) -> Option<u64> {
+  let output = Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=nb_frames",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      file,
+    ])
+    .output()
+    .ok()?;
+  String::from_utf8_lossy(&output.stdout)
+    .trim()
+    .parse::<u64>()
     .ok()
 }
 
@@ -613,6 +668,22 @@ pub fn describe(program: &str, args: &[&str]) -> String {
 }
 
 #[cfg(test)]
+mod test_parse_frame {
+  use super::parse_frame;
+
+  #[test]
+  fn reads_the_frame_count_from_a_progress_line() {
+    assert_eq!(parse_frame("frame=1957"), Some(1957));
+  }
+
+  #[test]
+  fn ignores_other_progress_lines() {
+    assert_eq!(parse_frame("out_time_us=230038666"), None);
+    assert_eq!(parse_frame("frame=N/A"), None);
+  }
+}
+
+#[cfg(test)]
 mod test_parse_flat_streams {
   use super::{parse_flat_streams, MediaStream};
 
@@ -802,7 +873,7 @@ mod test_ffmpeg_integration {
   use super::AudioProfile;
   use super::{
     adjust_fps_by_ffmpeg, convert_for_merge, get_media_seconds, merge, probe_streams,
-    run_ffmpeg_info_command,
+    run_ffmpeg_info_command, video_frame_count,
   };
   use std::path::{Path, PathBuf};
   use std::process::Command;
@@ -956,6 +1027,16 @@ mod test_ffmpeg_integration {
 
     let size = crate::commanders::cropper::frame_size(output.to_str().unwrap());
     assert_eq!(size, Some((160, 240)));
+  }
+
+  #[test]
+  fn video_frame_count_reads_the_frames_of_a_real_clip() {
+    let dir = TempDir::new("frames");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    // `make_clip` makes 1 second at 25 frames per second.
+    assert_eq!(video_frame_count(clip.to_str().unwrap()), Some(25));
   }
 
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.

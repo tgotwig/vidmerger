@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The black bar crop progress bar counts video frames, so it no longer jumps to 100% at the start when a file has subtitles.
 - Inputs with fewer audio tracks get silent tracks before the merge, so the merged file keeps every track.
 - Subtitles no longer force every input to be re-encoded. Inputs with matching subtitles are copied.
 - On macOS, the black bar crop decodes with VideoToolbox, which cuts CPU load and heat. On a 4K film test, CPU time fell from about 349 s to 52 s.
