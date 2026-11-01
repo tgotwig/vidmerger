@@ -1,4 +1,5 @@
 use crate::commanders::_cmd::{self, AudioProfile, MediaStream};
+use crate::commanders::cropper;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
 use std::fs::{self, File};
 use std::io::Write;
@@ -25,6 +26,9 @@ struct MergePlan {
   /// `true` when every input is HEVC and the OS has a hardware HEVC encoder. Otherwise H.264.
   hevc: bool,
   actions: Vec<InputAction>,
+  /// The `(width, height)` each input's video is scaled to when converted. `None` for inputs
+  /// without video.
+  video_size: Vec<Option<(u32, u32)>>,
 }
 
 /// The audio settings of the first audio stream found in any input, or `None` if no input has audio.
@@ -49,10 +53,35 @@ fn copyable_audio_codec(file_format: &str) -> &'static str {
   }
 }
 
+/// Returns the `(width, height)` that most inputs share, or `None` if no input has video. When
+/// two sizes are equally common, the one that appears first wins.
+fn most_common_size(sizes: &[Option<(u32, u32)>]) -> Option<(u32, u32)> {
+  let mut best: Option<((u32, u32), usize)> = None;
+  for size in sizes.iter().flatten() {
+    let count = sizes
+      .iter()
+      .flatten()
+      .filter(|other| *other == size)
+      .count();
+    best = match best {
+      Some((_, best_count)) if best_count >= count => best,
+      _ => Some((*size, count)),
+    };
+  }
+  best.map(|(size, _)| size)
+}
+
 /// Decides how each input is merged. An input is copied only when its audio has the codec the
-/// output format needs, the shared profile, and it has no extra streams (e.g. `tmcd`).
+/// output format needs, the shared profile, it has no extra streams (e.g. `tmcd`), and its video
+/// has the most common size (`sizes`). Other inputs are converted and scaled to that size.
 /// With `force_convert`, every input is converted.
-fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: bool) -> MergePlan {
+fn plan_merge(
+  probes: &[Vec<MediaStream>],
+  sizes: &[Option<(u32, u32)>],
+  file_format: &str,
+  force_convert: bool,
+) -> MergePlan {
+  let target_size = most_common_size(sizes);
   let profile = audio_profile(probes);
   let codec = copyable_audio_codec(file_format);
   let matches_profile = |stream: &MediaStream| {
@@ -74,7 +103,8 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
   // Per input: (needs conversion, silent audio needed).
   let decisions: Vec<(bool, bool)> = probes
     .iter()
-    .map(|streams| {
+    .zip(sizes)
+    .map(|(streams, size)| {
       let has_audio = streams.iter().any(|s| s.kind == "audio");
       let has_video = streams.iter().any(|s| s.kind == "video");
       let has_extra = streams
@@ -85,10 +115,12 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
       let video_differs = reference_layout.as_ref() != Some(&video_layout(streams));
+      // Frames of different sizes cannot be stream-copied together, so they are converted.
+      let size_differs = target_size.is_some() && size.is_some() && *size != target_size;
       // Silence is only added when there is video, because `-shortest` ends the output with it.
       let silent_audio = profile.is_some() && !has_audio && has_video;
       (
-        has_extra || !audio_fits || video_differs || silent_audio,
+        has_extra || !audio_fits || video_differs || size_differs || silent_audio,
         silent_audio,
       )
     })
@@ -119,18 +151,18 @@ fn plan_merge(probes: &[Vec<MediaStream>], file_format: &str, force_convert: boo
     profile,
     hevc,
     actions,
+    video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
   }
 }
 
-/// `force_convert` is set when some inputs were cropped. Cropped files are H.264, so every
-/// input is converted to keep the video codec the same for the stream-copy merge.
+/// Merges the inputs into `output`. Inputs are assumed to share one video codec (all H.264 or
+/// all HEVC), so only audio and stream differences cause a conversion.
 pub fn merge(
   input: String,
   output: String,
   files_to_merge_as_strings: Vec<String>,
   file_format: &str,
   tmp_dir: PathBuf,
-  force_convert: bool,
 ) {
   // Probe every input once. The plan decides which inputs can be copied as they are.
   let probes: Vec<Vec<MediaStream>> = files_to_merge_as_strings
@@ -173,8 +205,13 @@ pub fn merge(
 
   let output_str = output.clone();
   let chapters = file_path.to_string_lossy().to_string();
+  // Each input's video size. Inputs of another size are converted and scaled to the common one.
+  let sizes: Vec<Option<(u32, u32)>> = files_to_merge_as_strings
+    .iter()
+    .map(|path| cropper::frame_size(path))
+    .collect();
   // First try: copy inputs that already fit and convert the rest.
-  let plan = plan_merge(&probes, file_format, force_convert);
+  let plan = plan_merge(&probes, &sizes, file_format, false);
   let mut res = run_plan(
     &plan,
     &inputs_with_durations,
@@ -189,7 +226,7 @@ pub fn merge(
   // stream in a .mov). Convert every input to the shared profile and merge once more.
   if !res.status.success() && is_unsupported_stream_error(&res.stderr) {
     println!("⚠️  Unsupported stream found, converting every input and retrying the merge");
-    let plan = plan_merge(&probes, file_format, true);
+    let plan = plan_merge(&probes, &sizes, file_format, true);
     res = run_plan(
       &plan,
       &inputs_with_durations,
@@ -260,6 +297,7 @@ fn run_plan(
     let h264_plan = MergePlan {
       profile: plan.profile,
       hevc: false,
+      video_size: plan.video_size.clone(),
       actions: plan
         .actions
         .iter()
@@ -310,6 +348,7 @@ fn convert_inputs(
           *silent_audio,
           plan.hevc,
           *duration,
+          plan.video_size[index],
         );
         if !res.status.success() {
           panic!(
@@ -374,9 +413,10 @@ mod test_plan_merge {
   use super::{InputAction, MergePlan};
   use crate::commanders::_cmd::{AudioProfile, MediaStream};
 
-  /// Plans for an MP4 output, the common case.
+  /// Plans for an MP4 output, the common case. The inputs have no known video size.
   fn plan_merge(probes: &[Vec<MediaStream>], force_convert: bool) -> MergePlan {
-    super::plan_merge(probes, "mp4", force_convert)
+    let sizes = vec![None; probes.len()];
+    super::plan_merge(probes, &sizes, "mp4", force_convert)
   }
 
   fn video() -> MediaStream {
@@ -422,6 +462,7 @@ mod test_plan_merge {
         profile: Some(STEREO_48K),
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
+        video_size: vec![None, None],
       }
     );
   }
@@ -525,6 +566,7 @@ mod test_plan_merge {
         profile: None,
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
+        video_size: vec![None, None],
       }
     );
   }
@@ -607,6 +649,59 @@ mod test_plan_merge {
         },
       ]
     );
+  }
+
+  #[test]
+  fn most_common_size_picks_the_size_most_inputs_share() {
+    let sizes = [Some((3840, 2160)), Some((3840, 1608)), Some((3840, 2160))];
+    assert_eq!(super::most_common_size(&sizes), Some((3840, 2160)));
+  }
+
+  #[test]
+  fn most_common_size_breaks_a_tie_with_the_first_size() {
+    let sizes = [Some((3840, 1608)), Some((3840, 2160))];
+    assert_eq!(super::most_common_size(&sizes), Some((3840, 1608)));
+  }
+
+  #[test]
+  fn most_common_size_is_none_without_video() {
+    assert_eq!(super::most_common_size(&[None, None]), None);
+  }
+
+  #[test]
+  fn converts_and_scales_an_input_of_another_size() {
+    let probes = vec![
+      vec![video(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let sizes = [Some((3840, 2160)), Some((3840, 1608))];
+    let plan = super::plan_merge(&probes, &sizes, "mp4", false);
+    assert_eq!(
+      plan.actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
+    );
+    assert_eq!(
+      plan.video_size,
+      vec![Some((3840, 2160)), Some((3840, 2160))]
+    );
+  }
+
+  #[test]
+  fn copies_inputs_of_the_same_size() {
+    let probes = vec![
+      vec![video(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let sizes = [Some((3840, 2160)), Some((3840, 2160))];
+    let plan = super::plan_merge(&probes, &sizes, "mp4", false);
+    assert_eq!(plan.actions, vec![InputAction::Copy, InputAction::Copy]);
   }
 }
 
@@ -733,6 +828,7 @@ mod test_merge_integration {
       profile: Some(profile),
       hevc: false,
       actions: vec![InputAction::Convert { silent_audio: true }],
+      video_size: vec![None],
     };
     let files = [input.to_str().unwrap().to_string()];
 
@@ -773,6 +869,7 @@ mod test_merge_integration {
         InputAction::Convert { silent_audio: true },
         InputAction::Convert { silent_audio: true },
       ],
+      video_size: vec![None, None],
     };
     let files = [
       first.to_str().unwrap().to_string(),

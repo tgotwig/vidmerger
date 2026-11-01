@@ -66,14 +66,21 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
 /// GPU H.264 encoders for Linux and Windows, in order of preference.
 const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
 
-/// Returns the first candidate for which `works` is true, or `libx264` (CPU) if none is.
+/// GPU HEVC encoders for Linux and Windows, in order of preference.
+const GPU_HEVC_ENCODERS: [&str; 3] = ["hevc_nvenc", "hevc_qsv", "hevc_amf"];
+
+/// Returns the first candidate for which `works` is true, or `fallback` if none is.
 /// Stops at the first success, so later candidates are not tested.
-fn pick_h264_encoder(candidates: &[&'static str], works: impl Fn(&str) -> bool) -> &'static str {
+fn pick_encoder(
+  candidates: &[&'static str],
+  fallback: &'static str,
+  works: impl Fn(&str) -> bool,
+) -> &'static str {
   candidates
     .iter()
     .copied()
     .find(|encoder| works(encoder))
-    .unwrap_or("libx264")
+    .unwrap_or(fallback)
 }
 
 /// Returns true if FFmpeg can encode one test frame with `encoder`.
@@ -111,7 +118,21 @@ pub fn h264_encoder() -> &'static str {
     } else {
       &GPU_H264_ENCODERS
     };
-    pick_h264_encoder(candidates, encoder_works)
+    pick_encoder(candidates, "libx264", encoder_works)
+  })
+}
+
+/// Returns the HEVC encoder for HEVC input that is cropped. The result is found once per run.
+/// macOS uses VideoToolbox. Linux and Windows try the GPU encoders, then the CPU encoder
+/// `libx265`. Keeping HEVC lets cropped and uncropped HEVC files share one video codec in the merge.
+pub fn hevc_encoder() -> &'static str {
+  static ENCODER: OnceLock<&'static str> = OnceLock::new();
+  ENCODER.get_or_init(|| {
+    if cfg!(target_os = "macos") {
+      "hevc_videotoolbox"
+    } else {
+      pick_encoder(&GPU_HEVC_ENCODERS, "libx265", encoder_works)
+    }
   })
 }
 
@@ -120,7 +141,8 @@ pub fn h264_encoder() -> &'static str {
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
 /// If `silent_audio` is true, the input has no audio, so silence is generated and
 /// `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
-/// adding a `tmcd` track again.
+/// adding a `tmcd` track again. If `size` is set, the video is scaled to fit and padded with
+/// black bars to that `(width, height)`, so it can be concatenated with the other inputs.
 pub fn convert_for_merge(
   input: &str,
   output: &str,
@@ -128,6 +150,7 @@ pub fn convert_for_merge(
   silent_audio: bool,
   hevc: bool,
   duration_seconds: f64,
+  size: Option<(u32, u32)>,
 ) -> Output {
   // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
   // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
@@ -147,6 +170,7 @@ pub fn convert_for_merge(
         silent_audio,
         encoder,
         duration_seconds,
+        size,
       )
     },
   )
@@ -292,6 +316,7 @@ fn run_convert(
   silent_audio: bool,
   encoder: &str,
   duration_seconds: f64,
+  size: Option<(u32, u32)>,
 ) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
   let audio_map = if silent_audio {
@@ -304,7 +329,17 @@ fn run_convert(
   };
   // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
   // cover image) that MP4 cannot hold.
-  args.extend(["-map", "0:v:0?", "-map", audio_map, "-c:v"].map(String::from));
+  args.extend(["-map", "0:v:0?", "-map", audio_map].map(String::from));
+  // Scale to fit inside the target size, then pad with black bars to the exact size.
+  if let Some((width, height)) = size {
+    args.extend([
+      "-vf".to_string(),
+      format!(
+        "scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
+      ),
+    ]);
+  }
+  args.push("-c:v".to_string());
   args.push(encoder.to_string());
   // Apple players only open HEVC in MP4 when it is tagged `hvc1`.
   if encoder.starts_with("hevc") {
@@ -565,7 +600,7 @@ fn spawn_command(program: &str, args: &[&str], silent: bool) -> Result<Child, st
 
 /// Builds a printable version of the command for log output only.
 /// It is never executed.
-fn describe(program: &str, args: &[&str]) -> String {
+pub fn describe(program: &str, args: &[&str]) -> String {
   std::iter::once(program)
     .chain(args.iter().copied())
     .map(|arg| format!("'{arg}'"))
@@ -621,7 +656,7 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{convert_with_cpu_fallback, pick_h264_encoder, GPU_H264_ENCODERS};
+  use super::{convert_with_cpu_fallback, pick_encoder, GPU_H264_ENCODERS, GPU_HEVC_ENCODERS};
   use std::cell::RefCell;
 
   #[test]
@@ -672,7 +707,7 @@ mod test_h264_encoder {
   #[test]
   fn picks_nvenc_first_and_stops_testing() {
     let tested = std::cell::RefCell::new(Vec::new());
-    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |encoder| {
+    let picked = pick_encoder(&GPU_H264_ENCODERS, "libx264", |encoder| {
       tested.borrow_mut().push(encoder.to_string());
       true
     });
@@ -682,20 +717,42 @@ mod test_h264_encoder {
 
   #[test]
   fn picks_qsv_when_only_qsv_works() {
-    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |e| e == "h264_qsv");
+    let picked = pick_encoder(&GPU_H264_ENCODERS, "libx264", |e| e == "h264_qsv");
     assert_eq!(picked, "h264_qsv");
   }
 
   #[test]
+  fn hevc_falls_back_to_libx265_without_gpu_encoder() {
+    assert_eq!(
+      pick_encoder(&GPU_HEVC_ENCODERS, "libx265", |_| false),
+      "libx265"
+    );
+  }
+
+  #[test]
   fn falls_back_to_libx264_without_gpu_encoder() {
-    assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
+    assert_eq!(
+      pick_encoder(&GPU_H264_ENCODERS, "libx264", |_| false),
+      "libx264"
+    );
   }
 }
 
 /// Integration test: this runs real ffmpeg to test each H.264 encoder.
 #[cfg(test)]
 mod test_h264_encoder_integration {
-  use super::h264_encoder;
+  use super::{h264_encoder, hevc_encoder};
+
+  #[test]
+  fn hevc_encoder_is_a_known_hevc_encoder() {
+    let encoder = hevc_encoder();
+    let allowed: &[&str] = if cfg!(target_os = "macos") {
+      &["hevc_videotoolbox"]
+    } else {
+      &["hevc_nvenc", "hevc_qsv", "hevc_amf", "libx265"]
+    };
+    assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
+  }
 
   #[test]
   fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {
@@ -856,6 +913,7 @@ mod test_ffmpeg_integration {
       false,
       false,
       1.0,
+      None,
     );
     assert!(
       result.status.success(),
@@ -868,6 +926,32 @@ mod test_ffmpeg_integration {
     assert_eq!(audio.codec, "aac");
     assert_eq!(audio.sample_rate, Some(48_000));
     assert_eq!(audio.channels, Some(2));
+  }
+
+  #[test]
+  fn convert_for_merge_scales_and_pads_to_the_target_size() {
+    let dir = TempDir::new("scale-target");
+    let input = dir.path("input.mp4");
+    let output = dir.path("scaled.mp4");
+    make_clip(&input, false);
+
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      None,
+      false,
+      false,
+      1.0,
+      Some((160, 240)),
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let size = crate::commanders::cropper::frame_size(output.to_str().unwrap());
+    assert_eq!(size, Some((160, 240)));
   }
 
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
@@ -957,6 +1041,7 @@ mod test_ffmpeg_integration {
       true,
       false,
       1.0,
+      None,
     );
     assert!(
       result.status.success(),

@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Cropper** which removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 60% of sampled frames agree. Keeps the source bitrate, and HEVC stays HEVC on macOS. Can be skipped by `--skip-cropper`.
+- **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 60% of sampled frames agree. Keeps the source bitrate, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
 - The "Removing black bars" step shows the same 0–100% progress bar as the merge.
 - GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
 
 ### Fixed
 
+- Inputs whose video size differs from the most common size are scaled and padded to it before the merge, so cropped and uncropped files can be merged together.
+- Cropping no longer re-encodes the other inputs before the merge. Inputs are assumed to share one video codec (all H.264 or all HEVC).
 - Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).
 - Chapter start times no longer drift earlier with each episode (#48). Chapter times are now stored in milliseconds, and each boundary is calculated from the running total of clip durations instead of whole seconds per clip.
 - Merging `.mov` inputs with a `tmcd` timecode stream no longer fails (#53). The timecode track is dropped with `-write_tmcd 0`, and if the merge still fails, each input is converted to MP4 and the merge is retried (#100).
