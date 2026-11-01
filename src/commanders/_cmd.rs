@@ -66,14 +66,21 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
 /// GPU H.264 encoders for Linux and Windows, in order of preference.
 const GPU_H264_ENCODERS: [&str; 3] = ["h264_nvenc", "h264_qsv", "h264_amf"];
 
-/// Returns the first candidate for which `works` is true, or `libx264` (CPU) if none is.
+/// GPU HEVC encoders for Linux and Windows, in order of preference.
+const GPU_HEVC_ENCODERS: [&str; 3] = ["hevc_nvenc", "hevc_qsv", "hevc_amf"];
+
+/// Returns the first candidate for which `works` is true, or `fallback` if none is.
 /// Stops at the first success, so later candidates are not tested.
-fn pick_h264_encoder(candidates: &[&'static str], works: impl Fn(&str) -> bool) -> &'static str {
+fn pick_encoder(
+  candidates: &[&'static str],
+  fallback: &'static str,
+  works: impl Fn(&str) -> bool,
+) -> &'static str {
   candidates
     .iter()
     .copied()
     .find(|encoder| works(encoder))
-    .unwrap_or("libx264")
+    .unwrap_or(fallback)
 }
 
 /// Returns true if FFmpeg can encode one test frame with `encoder`.
@@ -111,7 +118,21 @@ pub fn h264_encoder() -> &'static str {
     } else {
       &GPU_H264_ENCODERS
     };
-    pick_h264_encoder(candidates, encoder_works)
+    pick_encoder(candidates, "libx264", encoder_works)
+  })
+}
+
+/// Returns the HEVC encoder for HEVC input that is cropped. The result is found once per run.
+/// macOS uses VideoToolbox. Linux and Windows try the GPU encoders, then the CPU encoder
+/// `libx265`. Keeping HEVC lets cropped and uncropped HEVC files share one video codec in the merge.
+pub fn hevc_encoder() -> &'static str {
+  static ENCODER: OnceLock<&'static str> = OnceLock::new();
+  ENCODER.get_or_init(|| {
+    if cfg!(target_os = "macos") {
+      "hevc_videotoolbox"
+    } else {
+      pick_encoder(&GPU_HEVC_ENCODERS, "libx265", encoder_works)
+    }
   })
 }
 
@@ -621,7 +642,7 @@ mod test_parse_flat_streams {
 
 #[cfg(test)]
 mod test_h264_encoder {
-  use super::{convert_with_cpu_fallback, pick_h264_encoder, GPU_H264_ENCODERS};
+  use super::{convert_with_cpu_fallback, pick_encoder, GPU_H264_ENCODERS, GPU_HEVC_ENCODERS};
   use std::cell::RefCell;
 
   #[test]
@@ -672,7 +693,7 @@ mod test_h264_encoder {
   #[test]
   fn picks_nvenc_first_and_stops_testing() {
     let tested = std::cell::RefCell::new(Vec::new());
-    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |encoder| {
+    let picked = pick_encoder(&GPU_H264_ENCODERS, "libx264", |encoder| {
       tested.borrow_mut().push(encoder.to_string());
       true
     });
@@ -682,20 +703,42 @@ mod test_h264_encoder {
 
   #[test]
   fn picks_qsv_when_only_qsv_works() {
-    let picked = pick_h264_encoder(&GPU_H264_ENCODERS, |e| e == "h264_qsv");
+    let picked = pick_encoder(&GPU_H264_ENCODERS, "libx264", |e| e == "h264_qsv");
     assert_eq!(picked, "h264_qsv");
   }
 
   #[test]
+  fn hevc_falls_back_to_libx265_without_gpu_encoder() {
+    assert_eq!(
+      pick_encoder(&GPU_HEVC_ENCODERS, "libx265", |_| false),
+      "libx265"
+    );
+  }
+
+  #[test]
   fn falls_back_to_libx264_without_gpu_encoder() {
-    assert_eq!(pick_h264_encoder(&GPU_H264_ENCODERS, |_| false), "libx264");
+    assert_eq!(
+      pick_encoder(&GPU_H264_ENCODERS, "libx264", |_| false),
+      "libx264"
+    );
   }
 }
 
 /// Integration test: this runs real ffmpeg to test each H.264 encoder.
 #[cfg(test)]
 mod test_h264_encoder_integration {
-  use super::h264_encoder;
+  use super::{h264_encoder, hevc_encoder};
+
+  #[test]
+  fn hevc_encoder_is_a_known_hevc_encoder() {
+    let encoder = hevc_encoder();
+    let allowed: &[&str] = if cfg!(target_os = "macos") {
+      &["hevc_videotoolbox"]
+    } else {
+      &["hevc_nvenc", "hevc_qsv", "hevc_amf", "libx265"]
+    };
+    assert!(allowed.contains(&encoder), "unexpected encoder: {encoder}");
+  }
 
   #[test]
   fn uses_videotoolbox_on_macos_and_a_known_encoder_elsewhere() {

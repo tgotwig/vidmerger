@@ -1,6 +1,6 @@
 use crate::commanders::_cmd::{
-  get_media_seconds, h264_encoder, is_hevc, keep_source_bit_rate, probe_streams, run_with_progress,
-  PROGRESS_ARGS,
+  get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate, probe_streams,
+  run_with_progress, PROGRESS_ARGS,
 };
 use crate::helpers::io_helper::verbose;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
@@ -229,9 +229,9 @@ fn majority_crop(values: &[String]) -> Option<String> {
   (share >= MIN_AGREEING_SHARE).then(|| crop.to_string())
 }
 
-/// Crops `input` with the normal encoder. If that fails (e.g. `hevc_videotoolbox` rejects the
-/// input), crops again with the CPU encoder `libx264`, so the crop step does not panic on a
-/// hardware encoder error.
+/// Crops `input` with the normal encoder. If that fails (e.g. a hardware encoder rejects the
+/// input), crops again with the CPU encoder: `libx265` for HEVC input, otherwise `libx264`. The
+/// CPU encoder keeps the codec the same, so the crop step does not panic on a hardware error.
 fn crop_with_cpu_fallback(
   input: &str,
   crop: &str,
@@ -259,8 +259,9 @@ fn crop_with_cpu_fallback(
   if res.status.success() {
     return res;
   }
-  println!("⚠️  Cropping with the default encoder failed, retrying with libx264");
-  run(Some("libx264"))
+  let cpu_encoder = if is_hevc(input) { "libx265" } else { "libx264" };
+  println!("⚠️  Cropping with the default encoder failed, retrying with {cpu_encoder}");
+  run(Some(cpu_encoder))
 }
 
 /// The FFmpeg arguments that crop `input` to `crop` and write `output`.
@@ -282,15 +283,16 @@ fn encode_args(
   args.extend(["-c:s", "copy", "-vf"].map(String::from));
   args.push(format!("crop={crop}"));
   if let Some(encoder) = encoder_override.or_else(|| video_encoder_for(output)) {
-    // Keep HEVC input as HEVC (VideoToolbox on macOS), instead of re-encoding it to H.264.
-    // A retry passes `encoder_override`, which replaces this choice.
-    let encoder = if encoder_override.is_none() && is_hevc(input) && cfg!(target_os = "macos") {
-      "hevc_videotoolbox"
+    // Keep HEVC input as HEVC on every OS, instead of re-encoding it to H.264. Otherwise the
+    // cropped file would not share a video codec with the other inputs. A retry passes
+    // `encoder_override`, which replaces this choice.
+    let encoder = if encoder_override.is_none() && is_hevc(input) {
+      hevc_encoder()
     } else {
       encoder
     };
     args.extend(["-c:v".to_string(), encoder.to_string()]);
-    if encoder.starts_with("hevc") {
+    if encoder.starts_with("hevc") || encoder == "libx265" {
       args.extend(["-tag:v", "hvc1"].map(String::from));
     }
     // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
@@ -616,6 +618,41 @@ mod test_cropper_integration {
     assert_eq!(new_files[1], files[1]);
     assert!(std::path::Path::new(&new_files[0]).exists());
     assert!(content.contains("file '"), "no concat list: {content}");
+  }
+
+  #[test]
+  fn crop_black_bars_keeps_a_hevc_input_as_hevc() {
+    // A barred HEVC clip, made with the CPU HEVC encoder so the test does not need a GPU.
+    let path = std::env::temp_dir().join(format!("vidmerger-crop-hevc-{}.mp4", std::process::id()));
+    let clip = Clip(path);
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("color=c=white:s=320x180:d=2:r=25")
+      .args([
+        "-vf",
+        "pad=320:240:0:30:black",
+        "-c:v",
+        "libx265",
+        "-tag:v",
+        "hvc1",
+      ])
+      .args(["-pix_fmt", "yuv420p", "-an"])
+      .arg(clip.path())
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create HEVC test clip");
+    let tmp = TempFolder::new("crop-hevc");
+
+    let files = vec![clip.path().to_string()];
+    let (new_files, _) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
+
+    let probe = Command::new("ffprobe")
+      .args(["-v", "error", "-select_streams", "v:0"])
+      .args(["-show_entries", "stream=codec_name", "-of", "csv=p=0"])
+      .arg(&new_files[0])
+      .output()
+      .expect("ffprobe must be installed");
+    assert_eq!(String::from_utf8_lossy(&probe.stdout).trim(), "hevc");
   }
 
   /// A temp folder that is removed when dropped.
