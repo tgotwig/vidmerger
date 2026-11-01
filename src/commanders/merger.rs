@@ -90,16 +90,16 @@ fn plan_merge(
         Some(p.sample_rate) == stream.sample_rate && Some(p.channels) == stream.channels
       })
   };
-  // The ordered video codecs of the first input. For `-c copy` concatenation every input must
-  // have the same video streams in the same order. An input that differs must be converted.
-  let video_layout = |streams: &[MediaStream]| -> Vec<String> {
+  // The ordered video and subtitle codecs of an input. For `-c copy` concatenation every input
+  // must have the same streams in the same order. An input that differs must be converted.
+  let stream_layout = |streams: &[MediaStream]| -> Vec<String> {
     streams
       .iter()
-      .filter(|s| s.kind == "video")
+      .filter(|s| s.kind == "video" || s.kind == "subtitle")
       .map(|s| s.codec.clone())
       .collect()
   };
-  let reference_layout = probes.first().map(|streams| video_layout(streams));
+  let reference_layout = probes.first().map(|streams| stream_layout(streams));
   // Per input: (needs conversion, silent audio needed).
   let decisions: Vec<(bool, bool)> = probes
     .iter()
@@ -107,20 +107,21 @@ fn plan_merge(
     .map(|(streams, size)| {
       let has_audio = streams.iter().any(|s| s.kind == "audio");
       let has_video = streams.iter().any(|s| s.kind == "video");
+      // Data streams (e.g. `tmcd`) cannot be copied into the output, so they force a conversion.
       let has_extra = streams
         .iter()
-        .any(|s| s.kind != "audio" && s.kind != "video");
+        .any(|s| !matches!(s.kind.as_str(), "audio" | "video" | "subtitle"));
       let audio_fits = streams
         .iter()
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
-      let video_differs = reference_layout.as_ref() != Some(&video_layout(streams));
+      let layout_differs = reference_layout.as_ref() != Some(&stream_layout(streams));
       // Frames of different sizes cannot be stream-copied together, so they are converted.
       let size_differs = target_size.is_some() && size.is_some() && *size != target_size;
       // Silence is only added when there is video, because `-shortest` ends the output with it.
       let silent_audio = profile.is_some() && !has_audio && has_video;
       (
-        has_extra || !audio_fits || video_differs || size_differs || silent_audio,
+        has_extra || !audio_fits || layout_differs || size_differs || silent_audio,
         silent_audio,
       )
     })
@@ -619,6 +620,38 @@ mod test_plan_merge {
     assert_eq!(
       plan_merge(&probes, false).actions,
       vec![InputAction::Copy, InputAction::Copy]
+    );
+  }
+
+  #[test]
+  fn copies_inputs_with_matching_subtitles() {
+    // Subtitles are copied with the other streams, so matching ones do not force a conversion.
+    let probes = vec![
+      vec![video(), aac_stereo_48k(), stream("subtitle", "mov_text")],
+      vec![video(), aac_stereo_48k(), stream("subtitle", "mov_text")],
+    ];
+    assert_eq!(
+      plan_merge(&probes, false).actions,
+      vec![InputAction::Copy, InputAction::Copy]
+    );
+  }
+
+  #[test]
+  fn converts_when_only_one_input_has_subtitles() {
+    let probes = vec![
+      vec![video(), aac_stereo_48k(), stream("subtitle", "mov_text")],
+      vec![video(), aac_stereo_48k()],
+    ];
+    assert_eq!(
+      plan_merge(&probes, false).actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
     );
   }
 
