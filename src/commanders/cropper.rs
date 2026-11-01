@@ -286,9 +286,9 @@ fn encode_args(
 ) -> Vec<String> {
   let mut args: Vec<String> = ["-y", "-v", "error"].map(String::from).to_vec();
   // On macOS, VideoToolbox decodes the input, so the media engine does the work instead of the
-  // CPU. Without `-hwaccel_output_format`, the frames are still handed to the crop filter as
-  // normal frames.
-  if cfg!(target_os = "macos") {
+  // CPU. A retry passes `encoder_override` (the CPU encoder), so it decodes on the CPU too. If
+  // VideoToolbox is what failed, the retry does not hit the same decoder again.
+  if cfg!(target_os = "macos") && encoder_override.is_none() {
     args.extend(["-hwaccel", "videotoolbox"].map(String::from));
   }
   args.extend(["-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?"].map(String::from));
@@ -519,6 +519,14 @@ mod test_encode_args {
       .windows(2)
       .any(|pair| pair == ["-hwaccel", "videotoolbox"]);
     assert_eq!(has_flag, cfg!(target_os = "macos"));
+  }
+
+  #[test]
+  fn cpu_retry_does_not_decode_with_videotoolbox() {
+    let args = encode_args("in.mp4", "1920:688:0:16", "out.mp4", Some("libx264"), 1.0);
+    assert!(!args
+      .windows(2)
+      .any(|pair| pair == ["-hwaccel", "videotoolbox"]));
   }
 
   #[test]
