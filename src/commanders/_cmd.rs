@@ -136,21 +136,29 @@ pub fn hevc_encoder() -> &'static str {
   })
 }
 
+/// The video settings of one converted input: the `(width, height)` it is scaled to (if any),
+/// and whether its second video stream (a cover image) is kept.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VideoTarget {
+  pub size: Option<(u32, u32)>,
+  pub keep_cover: bool,
+}
+
 /// Converts one input to an MP4 file that is safe to merge.
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
-/// If `silent_audio` is true, the input has no audio, so silence is generated and
-/// `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
-/// adding a `tmcd` track again. If `size` is set, the video is scaled to fit and padded with
+/// `silent_tracks` silent audio tracks are added after the input's own audio, so the output has
+/// the track count the merge needs. Each silent track lasts as long as the input. `-write_tmcd 0` stops the MP4/MOV muxer from
+/// adding a `tmcd` track again. If `video.size` is set, the video is scaled to fit and padded with
 /// black bars to that `(width, height)`, so it can be concatenated with the other inputs.
 pub fn convert_for_merge(
   input: &str,
   output: &str,
   profile: Option<AudioProfile>,
-  silent_audio: bool,
+  silent_tracks: usize,
   hevc: bool,
   duration_seconds: f64,
-  size: Option<(u32, u32)>,
+  video: VideoTarget,
 ) -> Output {
   // The merge chooses one video codec for every input (see `plan_merge`), so the converter does
   // not pick its own. HEVC uses the hardware HEVC encoder, H.264 uses the H.264 encoder.
@@ -167,10 +175,10 @@ pub fn convert_for_merge(
         input,
         output,
         profile,
-        silent_audio,
+        silent_tracks,
         encoder,
         duration_seconds,
-        size,
+        video,
       )
     },
   )
@@ -313,49 +321,59 @@ fn run_convert(
   input: &str,
   output: &str,
   profile: Option<AudioProfile>,
-  silent_audio: bool,
+  silent_tracks: usize,
   encoder: &str,
   duration_seconds: f64,
-  size: Option<(u32, u32)>,
+  video: VideoTarget,
 ) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
-  let audio_map = if silent_audio {
+  // Each silent track gets its own silent source (input 1, 2, ...). The input's own audio
+  // tracks come first, then the silent ones.
+  let mut audio_maps: Vec<String> = ["-map", "0:a?"].map(String::from).to_vec();
+  if silent_tracks > 0 {
     let profile = profile.expect("silent audio needs an audio profile");
-    args.extend(["-f", "lavfi", "-i"].map(String::from));
-    args.push(format!("anullsrc=r={}", profile.sample_rate));
-    "1:a"
-  } else {
-    "0:a?"
-  };
-  // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
-  // cover image) that MP4 cannot hold.
-  args.extend(["-map", "0:v:0?", "-map", audio_map].map(String::from));
+    for track in 0..silent_tracks {
+      // `-t` cuts the silence to the input's length, so the output ends with the video.
+      args.extend(["-f", "lavfi", "-t"].map(String::from));
+      args.push(duration_seconds.to_string());
+      args.extend(["-i"].map(String::from));
+      args.push(format!("anullsrc=r={}", profile.sample_rate));
+      audio_maps.extend(["-map".to_string(), format!("{}:a", track + 1)]);
+    }
+  }
+  // The picture is video stream 0, which is re-encoded. A cover image (e.g. PNG) is video stream 1,
+  // which is copied as it is. Video is mapped first, then the audio tracks.
+  args.extend(["-map", "0:v:0?"].map(String::from));
+  if video.keep_cover {
+    args.extend(["-map", "0:v:1?"].map(String::from));
+  }
+  args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
-  if let Some((width, height)) = size {
+  if let Some((width, height)) = video.size {
     args.extend([
-      "-vf".to_string(),
+      "-filter:v:0".to_string(),
       format!(
         "scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
       ),
     ]);
   }
-  args.push("-c:v".to_string());
+  args.push("-c:v:0".to_string());
   args.push(encoder.to_string());
   // Apple players only open HEVC in MP4 when it is tagged `hvc1`.
   if encoder.starts_with("hevc") {
-    args.extend(["-tag:v", "hvc1"].map(String::from));
+    args.extend(["-tag:v:0", "hvc1"].map(String::from));
   }
   // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
   if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
-    args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+    args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
+  }
+  if video.keep_cover {
+    args.extend(["-c:v:1", "copy"].map(String::from));
   }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
     args.extend(["-ac".to_string(), profile.channels.to_string()]);
-  }
-  if silent_audio {
-    args.push("-shortest".to_string());
   }
   args.extend(["-write_tmcd", "0"].map(String::from));
   args.push(output.to_string());
@@ -370,9 +388,37 @@ fn run_convert(
   Command::new("ffmpeg").args(&args).output().unwrap()
 }
 
-/// Runs FFmpeg (which must have the `PROGRESS_ARGS` set) and shows a 0–100% bar.
+/// Runs FFmpeg by the time it has written (`out_time_us`). Use it when there are no subtitle
+/// streams, because copied subtitles make FFmpeg report the end of the file at once.
 /// `total_seconds` is the length of the input. If it is 0, the bar only jumps to 100% at the end.
 pub fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Output {
+  run_with_progress_by(args, label, |line| {
+    if total_seconds <= 0.0 {
+      return None;
+    }
+    parse_out_time_us(line).map(|micros| micros as f64 / 1_000_000.0 / total_seconds)
+  })
+}
+
+/// Runs FFmpeg by its video frame count (`frame=`), out of `total_frames`. Use it when subtitles
+/// are copied, because the time reported by FFmpeg then jumps to the end of the file at once.
+pub fn run_with_frame_progress(args: &[&str], label: &str, total_frames: u64) -> Output {
+  run_with_progress_by(args, label, |line| {
+    if total_frames == 0 {
+      return None;
+    }
+    parse_frame(line).map(|frame| frame as f64 / total_frames as f64)
+  })
+}
+
+/// Runs FFmpeg (with `PROGRESS_ARGS` set) and shows a 0–100% bar. `fraction_of` turns each
+/// progress line into a fraction of the job (0.0 to 1.0), or `None` to ignore the line.
+/// Returns FFmpeg's status and stderr. The stdout in the result is empty.
+fn run_with_progress_by(
+  args: &[&str],
+  label: &str,
+  fraction_of: impl Fn(&str) -> Option<f64>,
+) -> Output {
   let mut child = Command::new("ffmpeg")
     .args(args)
     .stdout(Stdio::piped())
@@ -390,10 +436,8 @@ pub fn run_with_progress(args: &[&str], label: &str, total_seconds: f64) -> Outp
   let mut bar = ProgressBar::start(label);
   if let Some(stdout) = child.stdout.take() {
     for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-      if let Some(micros) = parse_out_time_us(&line) {
-        if total_seconds > 0.0 {
-          bar.set(micros as f64 / 1_000_000.0 / total_seconds);
-        }
+      if let Some(fraction) = fraction_of(&line) {
+        bar.set(fraction);
       }
     }
   }
@@ -417,6 +461,35 @@ fn parse_out_time_us(line: &str) -> Option<i64> {
     .strip_prefix("out_time_us=")?
     .trim()
     .parse::<i64>()
+    .ok()
+}
+
+/// Reads the `frame=` value from FFmpeg's `-progress` output, the number of video frames done.
+/// Returns `None` for other lines and for values that are not numbers.
+pub fn parse_frame(line: &str) -> Option<u64> {
+  line.strip_prefix("frame=")?.trim().parse::<u64>().ok()
+}
+
+/// Returns the number of frames in the first video stream, from ffprobe's `nb_frames`.
+/// Returns `None` if ffprobe cannot be run or the container does not store a frame count.
+pub fn video_frame_count(file: &str) -> Option<u64> {
+  let output = Command::new("ffprobe")
+    .args([
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=nb_frames",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      file,
+    ])
+    .output()
+    .ok()?;
+  String::from_utf8_lossy(&output.stdout)
+    .trim()
+    .parse::<u64>()
     .ok()
 }
 
@@ -609,6 +682,22 @@ pub fn describe(program: &str, args: &[&str]) -> String {
 }
 
 #[cfg(test)]
+mod test_parse_frame {
+  use super::parse_frame;
+
+  #[test]
+  fn reads_the_frame_count_from_a_progress_line() {
+    assert_eq!(parse_frame("frame=1957"), Some(1957));
+  }
+
+  #[test]
+  fn ignores_other_progress_lines() {
+    assert_eq!(parse_frame("out_time_us=230038666"), None);
+    assert_eq!(parse_frame("frame=N/A"), None);
+  }
+}
+
+#[cfg(test)]
 mod test_parse_flat_streams {
   use super::{parse_flat_streams, MediaStream};
 
@@ -796,9 +885,10 @@ mod tests {
 #[cfg(test)]
 mod test_ffmpeg_integration {
   use super::AudioProfile;
+  use super::VideoTarget;
   use super::{
     adjust_fps_by_ffmpeg, convert_for_merge, get_media_seconds, merge, probe_streams,
-    run_ffmpeg_info_command,
+    run_ffmpeg_info_command, video_frame_count,
   };
   use std::path::{Path, PathBuf};
   use std::process::Command;
@@ -910,10 +1000,13 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       Some(profile),
-      false,
+      0,
       false,
       1.0,
-      None,
+      VideoTarget {
+        size: None,
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
@@ -939,10 +1032,13 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       None,
-      false,
+      0,
       false,
       1.0,
-      Some((160, 240)),
+      VideoTarget {
+        size: Some((160, 240)),
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
@@ -952,6 +1048,66 @@ mod test_ffmpeg_integration {
 
     let size = crate::commanders::cropper::frame_size(output.to_str().unwrap());
     assert_eq!(size, Some((160, 240)));
+  }
+
+  #[test]
+  fn video_frame_count_reads_the_frames_of_a_real_clip() {
+    let dir = TempDir::new("frames");
+    let clip = dir.path("clip.mp4");
+    make_clip(&clip, false);
+
+    // `make_clip` makes 1 second at 25 frames per second.
+    assert_eq!(video_frame_count(clip.to_str().unwrap()), Some(25));
+  }
+
+  #[test]
+  fn convert_for_merge_keeps_a_cover_image_as_a_second_video_stream() {
+    let dir = TempDir::new("cover");
+    let input = dir.path("with-cover.mp4");
+    let output = dir.path("converted.mp4");
+    // A 1-second video with a single-frame PNG cover as its second video stream.
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("testsrc=d=1:s=160x120:r=25")
+      .args(["-f", "lavfi", "-i", "color=c=red:s=64x64:d=1"])
+      .args([
+        "-map", "0:v", "-map", "1:v", "-c:v:0", "libx264", "-pix_fmt", "yuv420p",
+      ])
+      .args(["-c:v:1", "png", "-frames:v:1", "1"])
+      .arg(&input)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create the cover test clip");
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      0,
+      false,
+      1.0,
+      VideoTarget {
+        size: None,
+        keep_cover: true,
+      },
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let video_codecs: Vec<&str> = streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .map(|s| s.codec.as_str())
+      .collect();
+    assert_eq!(video_codecs, vec!["h264", "png"]);
   }
 
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
@@ -1038,10 +1194,13 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       Some(profile),
-      true,
+      1,
       false,
       1.0,
-      None,
+      VideoTarget {
+        size: None,
+        keep_cover: false,
+      },
     );
     assert!(
       result.status.success(),
@@ -1053,6 +1212,12 @@ mod test_ffmpeg_integration {
     assert!(
       streams.iter().any(|s| s.kind == "audio"),
       "no silent audio added"
+    );
+    // The clip is 1 second, so the silence must stop there instead of running on.
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 1.0).abs() < 0.3,
+      "expected about 1s, got {seconds}"
     );
   }
 }

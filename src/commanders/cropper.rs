@@ -1,6 +1,6 @@
 use crate::commanders::_cmd::{
   describe, get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate,
-  probe_streams, run_with_progress, PROGRESS_ARGS,
+  probe_streams, run_with_frame_progress, run_with_progress, video_frame_count, PROGRESS_ARGS,
 };
 use crate::helpers::io_helper::verbose;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
@@ -238,6 +238,7 @@ fn crop_with_cpu_fallback(
   output: &str,
   duration_seconds: f64,
 ) -> std::process::Output {
+  let total_frames = video_frame_count(input);
   let run = |encoder_override: Option<&str>| {
     let mut args = encode_args(input, crop, output, encoder_override, duration_seconds);
     // The output path is always the last argument. The progress flags go before it.
@@ -262,7 +263,12 @@ fn crop_with_cpu_fallback(
     if verbose() {
       Command::new("ffmpeg").args(&refs).output().unwrap()
     } else {
-      run_with_progress(&refs, "Removing black bars", duration_seconds)
+      // Progress is counted in frames, because copied subtitles make FFmpeg's time jump to the end
+      // at once. Falls back to time when the frame count is unknown.
+      match total_frames {
+        Some(frames) => run_with_frame_progress(&refs, "Removing black bars", frames),
+        None => run_with_progress(&refs, "Removing black bars", duration_seconds),
+      }
     }
   };
   let res = run(None);
@@ -291,11 +297,18 @@ fn encode_args(
   if cfg!(target_os = "macos") && encoder_override.is_none() {
     args.extend(["-hwaccel", "videotoolbox"].map(String::from));
   }
+  // The picture is video stream 0. A cover image (e.g. PNG) is video stream 1, and it is copied
+  // as it is. WebM cannot hold PNG, so the cover is dropped there.
+  let encoder = encoder_override.or_else(|| video_encoder_for(output));
+  let keeps_cover = encoder.is_some();
   args.extend(["-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?"].map(String::from));
+  if keeps_cover {
+    args.extend(["-map", "0:v:1?"].map(String::from));
+  }
   // Subtitles are copied unchanged, so they are kept as they are.
-  args.extend(["-c:s", "copy", "-vf"].map(String::from));
+  args.extend(["-c:s", "copy", "-filter:v:0"].map(String::from));
   args.push(format!("crop={crop}"));
-  if let Some(encoder) = encoder_override.or_else(|| video_encoder_for(output)) {
+  if let Some(encoder) = encoder {
     // Keep HEVC input as HEVC on every OS, instead of re-encoding it to H.264. Otherwise the
     // cropped file would not share a video codec with the other inputs. A retry passes
     // `encoder_override`, which replaces this choice.
@@ -304,13 +317,16 @@ fn encode_args(
     } else {
       encoder
     };
-    args.extend(["-c:v".to_string(), encoder.to_string()]);
+    args.extend(["-c:v:0".to_string(), encoder.to_string()]);
     if encoder.starts_with("hevc") || encoder == "libx265" {
-      args.extend(["-tag:v", "hvc1"].map(String::from));
+      args.extend(["-tag:v:0", "hvc1"].map(String::from));
     }
     // Keep the source's video bitrate on long inputs (see `keep_source_bit_rate`).
     if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
-      args.extend(["-b:v".to_string(), bit_rate.to_string()]);
+      args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
+    }
+    if keeps_cover {
+      args.extend(["-c:v:1", "copy"].map(String::from));
     }
   }
   args.push(output.to_string());
@@ -539,11 +555,24 @@ mod test_encode_args {
     let args = encode_args("in.webm", "1920:688:0:16", "out.webm", None, 1.0);
     assert!(args
       .windows(2)
-      .any(|pair| pair == ["-vf", "crop=1920:688:0:16"]));
+      .any(|pair| pair == ["-filter:v:0", "crop=1920:688:0:16"]));
     assert!(args.windows(2).any(|pair| pair == ["-map", "0:v:0"]));
     assert!(args.windows(2).any(|pair| pair == ["-map", "0:s?"]));
     assert!(args.windows(2).any(|pair| pair == ["-c:s", "copy"]));
-    assert!(!args.contains(&"-c:v".to_string()));
+    assert!(!args.contains(&"-c:v:0".to_string()));
+  }
+
+  #[test]
+  fn keeps_a_cover_image_as_a_copied_second_video_stream() {
+    let args = encode_args("in.mp4", "1920:688:0:16", "out.mp4", None, 1.0);
+    assert!(args.windows(2).any(|pair| pair == ["-map", "0:v:1?"]));
+    assert!(args.windows(2).any(|pair| pair == ["-c:v:1", "copy"]));
+  }
+
+  #[test]
+  fn drops_the_cover_image_for_webm_output() {
+    let args = encode_args("in.webm", "1920:688:0:16", "out.webm", None, 1.0);
+    assert!(!args.contains(&"0:v:1?".to_string()));
   }
 }
 

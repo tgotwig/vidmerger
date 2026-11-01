@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A cover image (e.g. PNG) is kept in the merged file when every input has one with the same codec. Otherwise covers are dropped, so the merge does not fail.
+- The black bar crop progress bar counts video frames, so it no longer jumps to 100% at the start when a file has subtitles.
+- Inputs with fewer audio tracks get silent tracks before the merge, so the merged file keeps every track.
+- Subtitles no longer force every input to be re-encoded. Inputs with matching subtitles are copied.
 - On macOS, the black bar crop decodes with VideoToolbox, which cuts CPU load and heat. On a 4K film test, CPU time fell from about 349 s to 52 s.
 - Inputs whose video size differs from the most common size are scaled and padded to it before the merge, so cropped and uncropped files can be merged together.
 - Cropping no longer re-encodes the other inputs before the merge. Inputs are assumed to share one video codec (all H.264 or all HEVC).
