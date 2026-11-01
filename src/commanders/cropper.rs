@@ -1,6 +1,6 @@
 use crate::commanders::_cmd::{
-  get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate, probe_streams,
-  run_with_progress, PROGRESS_ARGS,
+  describe, get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate,
+  probe_streams, run_with_progress, PROGRESS_ARGS,
 };
 use crate::helpers::io_helper::verbose;
 use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
@@ -244,6 +244,16 @@ fn crop_with_cpu_fallback(
     let output_arg = args
       .pop()
       .expect("encode_args always ends with the output path");
+    // Print the command without the progress flags, so the log line stays short.
+    let shown: Vec<&str> = args
+      .iter()
+      .map(String::as_str)
+      .chain([output_arg.as_str()])
+      .collect();
+    println!(
+      "🔪 Cropping, calling: {}",
+      BrightBlue.paint(describe("ffmpeg", &shown))
+    );
     if !verbose() {
       args.extend(PROGRESS_ARGS.map(String::from));
     }

@@ -600,7 +600,7 @@ fn spawn_command(program: &str, args: &[&str], silent: bool) -> Result<Child, st
 
 /// Builds a printable version of the command for log output only.
 /// It is never executed.
-fn describe(program: &str, args: &[&str]) -> String {
+pub fn describe(program: &str, args: &[&str]) -> String {
   std::iter::once(program)
     .chain(args.iter().copied())
     .map(|arg| format!("'{arg}'"))
