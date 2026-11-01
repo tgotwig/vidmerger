@@ -284,11 +284,14 @@ fn encode_args(
   encoder_override: Option<&str>,
   duration_seconds: f64,
 ) -> Vec<String> {
-  let mut args: Vec<String> = [
-    "-y", "-v", "error", "-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?",
-  ]
-  .map(String::from)
-  .to_vec();
+  let mut args: Vec<String> = ["-y", "-v", "error"].map(String::from).to_vec();
+  // On macOS, VideoToolbox decodes the input, so the media engine does the work instead of the
+  // CPU. A retry passes `encoder_override` (the CPU encoder), so it decodes on the CPU too. If
+  // VideoToolbox is what failed, the retry does not hit the same decoder again.
+  if cfg!(target_os = "macos") && encoder_override.is_none() {
+    args.extend(["-hwaccel", "videotoolbox"].map(String::from));
+  }
+  args.extend(["-i", input, "-map", "0:v:0", "-map", "0:a?", "-map", "0:s?"].map(String::from));
   // Subtitles are copied unchanged, so they are kept as they are.
   args.extend(["-c:s", "copy", "-vf"].map(String::from));
   args.push(format!("crop={crop}"));
@@ -508,6 +511,23 @@ mod test_majority_crop {
 #[cfg(test)]
 mod test_encode_args {
   use super::{encode_args, video_encoder_for};
+
+  #[test]
+  fn decodes_with_videotoolbox_only_on_macos() {
+    let args = encode_args("in.mp4", "1920:688:0:16", "out.mp4", None, 1.0);
+    let has_flag = args
+      .windows(2)
+      .any(|pair| pair == ["-hwaccel", "videotoolbox"]);
+    assert_eq!(has_flag, cfg!(target_os = "macos"));
+  }
+
+  #[test]
+  fn cpu_retry_does_not_decode_with_videotoolbox() {
+    let args = encode_args("in.mp4", "1920:688:0:16", "out.mp4", Some("libx264"), 1.0);
+    assert!(!args
+      .windows(2)
+      .any(|pair| pair == ["-hwaccel", "videotoolbox"]));
+  }
 
   #[test]
   fn keeps_extension_without_h264_for_webm() {
