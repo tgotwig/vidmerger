@@ -139,15 +139,15 @@ pub fn hevc_encoder() -> &'static str {
 /// Converts one input to an MP4 file that is safe to merge.
 /// Only video and audio streams are mapped, so data streams (e.g. `tmcd`) are dropped.
 /// Video is re-encoded to H.264. Audio is encoded to AAC with the shared `profile`.
-/// If `silent_audio` is true, the input has no audio, so silence is generated and
-/// `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
+/// `silent_tracks` silent audio tracks are added after the input's own audio, so the output has
+/// the track count the merge needs. With any silent track, `-shortest` ends it with the video. `-write_tmcd 0` stops the MP4/MOV muxer from
 /// adding a `tmcd` track again. If `size` is set, the video is scaled to fit and padded with
 /// black bars to that `(width, height)`, so it can be concatenated with the other inputs.
 pub fn convert_for_merge(
   input: &str,
   output: &str,
   profile: Option<AudioProfile>,
-  silent_audio: bool,
+  silent_tracks: usize,
   hevc: bool,
   duration_seconds: f64,
   size: Option<(u32, u32)>,
@@ -167,7 +167,7 @@ pub fn convert_for_merge(
         input,
         output,
         profile,
-        silent_audio,
+        silent_tracks,
         encoder,
         duration_seconds,
         size,
@@ -313,23 +313,27 @@ fn run_convert(
   input: &str,
   output: &str,
   profile: Option<AudioProfile>,
-  silent_audio: bool,
+  silent_tracks: usize,
   encoder: &str,
   duration_seconds: f64,
   size: Option<(u32, u32)>,
 ) -> Output {
   let mut args: Vec<String> = ["-y", "-i", input].map(String::from).to_vec();
-  let audio_map = if silent_audio {
+  // Each silent track gets its own silent source (input 1, 2, ...). The input's own audio
+  // tracks come first, then the silent ones.
+  let mut audio_maps: Vec<String> = ["-map", "0:a?"].map(String::from).to_vec();
+  if silent_tracks > 0 {
     let profile = profile.expect("silent audio needs an audio profile");
-    args.extend(["-f", "lavfi", "-i"].map(String::from));
-    args.push(format!("anullsrc=r={}", profile.sample_rate));
-    "1:a"
-  } else {
-    "0:a?"
-  };
+    for track in 0..silent_tracks {
+      args.extend(["-f", "lavfi", "-i"].map(String::from));
+      args.push(format!("anullsrc=r={}", profile.sample_rate));
+      audio_maps.extend(["-map".to_string(), format!("{}:a", track + 1)]);
+    }
+  }
   // Only the first video stream is mapped. Files can carry extra video streams (e.g. a PNG
-  // cover image) that MP4 cannot hold.
-  args.extend(["-map", "0:v:0?", "-map", audio_map].map(String::from));
+  // cover image) that MP4 cannot hold. Video is mapped first, then the audio tracks.
+  args.extend(["-map", "0:v:0?"].map(String::from));
+  args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
   if let Some((width, height)) = size {
     args.extend([
@@ -354,7 +358,7 @@ fn run_convert(
     args.extend(["-ar".to_string(), profile.sample_rate.to_string()]);
     args.extend(["-ac".to_string(), profile.channels.to_string()]);
   }
-  if silent_audio {
+  if silent_tracks > 0 {
     args.push("-shortest".to_string());
   }
   args.extend(["-write_tmcd", "0"].map(String::from));
@@ -910,7 +914,7 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       Some(profile),
-      false,
+      0,
       false,
       1.0,
       None,
@@ -939,7 +943,7 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       None,
-      false,
+      0,
       false,
       1.0,
       Some((160, 240)),
@@ -1038,7 +1042,7 @@ mod test_ffmpeg_integration {
       input.to_str().unwrap(),
       output.to_str().unwrap(),
       Some(profile),
-      true,
+      1,
       false,
       1.0,
       None,

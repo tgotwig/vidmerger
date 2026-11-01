@@ -29,6 +29,10 @@ struct MergePlan {
   /// The `(width, height)` each input's video is scaled to when converted. `None` for inputs
   /// without video.
   video_size: Vec<Option<(u32, u32)>>,
+  /// How many audio tracks each input has, in input order.
+  audio_tracks: Vec<usize>,
+  /// How many audio tracks every converted input gets. Inputs with fewer get silent tracks.
+  target_audio_tracks: usize,
 }
 
 /// The audio settings of the first audio stream found in any input, or `None` if no input has audio.
@@ -83,6 +87,18 @@ fn plan_merge(
 ) -> MergePlan {
   let target_size = most_common_size(sizes);
   let profile = audio_profile(probes);
+  // Converted inputs all get the most audio tracks any input has. At least one track is needed
+  // when there is audio, so an input without audio can get silence.
+  let audio_tracks: Vec<usize> = probes
+    .iter()
+    .map(|streams| streams.iter().filter(|s| s.kind == "audio").count())
+    .collect();
+  let target_audio_tracks = audio_tracks
+    .iter()
+    .copied()
+    .max()
+    .unwrap_or(0)
+    .max(usize::from(profile.is_some()));
   let codec = copyable_audio_codec(file_format);
   let matches_profile = |stream: &MediaStream| {
     stream.codec == codec
@@ -105,7 +121,8 @@ fn plan_merge(
   let decisions: Vec<(bool, bool)> = probes
     .iter()
     .zip(sizes)
-    .map(|(streams, size)| {
+    .zip(&audio_tracks)
+    .map(|((streams, size), own_audio_tracks)| {
       let has_audio = streams.iter().any(|s| s.kind == "audio");
       let has_video = streams.iter().any(|s| s.kind == "video");
       // Data streams (e.g. `tmcd`) cannot be copied into the output, so they force a conversion.
@@ -119,8 +136,10 @@ fn plan_merge(
       let layout_differs = reference_layout.as_ref() != Some(&stream_layout(streams));
       // Frames of different sizes cannot be stream-copied together, so they are converted.
       let size_differs = target_size.is_some() && size.is_some() && *size != target_size;
-      // Silence is only added when there is video, because `-shortest` ends the output with it.
-      let silent_audio = profile.is_some() && !has_audio && has_video;
+      // Silent tracks fill the gap up to the target track count. Inputs with neither audio nor
+      // video get none, because `-shortest` would end the output with them.
+      let silent_audio =
+        profile.is_some() && *own_audio_tracks < target_audio_tracks && (has_video || has_audio);
       (
         has_extra || !audio_fits || layout_differs || size_differs || silent_audio,
         silent_audio,
@@ -154,6 +173,8 @@ fn plan_merge(
     hevc,
     actions,
     video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
+    audio_tracks,
+    target_audio_tracks,
   }
 }
 
@@ -300,6 +321,8 @@ fn run_plan(
       profile: plan.profile,
       hevc: false,
       video_size: plan.video_size.clone(),
+      audio_tracks: plan.audio_tracks.clone(),
+      target_audio_tracks: plan.target_audio_tracks,
       actions: plan
         .actions
         .iter()
@@ -347,7 +370,14 @@ fn convert_inputs(
           input,
           &output,
           plan.profile,
-          *silent_audio,
+          // Silent tracks fill the gap up to the target track count.
+          if *silent_audio {
+            plan
+              .target_audio_tracks
+              .saturating_sub(plan.audio_tracks[index])
+          } else {
+            0
+          },
           plan.hevc,
           *duration,
           plan.video_size[index],
@@ -465,6 +495,8 @@ mod test_plan_merge {
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
+        audio_tracks: vec![1, 1],
+        target_audio_tracks: 1,
       }
     );
   }
@@ -569,6 +601,8 @@ mod test_plan_merge {
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
+        audio_tracks: vec![0, 0],
+        target_audio_tracks: 0,
       }
     );
   }
@@ -640,22 +674,23 @@ mod test_plan_merge {
   #[test]
   fn converts_when_audio_track_counts_differ() {
     // Both inputs have matching AAC audio, but the second has one track fewer. `-c copy`
-    // concatenation would then mix up the audio streams, so both inputs must be converted.
+    // concatenation would then mix up the audio streams, so both inputs must be converted, and
+    // the second gets one silent track to reach two.
     let probes = vec![
       vec![video(), aac_stereo_48k(), aac_stereo_48k()],
       vec![video(), aac_stereo_48k()],
     ];
+    let plan = plan_merge(&probes, false);
     assert_eq!(
-      plan_merge(&probes, false).actions,
+      plan.actions,
       vec![
         InputAction::Convert {
           silent_audio: false
         },
-        InputAction::Convert {
-          silent_audio: false
-        },
+        InputAction::Convert { silent_audio: true },
       ]
     );
+    assert_eq!(plan.target_audio_tracks, 2);
   }
 
   #[test]
@@ -884,6 +919,8 @@ mod test_merge_integration {
       hevc: false,
       actions: vec![InputAction::Convert { silent_audio: true }],
       video_size: vec![None],
+      audio_tracks: vec![0],
+      target_audio_tracks: 1,
     };
     let files = [input.to_str().unwrap().to_string()];
 
@@ -925,6 +962,8 @@ mod test_merge_integration {
         InputAction::Convert { silent_audio: true },
       ],
       video_size: vec![None, None],
+      audio_tracks: vec![0, 0],
+      target_audio_tracks: 1,
     };
     let files = [
       first.to_str().unwrap().to_string(),
@@ -958,5 +997,86 @@ mod test_merge_integration {
       (seconds - 2.0).abs() < 0.3,
       "expected about 2s, got {seconds}"
     );
+  }
+
+  /// Creates a 1-second video with two audio tracks (440 Hz and 880 Hz).
+  fn make_clip_with_two_audio_tracks(path: &Path) {
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y"])
+      .args(["-f", "lavfi", "-i", "testsrc=d=1:s=160x120:r=25"])
+      .args(["-f", "lavfi", "-i", "sine=f=440:d=1"])
+      .args(["-f", "lavfi", "-i", "sine=f=880:d=1"])
+      .args(["-map", "0:v", "-map", "1:a", "-map", "2:a"])
+      .args([
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-shortest",
+      ])
+      .arg(path)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create two-track test clip");
+  }
+
+  #[test]
+  fn run_plan_gives_the_output_every_audio_track_when_the_shorter_input_is_first() {
+    let dir = TempDir::new("plan-tracks");
+    let one_track = dir.0.join("1 - one track.mp4");
+    let two_tracks = dir.0.join("2 - two tracks.mp4");
+    make_clip(&one_track, true);
+    make_clip_with_two_audio_tracks(&two_tracks);
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    // The input with fewer tracks comes first. It gets one silent track to match the other.
+    let plan = MergePlan {
+      profile: Some(profile),
+      hevc: false,
+      actions: vec![
+        InputAction::Convert { silent_audio: true },
+        InputAction::Convert {
+          silent_audio: false,
+        },
+      ],
+      video_size: vec![None, None],
+      audio_tracks: vec![1, 2],
+      target_audio_tracks: 2,
+    };
+    let files = [
+      one_track.to_str().unwrap().to_string(),
+      two_tracks.to_str().unwrap().to_string(),
+    ];
+    let inputs_with_durations: Vec<(String, f64)> =
+      files.iter().map(|file| (file.clone(), 1.0)).collect();
+
+    let concat_list = dir.0.join("list.txt");
+    let chapters = dir.0.join("chapters.txt");
+    fs::write(&chapters, ";FFMETADATA1\n").unwrap();
+    let output = dir.0.join("merged.mp4");
+
+    let result = run_plan(
+      &plan,
+      &inputs_with_durations,
+      &dir.0,
+      concat_list.to_str().unwrap(),
+      output.to_str().unwrap(),
+      chapters.to_str().unwrap(),
+      2.0,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let audio_tracks = streams.iter().filter(|s| s.kind == "audio").count();
+    assert_eq!(audio_tracks, 2, "expected two audio tracks in {streams:?}");
   }
 }
