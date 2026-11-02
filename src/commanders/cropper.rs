@@ -212,7 +212,7 @@ fn parse_crop_values(log: &str) -> Vec<String> {
 /// Most of a film can be letterboxed while a few scenes are full frame, so requiring every frame
 /// to agree would skip the whole film. The few full-frame scenes are the minority and are not
 /// the majority value, so they are not what decides the crop.
-const MIN_AGREEING_SHARE: f64 = 0.6;
+const MIN_AGREEING_SHARE: f64 = 0.5;
 
 /// Returns the crop value that at least `MIN_AGREEING_SHARE` of the sampled frames agree on, or
 /// `None` when no value is that common (e.g. a clip with an even mix of framings).
@@ -513,8 +513,18 @@ mod test_majority_crop {
   }
 
   #[test]
-  fn an_even_mix_is_not_cropped() {
-    let values: Vec<String> = ["320:180:0:30", "320:240:0:0"].map(String::from).to_vec();
+  fn a_film_with_bars_in_only_58_percent_of_readings_is_cropped() {
+    // Measured on Star Wars: 114 of 198 readings were the letterbox (about 58%).
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 114];
+    values.extend(vec!["3418:1608:0:276".to_string(); 84]);
+    assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
+  }
+
+  #[test]
+  fn an_even_three_way_mix_is_not_cropped() {
+    let values: Vec<String> = ["320:180:0:30", "320:240:0:0", "300:180:10:30"]
+      .map(String::from)
+      .to_vec();
     assert_eq!(majority_crop(&values), None);
   }
 
