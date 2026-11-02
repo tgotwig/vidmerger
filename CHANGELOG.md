@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- A cropped input is copied into the merge without a second re-encode, so the merge no longer prints "Converting for merge" for it.
+- A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
 - A cover image (e.g. PNG) is kept in the merged file when every input has one with the same codec. Otherwise covers are dropped, so the merge does not fail.
 - The black bar crop progress bar counts video frames, so it no longer jumps to 100% at the start when a file has subtitles.
 - Inputs with fewer audio tracks get silent tracks before the merge, so the merged file keeps every track.
