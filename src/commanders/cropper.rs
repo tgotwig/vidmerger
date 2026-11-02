@@ -13,7 +13,10 @@ use term_painter::ToStyle;
 /// Otherwise a cropped file is written to `tmp_dir/cropper` with the same file name, so the
 /// chapter titles (taken from the file names) stay the same. Inputs without bars are used as
 /// they are. Returns the new input paths and the concat list for them.
-pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>, String)> {
+pub fn crop_black_bars(
+  files: &[String],
+  tmp_dir: &Path,
+) -> Option<(Vec<String>, String, Vec<bool>)> {
   // Each file's duration is read once here, and reused for the sampling and for the encode.
   let detected: Vec<Option<(String, f64)>> =
     files.iter().map(|file| detect_black_bars(file)).collect();
@@ -25,12 +28,14 @@ pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>,
   let dir = tmp_dir.join("cropper");
   fs::create_dir_all(&dir).expect("Failed to create the cropper folder");
 
-  let inputs: Vec<String> = files
+  // Each entry is (new path, was cropped). A cropped file is written by this step, so it is
+  // already in the merge format. An input without bars keeps its path and is not cropped.
+  let outputs: Vec<(String, bool)> = files
     .iter()
     .zip(crops)
     .map(|(file, detected)| {
       let Some((crop, duration)) = detected else {
-        return file.clone();
+        return (file.clone(), false);
       };
       let file_name = Path::new(file).file_name().unwrap().to_string_lossy();
       let output = dir.join(file_name.as_ref()).to_string_lossy().to_string();
@@ -46,12 +51,17 @@ pub fn crop_black_bars(files: &[String], tmp_dir: &Path) -> Option<(Vec<String>,
         );
       }
       println!("🔪 Cropped: {}", BrightBlue.paint(&output));
-      output
+      (output, true)
     })
     .collect();
 
+  let cropped: Vec<bool> = outputs
+    .iter()
+    .map(|(_, was_cropped)| *was_cropped)
+    .collect();
+  let inputs: Vec<String> = outputs.into_iter().map(|(path, _)| path).collect();
   let content = gen_input_file_content_for_ffmpeg(&inputs);
-  Some((inputs, content))
+  Some((inputs, content, cropped))
 }
 
 /// Returns the crop value (`w:h:x:y`) and the file's duration for a file that has black bars,
@@ -691,7 +701,9 @@ mod test_cropper_integration {
     let tmp = TempFolder::new("crop-run");
 
     let files = vec![barred.path().to_string(), full.path().to_string()];
-    let (new_files, content) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
+    let (new_files, content, cropped) =
+      crop_black_bars(&files, &tmp.0).expect("bars should be found");
+    assert_eq!(cropped, vec![true, false]);
 
     // The barred clip is cropped into tmp/cropper. The full-frame clip is used as it is.
     assert!(
@@ -728,7 +740,7 @@ mod test_cropper_integration {
     let tmp = TempFolder::new("crop-hevc");
 
     let files = vec![clip.path().to_string()];
-    let (new_files, _) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
+    let (new_files, _, _) = crop_black_bars(&files, &tmp.0).expect("bars should be found");
 
     let probe = Command::new("ffprobe")
       .args(["-v", "error", "-select_streams", "v:0"])
