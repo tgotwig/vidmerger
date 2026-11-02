@@ -100,6 +100,7 @@ fn cover_codec(streams: &[MediaStream]) -> Option<String> {
 fn plan_merge(
   probes: &[Vec<MediaStream>],
   sizes: &[Option<(u32, u32)>],
+  cropped: &[bool],
   file_format: &str,
   force_convert: bool,
 ) -> MergePlan {
@@ -146,13 +147,16 @@ fn plan_merge(
     .iter()
     .zip(sizes)
     .zip(&audio_tracks)
-    .map(|((streams, size), own_audio_tracks)| {
+    .zip(cropped)
+    .map(|(((streams, size), own_audio_tracks), &is_cropped)| {
       let has_audio = streams.iter().any(|s| s.kind == "audio");
       let has_video = streams.iter().any(|s| s.kind == "video");
       // Data streams (e.g. `tmcd`) cannot be copied into the output, so they force a conversion.
-      let has_extra = streams
-        .iter()
-        .any(|s| !matches!(s.kind.as_str(), "audio" | "video" | "subtitle"));
+      // The cropper writes only video, audio and subtitles, so a cropped input never has them.
+      let has_extra = !is_cropped
+        && streams
+          .iter()
+          .any(|s| !matches!(s.kind.as_str(), "audio" | "video" | "subtitle"));
       let audio_fits = streams
         .iter()
         .filter(|s| s.kind == "audio")
@@ -220,6 +224,7 @@ pub fn merge(
   input: String,
   output: String,
   files_to_merge_as_strings: Vec<String>,
+  cropped: Vec<bool>,
   file_format: &str,
   tmp_dir: PathBuf,
 ) {
@@ -270,7 +275,7 @@ pub fn merge(
     .map(|path| cropper::frame_size(path))
     .collect();
   // First try: copy inputs that already fit and convert the rest.
-  let plan = plan_merge(&probes, &sizes, file_format, false);
+  let plan = plan_merge(&probes, &sizes, &cropped, file_format, false);
   let mut res = run_plan(
     &plan,
     &inputs_with_durations,
@@ -285,7 +290,7 @@ pub fn merge(
   // stream in a .mov). Convert every input to the shared profile and merge once more.
   if !res.status.success() && is_unsupported_stream_error(&res.stderr) {
     println!("⚠️  Unsupported stream found, converting every input and retrying the merge");
-    let plan = plan_merge(&probes, &sizes, file_format, true);
+    let plan = plan_merge(&probes, &sizes, &cropped, file_format, true);
     res = run_plan(
       &plan,
       &inputs_with_durations,
@@ -488,7 +493,8 @@ mod test_plan_merge {
   /// Plans for an MP4 output, the common case. The inputs have no known video size.
   fn plan_merge(probes: &[Vec<MediaStream>], force_convert: bool) -> MergePlan {
     let sizes = vec![None; probes.len()];
-    super::plan_merge(probes, &sizes, "mp4", force_convert)
+    let cropped = vec![false; probes.len()];
+    super::plan_merge(probes, &sizes, &cropped, "mp4", force_convert)
   }
 
   fn video() -> MediaStream {
@@ -745,6 +751,37 @@ mod test_plan_merge {
   }
 
   #[test]
+  fn a_cropped_input_with_an_extra_stream_is_copied() {
+    // The cropper writes only video, audio and subtitles, so the extra stream only appears in
+    // the merge's own muxing. A cropped input is copied, so the merge does not convert it again.
+    let probes = vec![
+      vec![video(), aac_stereo_48k(), stream("data", "tmcd")],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let sizes = [None, None];
+    let cropped = [true, false];
+    let plan = super::plan_merge(&probes, &sizes, &cropped, "mp4", false);
+    assert_eq!(plan.actions[0], InputAction::Copy);
+  }
+
+  #[test]
+  fn an_uncropped_input_with_an_extra_stream_is_still_converted() {
+    let probes = vec![
+      vec![video(), aac_stereo_48k(), stream("data", "tmcd")],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let sizes = [None, None];
+    let cropped = [false, false];
+    let plan = super::plan_merge(&probes, &sizes, &cropped, "mp4", false);
+    assert_eq!(
+      plan.actions[0],
+      InputAction::Convert {
+        silent_audio: false
+      }
+    );
+  }
+
+  #[test]
   fn copies_inputs_with_matching_subtitles() {
     // Subtitles are copied with the other streams, so matching ones do not force a conversion.
     let probes = vec![
@@ -851,7 +888,8 @@ mod test_plan_merge {
       vec![video(), aac_stereo_48k()],
     ];
     let sizes = [Some((3840, 2160)), Some((3840, 1608))];
-    let plan = super::plan_merge(&probes, &sizes, "mp4", false);
+    let cropped = [false, false];
+    let plan = super::plan_merge(&probes, &sizes, &cropped, "mp4", false);
     assert_eq!(
       plan.actions,
       vec![
@@ -876,7 +914,8 @@ mod test_plan_merge {
       vec![video(), aac_stereo_48k()],
     ];
     let sizes = [Some((3840, 2160)), Some((3840, 2160))];
-    let plan = super::plan_merge(&probes, &sizes, "mp4", false);
+    let cropped = [false, false];
+    let plan = super::plan_merge(&probes, &sizes, &cropped, "mp4", false);
     assert_eq!(plan.actions, vec![InputAction::Copy, InputAction::Copy]);
   }
 }

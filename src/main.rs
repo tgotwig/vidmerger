@@ -74,12 +74,15 @@ fn main() -> Result<(), Error> {
           change_fps(files_to_merge, &tmp_dir, fps_from_cli);
       }
 
+      // Which inputs the cropper wrote. Those are already in the merge format (see `merge`).
+      let mut cropped_inputs = vec![false; files_to_merge_as_strings.len()];
       if !skip_cropper {
-        if let Some((cropped_files, cropped_content)) =
+        if let Some((cropped_files, cropped_content, cropped)) =
           crop_black_bars(&files_to_merge_as_strings, &tmp_dir)
         {
           files_to_merge_as_strings = cropped_files;
           ffmpeg_input_content = cropped_content;
+          cropped_inputs = cropped;
         }
       }
 
@@ -94,6 +97,7 @@ fn main() -> Result<(), Error> {
         ffmpeg_input_file.to_slash().unwrap().into_owned(),
         ffmpeg_output_file.to_slash().unwrap().to_string(),
         files_to_merge_as_strings,
+        cropped_inputs,
         &file_format,
         tmp_dir,
       );
