@@ -224,8 +224,15 @@ fn majority_crop(values: &[String]) -> Option<String> {
   for value in values {
     *counts.entry(value.as_str()).or_default() += 1;
   }
-  let (crop, count) = counts.into_iter().max_by_key(|(_, count)| *count)?;
-  let share = count as f64 / values.len() as f64;
+  let top_count = counts.values().copied().max()?;
+  // A tie for the top count is not a majority, so no crop is chosen. `max_by_key` alone would
+  // pick one of the tied values by its position in the list, which is not evidence.
+  let mut leaders = counts.iter().filter(|(_, count)| **count == top_count);
+  let (crop, count) = leaders.next()?;
+  if leaders.next().is_some() {
+    return None;
+  }
+  let share = *count as f64 / values.len() as f64;
   (share >= MIN_AGREEING_SHARE).then(|| crop.to_string())
 }
 
@@ -518,6 +525,14 @@ mod test_majority_crop {
     let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 114];
     values.extend(vec!["3418:1608:0:276".to_string(); 84]);
     assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
+  }
+
+  #[test]
+  fn an_exact_tie_between_two_crops_is_not_cropped() {
+    // Both crops appear 50 times, so neither is the agreed crop.
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 50];
+    values.extend(vec!["3418:1608:0:276".to_string(); 50]);
+    assert_eq!(majority_crop(&values), None);
   }
 
   #[test]
