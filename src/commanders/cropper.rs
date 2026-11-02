@@ -212,7 +212,7 @@ fn parse_crop_values(log: &str) -> Vec<String> {
 /// Most of a film can be letterboxed while a few scenes are full frame, so requiring every frame
 /// to agree would skip the whole film. The few full-frame scenes are the minority and are not
 /// the majority value, so they are not what decides the crop.
-const MIN_AGREEING_SHARE: f64 = 0.6;
+const MIN_AGREEING_SHARE: f64 = 0.5;
 
 /// Returns the crop value that at least `MIN_AGREEING_SHARE` of the sampled frames agree on, or
 /// `None` when no value is that common (e.g. a clip with an even mix of framings).
@@ -224,8 +224,15 @@ fn majority_crop(values: &[String]) -> Option<String> {
   for value in values {
     *counts.entry(value.as_str()).or_default() += 1;
   }
-  let (crop, count) = counts.into_iter().max_by_key(|(_, count)| *count)?;
-  let share = count as f64 / values.len() as f64;
+  let top_count = counts.values().copied().max()?;
+  // A tie for the top count is not a majority, so no crop is chosen. `max_by_key` alone would
+  // pick one of the tied values by its position in the list, which is not evidence.
+  let mut leaders = counts.iter().filter(|(_, count)| **count == top_count);
+  let (crop, count) = leaders.next()?;
+  if leaders.next().is_some() {
+    return None;
+  }
+  let share = *count as f64 / values.len() as f64;
   (share >= MIN_AGREEING_SHARE).then(|| crop.to_string())
 }
 
@@ -513,8 +520,26 @@ mod test_majority_crop {
   }
 
   #[test]
-  fn an_even_mix_is_not_cropped() {
-    let values: Vec<String> = ["320:180:0:30", "320:240:0:0"].map(String::from).to_vec();
+  fn a_film_with_bars_in_only_58_percent_of_readings_is_cropped() {
+    // Measured on Star Wars: 114 of 198 readings were the letterbox (about 58%).
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 114];
+    values.extend(vec!["3418:1608:0:276".to_string(); 84]);
+    assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
+  }
+
+  #[test]
+  fn an_exact_tie_between_two_crops_is_not_cropped() {
+    // Both crops appear 50 times, so neither is the agreed crop.
+    let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 50];
+    values.extend(vec!["3418:1608:0:276".to_string(); 50]);
+    assert_eq!(majority_crop(&values), None);
+  }
+
+  #[test]
+  fn an_even_three_way_mix_is_not_cropped() {
+    let values: Vec<String> = ["320:180:0:30", "320:240:0:0", "300:180:10:30"]
+      .map(String::from)
+      .to_vec();
     assert_eq!(majority_crop(&values), None);
   }
 
