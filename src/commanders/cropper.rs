@@ -531,7 +531,7 @@ mod test_majority_crop {
 
   #[test]
   fn a_film_with_bars_in_only_58_percent_of_readings_is_cropped() {
-    // Measured on Star Wars: 114 of 198 readings were the letterbox (about 58%).
+    // Measured on a 2h24m film: 114 of 198 readings were the letterbox (about 58%).
     let mut values: Vec<String> = vec!["3840:1608:0:276".to_string(); 114];
     values.extend(vec!["3418:1608:0:276".to_string(); 84]);
     assert_eq!(majority_crop(&values), Some("3840:1608:0:276".to_string()));
