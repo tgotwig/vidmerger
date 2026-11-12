@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The temporary files are removed after the output file is created. Use `--skip-cleanup` to keep them.
 - The run prints where temporary files go before they are created.
 - **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 50% of sampled frames agree. Keeps the source bitrate, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
 - The "Removing black bars" step shows the same 0–100% progress bar as the merge.

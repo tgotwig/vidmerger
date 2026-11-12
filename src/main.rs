@@ -11,11 +11,13 @@ use cli::Cli;
 use helpers::io_helper::create;
 use helpers::io_helper::create_tmp_dir;
 use helpers::io_helper::exit_when_ffmpeg_not_available;
+use helpers::io_helper::output_is_ready;
 use helpers::io_helper::remove_file;
 use helpers::io_helper::wait_for_enter_or_esc_key;
 use helpers::str_helper::split;
 use lazy_static::lazy_static;
 use path_slash::PathExt;
+use std::fs;
 use std::io::Error;
 use std::path::Path;
 use system_shutdown::shutdown;
@@ -44,6 +46,7 @@ fn main() -> Result<(), Error> {
   let should_shutdown = matches.get_flag("shutdown");
   let skip_fps_changer = matches.get_flag("skip-fps-changer");
   let skip_cropper = matches.get_flag("skip-cropper");
+  let skip_cleanup = matches.get_flag("skip-cleanup");
   let yes = matches.get_flag("yes");
   let fps_from_cli = matches
     .get_one::<String>("fps")
@@ -97,6 +100,8 @@ fn main() -> Result<(), Error> {
         BrightBlue.paint(ffmpeg_input_file.to_slash().unwrap())
       );
 
+      // `merge` takes the folder by value, so keep its path for the cleanup below.
+      let run_folder = tmp_dir.clone();
       commanders::merger::merge(
         ffmpeg_input_file.to_slash().unwrap().into_owned(),
         ffmpeg_output_file.to_slash().unwrap().to_string(),
@@ -105,6 +110,19 @@ fn main() -> Result<(), Error> {
         &file_format,
         tmp_dir,
       );
+
+      // Clean up only after the output file exists. `merge` panics on failure, so a failed run
+      // never reaches this point and keeps its files for inspection.
+      if !skip_cleanup && output_is_ready(&ffmpeg_output_file) {
+        if let Err(error) = fs::remove_dir_all(&run_folder) {
+          println!("⚠️  Could not remove temporary files: {error}");
+        } else {
+          println!(
+            "🧹 Removed temporary files: {}",
+            BrightBlue.paint(run_folder.to_slash().unwrap())
+          );
+        }
+      }
     }
   }
 
