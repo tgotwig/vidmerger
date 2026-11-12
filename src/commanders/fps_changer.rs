@@ -13,6 +13,8 @@ use std::{
   collections::{HashMap, HashSet},
   path::{Path, PathBuf},
 };
+use term_painter::Color::BrightBlue;
+use term_painter::ToStyle;
 
 lazy_static! {
   static ref MATCHES: ArgMatches = Cli::init().get_matches();
@@ -30,6 +32,10 @@ pub fn change_fps(
   fps_from_cli: f32,
 ) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
   let tmp_dir_for_fps_changer = create_dir_for_fps_changer(tmp_dir).unwrap();
+  println!(
+    "🎞️  FPS changer files go to: {}",
+    BrightBlue.paint(tmp_dir_for_fps_changer.to_string_lossy())
+  );
 
   let mut new_files_to_merge = Vec::new();
   let mut map: HashMap<&PathBuf, f32> = HashMap::new();

@@ -68,6 +68,10 @@ fn main() -> Result<(), Error> {
       }
 
       let tmp_dir = create_tmp_dir();
+      println!(
+        "🗂️  Temporary files go to: {}",
+        BrightBlue.paint(tmp_dir.to_slash().unwrap())
+      );
 
       if !skip_fps_changer {
         (_, files_to_merge_as_strings, ffmpeg_input_content) =
