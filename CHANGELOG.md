@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The run prints where temporary files go: the run folder, the FPS changer folder, and the chapters file.
-
 - A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
 - A cover image (e.g. PNG) is kept in the merged file when every input has one with the same codec. Otherwise covers are dropped, so the merge does not fail.
 - The black bar crop progress bar counts video frames, so it no longer jumps to 100% at the start when a file has subtitles.
