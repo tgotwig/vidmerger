@@ -96,6 +96,10 @@ pub fn change_fps(
       println!();
     }
 
+    println!(
+      "🎞️  FPS changer files go to: {}",
+      tmp_dir_for_fps_changer.to_string_lossy()
+    );
     for file_to_merge in files_to_merge {
       let fps = get_fps(&file_to_merge);
 
