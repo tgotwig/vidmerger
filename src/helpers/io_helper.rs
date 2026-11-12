@@ -63,6 +63,12 @@ pub fn read_dir(input_vids_path: &Path) -> Result<Vec<PathBuf>> {
     .collect::<Result<Vec<_>>>()
 }
 
+/// Returns true when the merged output file exists, so the temporary files are no longer needed.
+/// Returns false when it does not, so nothing is deleted before the merge has written the output.
+pub fn output_is_ready(output: &Path) -> bool {
+  output.is_file()
+}
+
 /// Creates a new folder with a random name in the system temp directory and returns its path.
 /// Panics if the folder cannot be created.
 pub fn create_tmp_dir() -> PathBuf {
@@ -285,6 +291,15 @@ mod test_io_integration {
   fn read_dir_fails_on_a_missing_folder() {
     let dir = TempDir::new("read-dir-missing");
     assert!(read_dir(&dir.0.join("missing")).is_err());
+  }
+
+  #[test]
+  fn output_is_ready_only_when_the_output_file_exists() {
+    let dir = TempDir::new("output-ready");
+    let output = dir.0.join("output.mp4");
+    assert!(!output_is_ready(&output));
+    fs::write(&output, b"x").unwrap();
+    assert!(output_is_ready(&output));
   }
 
   #[test]

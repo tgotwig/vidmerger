@@ -29,8 +29,6 @@ pub fn change_fps(
   tmp_dir: &Path,
   fps_from_cli: f32,
 ) -> (Vec<PathBuf>, Vec<std::string::String>, std::string::String) {
-  let tmp_dir_for_fps_changer = create_dir_for_fps_changer(tmp_dir).unwrap();
-
   let mut new_files_to_merge = Vec::new();
   let mut map: HashMap<&PathBuf, f32> = HashMap::new();
 
@@ -96,6 +94,8 @@ pub fn change_fps(
       println!();
     }
 
+    // The folder is made only here, when at least one file really needs a new frame rate.
+    let tmp_dir_for_fps_changer = create_dir_for_fps_changer(tmp_dir).unwrap();
     println!(
       "🎞️  FPS changer files go to: {}",
       tmp_dir_for_fps_changer.to_string_lossy()
