@@ -40,6 +40,7 @@ pub fn crop_black_bars(
       let file_name = Path::new(file).file_name().unwrap().to_string_lossy();
       let output = dir.join(file_name.as_ref()).to_string_lossy().to_string();
       println!("✂️  Removing black bars from {file}, calling: crop={crop}");
+      println!("💾 Will create: {}", BrightBlue.paint(&output));
 
       let res = crop_with_cpu_fallback(file, &crop, &output, duration);
       if !res.status.success() {

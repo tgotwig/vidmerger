@@ -260,6 +260,10 @@ pub fn merge(
   }
   let mut file_path = tmp_dir.clone();
   file_path.push("chapters.txt");
+  println!(
+    "📖 Chapters file: {}",
+    BrightBlue.paint(file_path.to_string_lossy())
+  );
   let mut file = File::create(&file_path).expect("Failed to create file");
   file
     .write_all(metadata_string.as_bytes())
