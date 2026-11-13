@@ -1,8 +1,8 @@
 use crate::cli::Cli;
-use crate::helpers::io_helper::path_bufs_to_sorted_strings;
-use crate::helpers::io_helper::read_dir;
-use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
-use crate::helpers::vec_helper::filter_files;
+use crate::helper::io_helper::path_bufs_to_sorted_strings;
+use crate::helper::io_helper::read_dir;
+use crate::helper::str_helper::gen_input_file_content_for_ffmpeg;
+use crate::helper::vec_helper::filter_files;
 use clap::ArgMatches;
 use lazy_static::lazy_static;
 use std::path::{Path, PathBuf};

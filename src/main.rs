@@ -1,20 +1,20 @@
 #![deny(warnings)]
 mod cli;
-mod commanders;
-mod helpers;
-use crate::commanders::cropper::crop_black_bars;
-use crate::commanders::fps_changer::change_fps;
-use crate::commanders::selector::select;
-use crate::helpers::str_helper::create_order_of_merging;
+mod commander;
+mod helper;
+use crate::commander::cropper::crop_black_bars;
+use crate::commander::fps_changer::change_fps;
+use crate::commander::selector::select;
+use crate::helper::str_helper::create_order_of_merging;
 use clap::ArgMatches;
 use cli::Cli;
-use helpers::io_helper::create;
-use helpers::io_helper::create_tmp_dir;
-use helpers::io_helper::exit_when_ffmpeg_not_available;
-use helpers::io_helper::output_is_ready;
-use helpers::io_helper::remove_file;
-use helpers::io_helper::wait_for_enter_or_esc_key;
-use helpers::str_helper::split;
+use helper::io_helper::create;
+use helper::io_helper::create_tmp_dir;
+use helper::io_helper::exit_when_ffmpeg_not_available;
+use helper::io_helper::output_is_ready;
+use helper::io_helper::remove_file;
+use helper::io_helper::wait_for_enter_or_esc_key;
+use helper::str_helper::split;
 use lazy_static::lazy_static;
 use path_slash::PathExt;
 use std::fs;
@@ -102,7 +102,7 @@ fn main() -> Result<(), Error> {
 
       // `merge` takes the folder by value, so keep its path for the cleanup below.
       let run_folder = tmp_dir.clone();
-      commanders::merger::merge(
+      commander::merger::merge(
         ffmpeg_input_file.to_slash().unwrap().into_owned(),
         ffmpeg_output_file.to_slash().unwrap().to_string(),
         files_to_merge_as_strings,

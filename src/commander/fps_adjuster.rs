@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::commanders::_cmd::adjust_fps_by_ffmpeg;
+use crate::commander::_cmd::adjust_fps_by_ffmpeg;
 
 pub fn adjust_fps(file_to_merge: PathBuf, fps_goal: &f32, tmp_dir: &Path) -> PathBuf {
   let file_name = file_to_merge.file_name().unwrap().to_string_lossy();

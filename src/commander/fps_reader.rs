@@ -1,5 +1,5 @@
-use crate::commanders::_cmd;
-use crate::helpers::str_helper::extract_fps_from_ffmpeg_output;
+use crate::commander::_cmd;
+use crate::helper::str_helper::extract_fps_from_ffmpeg_output;
 use std::path::PathBuf;
 
 /// Returns the frame rate of a media file, read from FFmpeg's stream info.

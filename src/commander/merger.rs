@@ -1,6 +1,6 @@
-use crate::commanders::_cmd::{self, AudioProfile, MediaStream, VideoTarget};
-use crate::commanders::cropper;
-use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
+use crate::commander::_cmd::{self, AudioProfile, MediaStream, VideoTarget};
+use crate::commander::cropper;
+use crate::helper::str_helper::gen_input_file_content_for_ffmpeg;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -492,7 +492,7 @@ mod test_chapter_bounds_ms {
 #[cfg(test)]
 mod test_plan_merge {
   use super::{InputAction, MergePlan};
-  use crate::commanders::_cmd::{AudioProfile, MediaStream};
+  use crate::commander::_cmd::{AudioProfile, MediaStream};
 
   /// Plans for an MP4 output, the common case. The inputs have no known video size.
   fn plan_merge(probes: &[Vec<MediaStream>], force_convert: bool) -> MergePlan {
@@ -994,7 +994,7 @@ mod test_extract_title {
 #[cfg(test)]
 mod test_merge_integration {
   use super::{convert_inputs, run_plan, InputAction, MergePlan};
-  use crate::commanders::_cmd::{get_media_seconds, probe_streams, AudioProfile};
+  use crate::commander::_cmd::{get_media_seconds, probe_streams, AudioProfile};
   use std::fs;
   use std::path::{Path, PathBuf};
   use std::process::Command;
