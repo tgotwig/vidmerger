@@ -125,7 +125,7 @@ docker container run -it -v ./data/call_merger:/data tgotwig/vidmerger
 
 ## ⚙️ Developing
 
-The primary requirements are rust, ffmpeg, and go-task. The devcontainer provides all necessary components 🔧
+The primary requirements are rust, ffmpeg, and go-task 🔧
 
 If you see anything to improve, just create an [issue](https://github.com/tgotwig/vidmerger/issues) or directly open a [pull request](https://github.com/tgotwig/vidmerger/pulls) 🤗✨
 
