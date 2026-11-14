@@ -181,7 +181,7 @@ pub fn wait_for_enter_or_esc_key() {
           disable_raw_mode().unwrap();
           process::exit(0);
         }
-        KeyCode::Char('c') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+        KeyCode::Char('c' | 'C') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
           disable_raw_mode().unwrap();
           process::exit(130);
         }
