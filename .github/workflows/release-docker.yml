@@ -68,7 +68,7 @@ jobs:
             ${{ github.repository }}:latest
             ${{ github.repository }}:${{ inputs.tag }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=gha,scope=vidmerger
-          cache-to: type=gha,scope=vidmerger,mode=max
+          cache-from: type=registry,ref=${{ github.repository }}:buildcache
+          cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max,ignore-error=true
           provenance: false
           outputs: type=registry,create-index=true
