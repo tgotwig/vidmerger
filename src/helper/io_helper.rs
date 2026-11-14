@@ -1,7 +1,7 @@
 use crate::cli::Cli;
 use clap::ArgMatches;
 use crossterm::{
-  event::{read, Event, KeyCode},
+  event::{read, Event, KeyCode, KeyModifiers},
   terminal::{disable_raw_mode, enable_raw_mode},
 };
 use lazy_static::lazy_static;
@@ -166,7 +166,7 @@ pub fn path_bufs_to_sorted_strings(path_bufs: &[PathBuf]) -> Vec<String> {
     .collect()
 }
 
-/// Waits for the user to press ENTER (continue) or ESC (exit the program with status 0).
+/// Waits for ENTER to continue, ESC to exit with status 0, or Ctrl+C to exit with status 130.
 /// Panics if the terminal's raw mode or key reading fails.
 pub fn wait_for_enter_or_esc_key() {
   println!("❓ Press ENTER to continue or ESC to cancel...");
@@ -180,6 +180,10 @@ pub fn wait_for_enter_or_esc_key() {
         KeyCode::Esc => {
           disable_raw_mode().unwrap();
           process::exit(0);
+        }
+        KeyCode::Char('c' | 'C') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
+          disable_raw_mode().unwrap();
+          process::exit(130);
         }
         _ => {}
       }
