@@ -62,6 +62,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: docker/Dockerfile
           push: true
           tags: |
             ${{ github.repository }}:latest
