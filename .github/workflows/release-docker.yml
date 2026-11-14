@@ -22,6 +22,15 @@ jobs:
     outputs:
       exists: ${{ steps.check.outputs.exists }}
     steps:
+      - name: Validate release tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$TAG" = "buildcache" ]; then
+            echo "The buildcache tag is reserved for the Docker build cache" >&2
+            exit 1
+          fi
+
       - name: Check if this version is already on Docker Hub
         id: check
         env:
