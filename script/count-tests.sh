@@ -31,6 +31,26 @@ count() {
   grep -h "#\[test\]" "$@" | wc -l | tr -d ' '
 }
 
+registered_tests=$(
+  awk '
+    /^\[\[test\]\]$/ { in_test = 1; next }
+    /^\[\[/ { in_test = 0 }
+    in_test && /^[[:space:]]*path[[:space:]]*=/ {
+      sub(/^[^"]*"/, "")
+      sub(/".*$/, "")
+      print
+    }
+  ' Cargo.toml
+)
+
+for test_file in test/*.rs; do
+  [ -f "$test_file" ] || continue
+  if ! printf '%s\n' "$registered_tests" | grep -F -x -q "$test_file"; then
+    printf 'Unregistered Rust test file: %s (add a [[test]] path entry to Cargo.toml)\n' "$test_file" >&2
+    exit 1
+  fi
+done
+
 set -- $(count_src)
 unit=$1
 src_integration=$2
