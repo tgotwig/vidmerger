@@ -26,14 +26,14 @@ mod e2e_mp3 {
     check_for_merged_file(test_name, "output.mp3");
   }
 
-  /// Copies the two real `.mp3` samples from `tests/data/mp3`.
+  /// Copies the two real `.mp3` samples from `test/data/mp3`.
   fn prep_audio(test_name: &str) {
     // Start empty, so files from an earlier run cannot be merged again.
     let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     for name in [DATA_1_MP3, DATA_2_MP3] {
       fs::copy(
-        format!("tests/data/mp3/{}", name),
+        format!("test/data/mp3/{}", name),
         format!("data/{}/{}", test_name, name),
       )
       .unwrap();

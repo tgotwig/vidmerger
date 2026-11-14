@@ -3,8 +3,8 @@
 # Each test is a `#[test]` attribute:
 #   unit        -> #[test] in src/**/*.rs, except modules named test_*_integration
 #   integration -> #[test] in src/**/*.rs modules named test_*_integration,
-#                  and in tests/*.rs files that are not e2e files
-#   e2e         -> #[test] in tests/e2e*.rs
+#                  and in test/*.rs files that are not e2e files
+#   e2e         -> #[test] in test/e2e*.rs
 
 # Counts #[test] attributes in src/ files, split into unit and integration.
 # An integration module is one whose name ends in `_integration`.
@@ -31,12 +31,32 @@ count() {
   grep -h "#\[test\]" "$@" | wc -l | tr -d ' '
 }
 
+registered_tests=$(
+  awk '
+    /^\[\[test\]\]$/ { in_test = 1; next }
+    /^\[\[/ { in_test = 0 }
+    in_test && /^[[:space:]]*path[[:space:]]*=/ {
+      sub(/^[^"]*"/, "")
+      sub(/".*$/, "")
+      print
+    }
+  ' Cargo.toml
+)
+
+for test_file in test/*.rs; do
+  [ -f "$test_file" ] || continue
+  if ! printf '%s\n' "$registered_tests" | grep -F -x -q "$test_file"; then
+    printf 'Unregistered Rust test file: %s (add a [[test]] path entry to Cargo.toml)\n' "$test_file" >&2
+    exit 1
+  fi
+done
+
 set -- $(count_src)
 unit=$1
 src_integration=$2
-tests_integration=$(count $(find tests -maxdepth 1 -name '*.rs' ! -name 'e2e*'))
+tests_integration=$(count $(find test -maxdepth 1 -name '*.rs' ! -name 'e2e*'))
 integration=$((src_integration + tests_integration))
-e2e=$(count $(find tests -maxdepth 1 -name 'e2e*.rs'))
+e2e=$(count $(find test -maxdepth 1 -name 'e2e*.rs'))
 
 echo "🧪 Unit tests:        $unit"
 echo "🔗 Integration tests: $integration"

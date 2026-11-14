@@ -25,3 +25,19 @@ system_shutdown = "4.0.0"
 term-painter = "0.4.0"
 ureq = "3"
 which = "8.0.0"
+
+[[test]]
+name = "e2e"
+path = "test/e2e.rs"
+
+[[test]]
+name = "e2e-mov"
+path = "test/e2e-mov.rs"
+
+[[test]]
+name = "e2e-mp3"
+path = "test/e2e-mp3.rs"
+
+[[test]]
+name = "e2e-mp4"
+path = "test/e2e-mp4.rs"

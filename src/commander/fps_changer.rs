@@ -1,8 +1,8 @@
 use super::fps_reader::get_fps;
 use crate::{
   cli::Cli,
-  commanders,
-  helpers::{
+  commander,
+  helper::{
     io_helper::{create_dir_for_fps_changer, path_bufs_to_sorted_strings, verbose},
     str_helper::gen_input_file_content_for_ffmpeg,
   },
@@ -105,7 +105,7 @@ pub fn change_fps(
 
       if fps != fps_goal {
         let new_file_to_merge =
-          commanders::fps_adjuster::adjust_fps(file_to_merge, &fps_goal, &tmp_dir_for_fps_changer);
+          commander::fps_adjuster::adjust_fps(file_to_merge, &fps_goal, &tmp_dir_for_fps_changer);
         new_files_to_merge.push(new_file_to_merge);
       } else {
         new_files_to_merge.push(file_to_merge);

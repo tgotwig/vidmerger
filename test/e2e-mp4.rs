@@ -183,14 +183,14 @@ mod e2e_mp4 {
     check_for_merged_file(test_name, "output.mp4");
   }
 
-  /// Copies the two real `.mp4` samples from `tests/data/mp4`.
+  /// Copies the two real `.mp4` samples from `test/data/mp4`.
   fn prep(test_name: &str) {
     // Start empty, so files from an earlier run cannot be merged again.
     let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     for name in [DATA_1_MP4, DATA_2_MP4] {
       fs::copy(
-        format!("tests/data/mp4/{}", name),
+        format!("test/data/mp4/{}", name),
         format!("data/{}/{}", test_name, name),
       )
       .unwrap();
@@ -271,7 +271,7 @@ mod e2e_mp4 {
     let _ = fs::remove_dir_all(format!("data/{}", test_name));
     fs::create_dir_all(format!("data/{}", test_name)).unwrap();
     fs::copy(
-      format!("tests/data/mp4/{}", DATA_1_MP4),
+      format!("test/data/mp4/{}", DATA_1_MP4),
       format!("data/{}/{}", test_name, DATA_1_MP4),
     )
     .unwrap();

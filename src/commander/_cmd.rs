@@ -1,6 +1,6 @@
 use crate::cli::Cli;
-use crate::helpers::io_helper::verbose;
-use crate::helpers::progress_helper::ProgressBar;
+use crate::helper::io_helper::verbose;
+use crate::helper::progress_helper::ProgressBar;
 use clap::ArgMatches;
 use lazy_static::lazy_static;
 use path_slash::PathBufExt;
@@ -1046,7 +1046,7 @@ mod test_ffmpeg_integration {
       String::from_utf8_lossy(&result.stderr)
     );
 
-    let size = crate::commanders::cropper::frame_size(output.to_str().unwrap());
+    let size = crate::commander::cropper::frame_size(output.to_str().unwrap());
     assert_eq!(size, Some((160, 240)));
   }
 

@@ -1,9 +1,9 @@
-use crate::commanders::_cmd::{
+use crate::commander::_cmd::{
   describe, get_media_seconds, h264_encoder, hevc_encoder, is_hevc, keep_source_bit_rate,
   probe_streams, run_with_frame_progress, run_with_progress, video_frame_count, PROGRESS_ARGS,
 };
-use crate::helpers::io_helper::verbose;
-use crate::helpers::str_helper::gen_input_file_content_for_ffmpeg;
+use crate::helper::io_helper::verbose;
+use crate::helper::str_helper::gen_input_file_content_for_ffmpeg;
 use std::{fs, path::Path, process::Command};
 use term_painter::Color::BrightBlue;
 use term_painter::ToStyle;
