@@ -88,7 +88,7 @@ fn most_common_size(sizes: &[Option<(u32, u32)>]) -> Option<(u32, u32)> {
 fn mp4_can_hold_codec(codec: &str, attached_pic: bool) -> bool {
   match codec {
     "bmp" => attached_pic,
-    "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1" | "vp9" => true,
+    "png" | "mjpeg" | "h264" | "hevc" | "mpeg2video" | "mpeg4" | "av1" | "vp9" => true,
     _ => false,
   }
 }
@@ -847,6 +847,19 @@ mod test_plan_merge {
         },
       ]
     );
+  }
+
+  #[test]
+  fn keeps_matching_mpeg2_secondary_video_without_conversion() {
+    // MP4 holds MPEG-2 video (verified with ffmpeg copy). Matching MPEG-2 secondary streams in
+    // two inputs must be kept without forcing a conversion.
+    let probes = vec![
+      vec![video(), stream("video", "mpeg2video"), aac_stereo_48k()],
+      vec![video(), stream("video", "mpeg2video"), aac_stereo_48k()],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1]);
+    assert_eq!(plan.actions, vec![InputAction::Copy, InputAction::Copy]);
   }
 
   #[test]
