@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Extra video tracks and cover images are kept when inputs are re-encoded, if every input has the same video streams in the same order and MP4 can hold each one. Covers stay marked as cover images (#125).
 - Ctrl+C now exits the merge confirmation prompt.
 - A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
 - A cover image (e.g. PNG) is kept in the merged file when every input has one with the same codec. Otherwise covers are dropped, so the merge does not fail.
