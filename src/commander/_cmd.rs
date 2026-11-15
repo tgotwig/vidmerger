@@ -1150,6 +1150,67 @@ mod test_ffmpeg_integration {
     assert_eq!(video_codecs, vec!["h264", "png"]);
   }
 
+  #[test]
+  fn convert_for_merge_keeps_a_bmp_attached_cover_as_an_attached_picture() {
+    let dir = TempDir::new("bmp-cover");
+    let input = dir.path("with-bmp-cover.mp4");
+    let output = dir.path("converted.mp4");
+    // A 1-second video with a single-frame BMP cover, flagged as an attached picture.
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("testsrc=d=1:s=160x120:r=25")
+      .args(["-f", "lavfi", "-i", "color=c=red:s=64x64:d=1"])
+      .args([
+        "-map", "0:v", "-map", "1:v", "-c:v:0", "libx264", "-pix_fmt", "yuv420p",
+      ])
+      .args([
+        "-c:v:1",
+        "bmp",
+        "-disposition:v:1",
+        "attached_pic",
+        "-frames:v:1",
+        "1",
+      ])
+      .arg(&input)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create the BMP cover test clip");
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      0,
+      false,
+      1.0,
+      VideoTarget {
+        size: None,
+        keep_video_streams: vec![1],
+      },
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let cover = streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .nth(1)
+      .expect("the BMP cover was not kept");
+    assert_eq!(cover.codec, "bmp");
+    assert!(
+      cover.attached_pic,
+      "the BMP cover lost its attached_pic flag"
+    );
+  }
+
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
   fn make_clip_with_fps(path: &Path, fps: u32) {
     let status = Command::new("ffmpeg")

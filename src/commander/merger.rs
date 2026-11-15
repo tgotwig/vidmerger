@@ -82,13 +82,15 @@ fn most_common_size(sizes: &[Option<(u32, u32)>]) -> Option<(u32, u32)> {
   best.map(|(size, _)| size)
 }
 
-/// True when the MP4 format can hold a second video stream with this codec (e.g. a cover image).
-/// Converting keeps a cover only when this is true, because FFmpeg fails on other codecs.
-fn mp4_can_hold_codec(codec: &str) -> bool {
-  matches!(
-    codec,
-    "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1" | "vp9"
-  )
+/// True when the MP4 format can hold a secondary video stream with this codec and attached-picture
+/// status. Converting keeps a stream only when this is true, because FFmpeg fails on other codecs.
+/// BMP is accepted only as an attached cover: ordinary BMP video is not kept.
+fn mp4_can_hold_codec(codec: &str, attached_pic: bool) -> bool {
+  match codec {
+    "bmp" => attached_pic,
+    "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1" | "vp9" => true,
+    _ => false,
+  }
 }
 
 /// The secondary video streams of an input (every video stream after the first), in order, as
@@ -147,7 +149,7 @@ fn plan_merge(
   let kept: Vec<(usize, bool)> = shared_secondary
     .iter()
     .enumerate()
-    .filter(|(_, (codec, _))| mp4_can_hold_codec(codec))
+    .filter(|(_, (codec, attached))| mp4_can_hold_codec(codec, *attached))
     .map(|(position, (_, attached))| (position + 1, *attached))
     .collect();
   let keep_video_streams: Vec<usize> = kept.iter().map(|(index, _)| *index).collect();
@@ -845,6 +847,29 @@ mod test_plan_merge {
         },
       ]
     );
+  }
+
+  #[test]
+  fn keeps_matching_bmp_attached_covers() {
+    // BMP is kept when it is an attached cover, since MP4 holds BMP covers.
+    let probes = vec![
+      vec![video(), attached_cover("bmp"), aac_stereo_48k()],
+      vec![video(), attached_cover("bmp"), audio("pcm_alaw", 8_000, 1)],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1]);
+    assert_eq!(plan.attached_covers, vec![1]);
+  }
+
+  #[test]
+  fn drops_ordinary_bmp_video_even_when_both_inputs_have_it() {
+    // Ordinary BMP video is not an attached cover, so MP4 is not assumed to hold it.
+    let probes = vec![
+      vec![video(), stream("video", "bmp"), aac_stereo_48k()],
+      vec![video(), stream("video", "bmp"), audio("pcm_alaw", 8_000, 1)],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert!(plan.keep_video_streams.is_empty());
   }
 
   #[test]
