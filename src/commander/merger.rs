@@ -82,7 +82,10 @@ fn most_common_size(sizes: &[Option<(u32, u32)>]) -> Option<(u32, u32)> {
 /// True when the MP4 format can hold a second video stream with this codec (e.g. a cover image).
 /// Converting keeps a cover only when this is true, because FFmpeg fails on other codecs.
 fn mp4_can_hold_codec(codec: &str) -> bool {
-  matches!(codec, "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1")
+  matches!(
+    codec,
+    "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1" | "vp9"
+  )
 }
 
 /// Returns the codecs of the secondary video streams (every video stream after the first), in order.
@@ -733,6 +736,28 @@ mod test_plan_merge {
       .actions
       .iter()
       .all(|action| matches!(action, InputAction::Convert { .. })));
+  }
+
+  #[test]
+  fn keeps_shared_vp9_secondary_stream_alongside_h264() {
+    // Both inputs have a `vp9` secondary stream, which MP4 can hold. Audio differences force
+    // conversion, so both kept streams (indices 1 and 2) must be listed.
+    let probes = vec![
+      vec![
+        video(),
+        stream("video", "h264"),
+        stream("video", "vp9"),
+        aac_stereo_48k(),
+      ],
+      vec![
+        video(),
+        stream("video", "h264"),
+        stream("video", "vp9"),
+        audio("pcm_alaw", 8_000, 1),
+      ],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1, 2]);
   }
 
   #[test]
