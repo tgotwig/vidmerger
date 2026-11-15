@@ -33,9 +33,9 @@ struct MergePlan {
   /// only when every input has the same secondary video codecs in the same order, and the MP4
   /// format can hold each codec. Index 1 is the cover image.
   keep_video_streams: Vec<usize>,
-  /// `true` when the kept video stream at index 1 is an attached picture (cover). The final merge
-  /// must flag it again, because concatenation drops that flag.
-  attached_cover: bool,
+  /// Output video indices (from 1) of the kept streams that are attached pictures (covers). The
+  /// final merge must flag each again, because concatenation drops that flag.
+  attached_covers: Vec<usize>,
   /// How many audio tracks each input has, in input order.
   audio_tracks: Vec<usize>,
   /// How many audio tracks every converted input gets. Inputs with fewer get silent tracks.
@@ -144,11 +144,20 @@ fn plan_merge(
   };
   // Only the streams the MP4 format can hold are kept (e.g. a `gif` cover is not). The index is the
   // stream's position among the video streams, starting at 1 (0 is the picture).
-  let keep_video_streams: Vec<usize> = shared_secondary
+  let kept: Vec<(usize, bool)> = shared_secondary
     .iter()
     .enumerate()
     .filter(|(_, (codec, _))| mp4_can_hold_codec(codec))
-    .map(|(position, _)| position + 1)
+    .map(|(position, (_, attached))| (position + 1, *attached))
+    .collect();
+  let keep_video_streams: Vec<usize> = kept.iter().map(|(index, _)| *index).collect();
+  // The copied streams keep their order, so a kept stream's output index is its place in the
+  // kept list (starting at 1, since 0 is the picture). Record the output index of each cover.
+  let attached_covers: Vec<usize> = kept
+    .iter()
+    .enumerate()
+    .filter(|(_, (_, attached))| *attached)
+    .map(|(output_position, _)| output_position + 1)
     .collect();
   // Secondary video is dropped from every input unless the layouts match and all of it is kept.
   // A mismatch is never treated as keeping everything, even though the kept list is empty.
@@ -237,10 +246,7 @@ fn plan_merge(
     hevc,
     actions,
     video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
-    attached_cover: keep_video_streams.contains(&1)
-      && shared_secondary
-        .first()
-        .is_some_and(|(_, attached)| *attached),
+    attached_covers,
     keep_video_streams,
     audio_tracks,
     target_audio_tracks,
@@ -396,7 +402,7 @@ fn run_plan(
       hevc: false,
       video_size: plan.video_size.clone(),
       keep_video_streams: plan.keep_video_streams.clone(),
-      attached_cover: plan.attached_cover,
+      attached_covers: plan.attached_covers.clone(),
       audio_tracks: plan.audio_tracks.clone(),
       target_audio_tracks: plan.target_audio_tracks,
       actions: plan
@@ -423,7 +429,7 @@ fn run_plan(
     output,
     chapters,
     total_seconds,
-    plan.attached_cover,
+    &plan.attached_covers,
   )
 }
 
@@ -592,7 +598,7 @@ mod test_plan_merge {
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
         keep_video_streams: vec![],
-        attached_cover: false,
+        attached_covers: vec![],
         audio_tracks: vec![1, 1],
         target_audio_tracks: 1,
       }
@@ -700,7 +706,7 @@ mod test_plan_merge {
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
         keep_video_streams: vec![],
-        attached_cover: false,
+        attached_covers: vec![],
         audio_tracks: vec![0, 0],
         target_audio_tracks: 0,
       }
@@ -828,6 +834,40 @@ mod test_plan_merge {
     ];
     let plan = plan_merge(&probes, false);
     assert!(plan.keep_video_streams.is_empty());
+    assert_eq!(
+      plan.actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
+    );
+  }
+
+  #[test]
+  fn records_the_output_index_of_a_cover_after_an_ordinary_stream() {
+    // Both inputs have an ordinary H.264 stream at index 1 and an attached cover at index 2. The
+    // cover's output index is 2, so the merge must flag output video 2, not index 1.
+    let probes = vec![
+      vec![
+        video(),
+        stream("video", "h264"),
+        attached_cover("mjpeg"),
+        aac_stereo_48k(),
+      ],
+      vec![
+        video(),
+        stream("video", "h264"),
+        attached_cover("mjpeg"),
+        audio("pcm_alaw", 8_000, 1),
+      ],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1, 2]);
+    assert_eq!(plan.attached_covers, vec![2]);
   }
 
   #[test]
@@ -1192,7 +1232,7 @@ mod test_merge_integration {
       actions: vec![InputAction::Convert { silent_audio: true }],
       video_size: vec![None],
       keep_video_streams: vec![],
-      attached_cover: false,
+      attached_covers: vec![],
       audio_tracks: vec![0],
       target_audio_tracks: 1,
     };
@@ -1237,7 +1277,7 @@ mod test_merge_integration {
       ],
       video_size: vec![None, None],
       keep_video_streams: vec![],
-      attached_cover: false,
+      attached_covers: vec![],
       audio_tracks: vec![0, 0],
       target_audio_tracks: 1,
     };
@@ -1412,7 +1452,7 @@ mod test_merge_integration {
       ],
       video_size: vec![None, None],
       keep_video_streams: vec![],
-      attached_cover: false,
+      attached_covers: vec![],
       audio_tracks: vec![1, 2],
       target_audio_tracks: 2,
     };
