@@ -24,8 +24,16 @@ lazy_static! {
 pub const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
 
 /// Merges the files with stream copy and shows a 0–100% progress bar.
-/// `total_seconds` is the combined length of all input files.
-pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) -> Output {
+/// `total_seconds` is the combined length of all input files. Each output video index in
+/// `attached_covers` is flagged as an attached picture again, because the concat step drops that
+/// flag even though the cover itself is kept.
+pub fn merge(
+  input: String,
+  output: &str,
+  chapters: &str,
+  total_seconds: f64,
+  attached_covers: &[usize],
+) -> Output {
   let mut args: Vec<&str> = vec![
     "-y",
     "-f",
@@ -43,6 +51,13 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     "-c",
     "copy",
   ];
+  let cover_flags: Vec<String> = attached_covers
+    .iter()
+    .map(|index| format!("-disposition:v:{index}"))
+    .collect();
+  for flag in &cover_flags {
+    args.extend([flag.as_str(), "attached_pic"]);
+  }
   if !verbose() {
     args.extend(PROGRESS_ARGS);
   }
@@ -137,11 +152,11 @@ pub fn hevc_encoder() -> &'static str {
 }
 
 /// The video settings of one converted input: the `(width, height)` it is scaled to (if any),
-/// and whether its second video stream (a cover image) is kept.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// and which secondary video streams are copied (their index among the video streams, starting at 1).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VideoTarget {
   pub size: Option<(u32, u32)>,
-  pub keep_cover: bool,
+  pub keep_video_streams: Vec<usize>,
 }
 
 /// Converts one input to an MP4 file that is safe to merge.
@@ -178,7 +193,7 @@ pub fn convert_for_merge(
         silent_tracks,
         encoder,
         duration_seconds,
-        video,
+        video.clone(),
       )
     },
   )
@@ -344,8 +359,8 @@ fn run_convert(
   // The picture is video stream 0, which is re-encoded. A cover image (e.g. PNG) is video stream 1,
   // which is copied as it is. Video is mapped first, then the audio tracks.
   args.extend(["-map", "0:v:0?"].map(String::from));
-  if video.keep_cover {
-    args.extend(["-map", "0:v:1?"].map(String::from));
+  for index in &video.keep_video_streams {
+    args.extend(["-map".to_string(), format!("0:v:{index}?")]);
   }
   args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
@@ -367,8 +382,9 @@ fn run_convert(
   if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
     args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
   }
-  if video.keep_cover {
-    args.extend(["-c:v:1", "copy"].map(String::from));
+  // Output video streams: 0 is the re-encoded picture, so the kept streams are 1, 2, ...
+  for output_index in 1..=video.keep_video_streams.len() {
+    args.extend([format!("-c:v:{output_index}"), "copy".to_string()]);
   }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
@@ -545,12 +561,15 @@ pub fn adjust_fps_by_ffmpeg(
 }
 
 /// One stream reported by ffprobe. `sample_rate` and `channels` are only set for audio.
+/// `attached_pic` is true for a cover image stored as a video stream (ffprobe's `attached_pic`
+/// disposition), such as album art.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct MediaStream {
   pub kind: String,
   pub codec: String,
   pub sample_rate: Option<u32>,
   pub channels: Option<u32>,
+  pub attached_pic: bool,
 }
 
 /// Audio settings that all merged inputs share (sample rate in Hz, channel count).
@@ -568,7 +587,7 @@ pub fn probe_streams(media_path: &str) -> Result<Vec<MediaStream>, String> {
       "-v",
       "error",
       "-show_entries",
-      "stream=codec_type,codec_name,sample_rate,channels",
+      "stream=codec_type,codec_name,sample_rate,channels:stream_disposition=attached_pic",
       "-of",
       "flat",
       media_path,
@@ -589,9 +608,13 @@ fn parse_flat_streams(text: &str) -> Result<Vec<MediaStream>, String> {
     let Some((key, value)) = line.split_once('=') else {
       continue;
     };
+    // Keys look like `streams.stream.N.field`, or `streams.stream.N.disposition.flag` for the
+    // disposition flags. The flag is stored under its own name, e.g. `attached_pic`.
     let parts: Vec<&str> = key.split('.').collect();
-    let ["streams", "stream", index, field] = parts.as_slice() else {
-      continue;
+    let (index, field) = match parts.as_slice() {
+      ["streams", "stream", index, field] => (index, *field),
+      ["streams", "stream", index, "disposition", flag] => (index, *flag),
+      _ => continue,
     };
     let Ok(index) = index.parse::<usize>() else {
       continue;
@@ -624,11 +647,13 @@ fn stream_from_fields(fields: &BTreeMap<&str, &str>) -> Result<MediaStream, Stri
   } else {
     (None, None)
   };
+  let attached_pic = fields.get("attached_pic").copied() == Some("1");
   Ok(MediaStream {
     kind: kind.to_string(),
     codec: codec.to_string(),
     sample_rate,
     channels,
+    attached_pic,
   })
 }
 
@@ -717,15 +742,30 @@ mod test_parse_flat_streams {
           codec: "h264".into(),
           sample_rate: None,
           channels: None,
+          attached_pic: false,
         },
         MediaStream {
           kind: "audio".into(),
           codec: "aac".into(),
           sample_rate: Some(44100),
           channels: Some(1),
+          attached_pic: false,
         },
       ])
     );
+  }
+
+  #[test]
+  fn reads_the_attached_picture_disposition() {
+    let text = "streams.stream.0.codec_name=\"h264\"\n\
+                streams.stream.0.codec_type=\"video\"\n\
+                streams.stream.0.disposition.attached_pic=0\n\
+                streams.stream.1.codec_name=\"mjpeg\"\n\
+                streams.stream.1.codec_type=\"video\"\n\
+                streams.stream.1.disposition.attached_pic=1\n";
+    let streams = parse_flat_streams(text).unwrap();
+    assert!(!streams[0].attached_pic);
+    assert!(streams[1].attached_pic);
   }
 
   #[test]
@@ -1005,7 +1045,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
@@ -1037,7 +1077,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: Some((160, 240)),
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
@@ -1092,7 +1132,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: true,
+        keep_video_streams: vec![1],
       },
     );
     assert!(
@@ -1108,6 +1148,67 @@ mod test_ffmpeg_integration {
       .map(|s| s.codec.as_str())
       .collect();
     assert_eq!(video_codecs, vec!["h264", "png"]);
+  }
+
+  #[test]
+  fn convert_for_merge_keeps_a_bmp_attached_cover_as_an_attached_picture() {
+    let dir = TempDir::new("bmp-cover");
+    let input = dir.path("with-bmp-cover.mp4");
+    let output = dir.path("converted.mp4");
+    // A 1-second video with a single-frame BMP cover, flagged as an attached picture.
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y", "-f", "lavfi", "-i"])
+      .arg("testsrc=d=1:s=160x120:r=25")
+      .args(["-f", "lavfi", "-i", "color=c=red:s=64x64:d=1"])
+      .args([
+        "-map", "0:v", "-map", "1:v", "-c:v:0", "libx264", "-pix_fmt", "yuv420p",
+      ])
+      .args([
+        "-c:v:1",
+        "bmp",
+        "-disposition:v:1",
+        "attached_pic",
+        "-frames:v:1",
+        "1",
+      ])
+      .arg(&input)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create the BMP cover test clip");
+
+    let profile = AudioProfile {
+      sample_rate: 48_000,
+      channels: 2,
+    };
+    let result = convert_for_merge(
+      input.to_str().unwrap(),
+      output.to_str().unwrap(),
+      Some(profile),
+      0,
+      false,
+      1.0,
+      VideoTarget {
+        size: None,
+        keep_video_streams: vec![1],
+      },
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let cover = streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .nth(1)
+      .expect("the BMP cover was not kept");
+    assert_eq!(cover.codec, "bmp");
+    assert!(
+      cover.attached_pic,
+      "the BMP cover lost its attached_pic flag"
+    );
   }
 
   /// Creates a 1-second 160x120 video at `fps` frames per second, without audio.
@@ -1150,6 +1251,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       chapters.to_str().unwrap(),
       2.0,
+      &[],
     );
     assert!(
       result.status.success(),
@@ -1199,7 +1301,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
