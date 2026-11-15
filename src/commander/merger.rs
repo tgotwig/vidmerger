@@ -29,9 +29,10 @@ struct MergePlan {
   /// The `(width, height)` each input's video is scaled to when converted. `None` for inputs
   /// without video.
   video_size: Vec<Option<(u32, u32)>>,
-  /// `true` when converted inputs keep their cover image. Covers are kept only when every input
-  /// has one with the same codec, and the MP4 format can hold that codec.
-  keep_cover: bool,
+  /// Secondary video streams (index among video streams, from 1) kept in converted inputs. Kept
+  /// only when every input has the same secondary video codecs in the same order, and the MP4
+  /// format can hold each codec. Index 1 is the cover image.
+  keep_video_streams: Vec<usize>,
   /// How many audio tracks each input has, in input order.
   audio_tracks: Vec<usize>,
   /// How many audio tracks every converted input gets. Inputs with fewer get silent tracks.
@@ -84,13 +85,15 @@ fn mp4_can_hold_codec(codec: &str) -> bool {
   matches!(codec, "png" | "mjpeg" | "h264" | "hevc" | "mpeg4" | "av1")
 }
 
-/// Returns the codec of the second video stream (a cover image), or `None` if there is none.
-fn cover_codec(streams: &[MediaStream]) -> Option<String> {
+/// Returns the codecs of the secondary video streams (every video stream after the first), in order.
+/// The second one is usually a cover image.
+fn secondary_video_codecs(streams: &[MediaStream]) -> Vec<String> {
   streams
     .iter()
     .filter(|s| s.kind == "video")
-    .nth(1)
+    .skip(1)
     .map(|s| s.codec.clone())
+    .collect()
 }
 
 /// Decides how each input is merged. An input is copied only when its audio has the codec the
@@ -118,12 +121,22 @@ fn plan_merge(
     .max()
     .unwrap_or(0)
     .max(usize::from(profile.is_some()));
-  // A cover is kept only when every input has one, and they all share a codec.
-  let cover_codecs: Vec<Option<String>> = probes.iter().map(|s| cover_codec(s)).collect();
-  let keep_cover = match cover_codecs.first() {
-    Some(first) => first.is_some() && cover_codecs.iter().all(|codec| codec == first),
-    None => false,
-  };
+  // Secondary video streams are kept only when every input has the same ones, in the same order.
+  let secondary_codecs: Vec<Vec<String>> =
+    probes.iter().map(|s| secondary_video_codecs(s)).collect();
+  let shared_secondary = secondary_codecs
+    .first()
+    .filter(|first| !first.is_empty() && secondary_codecs.iter().all(|codecs| codecs == *first))
+    .cloned()
+    .unwrap_or_default();
+  // Only the codecs the MP4 format can hold are kept (e.g. a `gif` cover is not).
+  let keep_video_streams: Vec<usize> = shared_secondary
+    .iter()
+    .enumerate()
+    .filter(|(_, codec)| mp4_can_hold_codec(codec))
+    .map(|(position, _)| position + 1)
+    .collect();
+  let keeps_all_secondary = keep_video_streams.len() == shared_secondary.len();
   let codec = copyable_audio_codec(file_format);
   let matches_profile = |stream: &MediaStream| {
     stream.codec == codec
@@ -162,6 +175,7 @@ fn plan_merge(
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
       let layout_differs = reference_layout.as_ref() != Some(&stream_layout(streams));
+      let own_secondary = secondary_video_codecs(streams);
       // Frames of different sizes cannot be stream-copied together, so they are converted.
       let size_differs = target_size.is_some() && size.is_some() && *size != target_size;
       // Silent tracks fill the gap up to the target track count. Inputs with neither audio nor
@@ -169,13 +183,13 @@ fn plan_merge(
       let silent_audio =
         profile.is_some() && *own_audio_tracks < target_audio_tracks && (has_video || has_audio);
       (
-        // Covers that are dropped must not stay in an input that is copied.
+        // Secondary video that is dropped must not stay in an input that is copied.
         has_extra
           || !audio_fits
           || layout_differs
           || size_differs
           || silent_audio
-          || (cover_codec(streams).is_some() && !keep_cover),
+          || (!own_secondary.is_empty() && !keeps_all_secondary),
         silent_audio,
       )
     })
@@ -207,12 +221,7 @@ fn plan_merge(
     hevc,
     actions,
     video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
-    // Converted inputs keep their cover only when the MP4 format can hold its codec.
-    keep_cover: keep_cover
-      && cover_codecs
-        .first()
-        .and_then(|codec| codec.as_deref())
-        .is_some_and(mp4_can_hold_codec),
+    keep_video_streams,
     audio_tracks,
     target_audio_tracks,
   }
@@ -366,7 +375,7 @@ fn run_plan(
       profile: plan.profile,
       hevc: false,
       video_size: plan.video_size.clone(),
-      keep_cover: plan.keep_cover,
+      keep_video_streams: plan.keep_video_streams.clone(),
       audio_tracks: plan.audio_tracks.clone(),
       target_audio_tracks: plan.target_audio_tracks,
       actions: plan
@@ -428,7 +437,7 @@ fn convert_inputs(
           *duration,
           VideoTarget {
             size: plan.video_size[index],
-            keep_cover: plan.keep_cover,
+            keep_video_streams: plan.keep_video_streams.clone(),
           },
         );
         if !res.status.success() {
@@ -545,7 +554,7 @@ mod test_plan_merge {
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
-        keep_cover: false,
+        keep_video_streams: vec![],
         audio_tracks: vec![1, 1],
         target_audio_tracks: 1,
       }
@@ -652,7 +661,7 @@ mod test_plan_merge {
         hevc: false,
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
-        keep_cover: false,
+        keep_video_streams: vec![],
         audio_tracks: vec![0, 0],
         target_audio_tracks: 0,
       }
@@ -711,13 +720,41 @@ mod test_plan_merge {
   }
 
   #[test]
+  fn keeps_matching_secondary_video_streams_when_conversion_is_forced_by_audio() {
+    // The second input's PCM audio forces a conversion. Both inputs share a `hevc` secondary video
+    // stream, so it must be kept in the converted files instead of being dropped.
+    let probes = vec![
+      vec![video(), hevc_video(), aac_stereo_48k()],
+      vec![video(), hevc_video(), audio("pcm_alaw", 8_000, 1)],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1]);
+    assert!(plan
+      .actions
+      .iter()
+      .all(|action| matches!(action, InputAction::Convert { .. })));
+  }
+
+  #[test]
+  fn drops_secondary_video_streams_when_inputs_have_mismatched_layouts() {
+    // The first input has an extra secondary stream the second does not. Neither is kept, so
+    // the converted outputs have one layout.
+    let probes = vec![
+      vec![video(), hevc_video(), aac_stereo_48k()],
+      vec![video(), aac_stereo_48k()],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert!(plan.keep_video_streams.is_empty());
+  }
+
+  #[test]
   fn keeps_covers_when_every_input_has_the_same_cover_codec() {
     let probes = vec![
       vec![video(), stream("video", "png"), aac_stereo_48k()],
       vec![video(), stream("video", "png"), aac_stereo_48k()],
     ];
     let plan = plan_merge(&probes, false);
-    assert!(plan.keep_cover);
+    assert_eq!(plan.keep_video_streams, vec![1]);
     assert_eq!(plan.actions, vec![InputAction::Copy, InputAction::Copy]);
   }
 
@@ -728,7 +765,7 @@ mod test_plan_merge {
       vec![video(), aac_stereo_48k()],
     ];
     let plan = plan_merge(&probes, false);
-    assert!(!plan.keep_cover);
+    assert!(plan.keep_video_streams.is_empty());
     assert_eq!(
       plan.actions,
       vec![
@@ -751,7 +788,7 @@ mod test_plan_merge {
       vec![video(), stream("video", "gif"), audio("pcm_alaw", 8_000, 1)],
     ];
     let plan = plan_merge(&probes, false);
-    assert!(!plan.keep_cover);
+    assert!(plan.keep_video_streams.is_empty());
   }
 
   #[test]
@@ -1048,7 +1085,7 @@ mod test_merge_integration {
       hevc: false,
       actions: vec![InputAction::Convert { silent_audio: true }],
       video_size: vec![None],
-      keep_cover: false,
+      keep_video_streams: vec![],
       audio_tracks: vec![0],
       target_audio_tracks: 1,
     };
@@ -1092,7 +1129,7 @@ mod test_merge_integration {
         InputAction::Convert { silent_audio: true },
       ],
       video_size: vec![None, None],
-      keep_cover: false,
+      keep_video_streams: vec![],
       audio_tracks: vec![0, 0],
       target_audio_tracks: 1,
     };
@@ -1176,7 +1213,7 @@ mod test_merge_integration {
         },
       ],
       video_size: vec![None, None],
-      keep_cover: false,
+      keep_video_streams: vec![],
       audio_tracks: vec![1, 2],
       target_audio_tracks: 2,
     };

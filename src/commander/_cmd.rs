@@ -137,11 +137,11 @@ pub fn hevc_encoder() -> &'static str {
 }
 
 /// The video settings of one converted input: the `(width, height)` it is scaled to (if any),
-/// and whether its second video stream (a cover image) is kept.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// and which secondary video streams are copied (their index among the video streams, starting at 1).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VideoTarget {
   pub size: Option<(u32, u32)>,
-  pub keep_cover: bool,
+  pub keep_video_streams: Vec<usize>,
 }
 
 /// Converts one input to an MP4 file that is safe to merge.
@@ -178,7 +178,7 @@ pub fn convert_for_merge(
         silent_tracks,
         encoder,
         duration_seconds,
-        video,
+        video.clone(),
       )
     },
   )
@@ -344,8 +344,8 @@ fn run_convert(
   // The picture is video stream 0, which is re-encoded. A cover image (e.g. PNG) is video stream 1,
   // which is copied as it is. Video is mapped first, then the audio tracks.
   args.extend(["-map", "0:v:0?"].map(String::from));
-  if video.keep_cover {
-    args.extend(["-map", "0:v:1?"].map(String::from));
+  for index in &video.keep_video_streams {
+    args.extend(["-map".to_string(), format!("0:v:{index}?")]);
   }
   args.extend(audio_maps);
   // Scale to fit inside the target size, then pad with black bars to the exact size.
@@ -367,8 +367,9 @@ fn run_convert(
   if let Some(bit_rate) = keep_source_bit_rate(input, duration_seconds) {
     args.extend(["-b:v:0".to_string(), bit_rate.to_string()]);
   }
-  if video.keep_cover {
-    args.extend(["-c:v:1", "copy"].map(String::from));
+  // Output video streams: 0 is the re-encoded picture, so the kept streams are 1, 2, ...
+  for output_index in 1..=video.keep_video_streams.len() {
+    args.extend([format!("-c:v:{output_index}"), "copy".to_string()]);
   }
   args.extend(["-c:a", "aac"].map(String::from));
   if let Some(profile) = profile {
@@ -1005,7 +1006,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
@@ -1037,7 +1038,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: Some((160, 240)),
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
@@ -1092,7 +1093,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: true,
+        keep_video_streams: vec![1],
       },
     );
     assert!(
@@ -1199,7 +1200,7 @@ mod test_ffmpeg_integration {
       1.0,
       VideoTarget {
         size: None,
-        keep_cover: false,
+        keep_video_streams: vec![],
       },
     );
     assert!(
