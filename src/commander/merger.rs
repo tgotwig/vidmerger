@@ -33,6 +33,9 @@ struct MergePlan {
   /// only when every input has the same secondary video codecs in the same order, and the MP4
   /// format can hold each codec. Index 1 is the cover image.
   keep_video_streams: Vec<usize>,
+  /// `true` when the kept video stream at index 1 is an attached picture (cover). The final merge
+  /// must flag it again, because concatenation drops that flag.
+  attached_cover: bool,
   /// How many audio tracks each input has, in input order.
   audio_tracks: Vec<usize>,
   /// How many audio tracks every converted input gets. Inputs with fewer get silent tracks.
@@ -129,11 +132,16 @@ fn plan_merge(
   // the same order, with the same attached-picture status. Covers and extra video use this same
   // layout rule, so one check covers both.
   let secondary: Vec<Vec<(String, bool)>> = probes.iter().map(|s| secondary_video(s)).collect();
-  let shared_secondary = secondary
-    .first()
-    .filter(|first| !first.is_empty() && secondary.iter().all(|layout| layout == *first))
-    .cloned()
-    .unwrap_or_default();
+  // Inputs share a layout when every one matches the first. An empty layout (no secondary video)
+  // is shared too, but nothing needs keeping then.
+  let layouts_match = secondary
+    .iter()
+    .all(|layout| Some(layout) == secondary.first());
+  let shared_secondary = if layouts_match {
+    secondary.first().cloned().unwrap_or_default()
+  } else {
+    Vec::new()
+  };
   // Only the streams the MP4 format can hold are kept (e.g. a `gif` cover is not). The index is the
   // stream's position among the video streams, starting at 1 (0 is the picture).
   let keep_video_streams: Vec<usize> = shared_secondary
@@ -142,7 +150,9 @@ fn plan_merge(
     .filter(|(_, (codec, _))| mp4_can_hold_codec(codec))
     .map(|(position, _)| position + 1)
     .collect();
-  let keeps_all_secondary = keep_video_streams.len() == shared_secondary.len();
+  // Secondary video is dropped from every input unless the layouts match and all of it is kept.
+  // A mismatch is never treated as keeping everything, even though the kept list is empty.
+  let keeps_all_secondary = layouts_match && keep_video_streams.len() == shared_secondary.len();
   let codec = copyable_audio_codec(file_format);
   let matches_profile = |stream: &MediaStream| {
     stream.codec == codec
@@ -227,6 +237,10 @@ fn plan_merge(
     hevc,
     actions,
     video_size: sizes.iter().map(|size| size.and(target_size)).collect(),
+    attached_cover: keep_video_streams.contains(&1)
+      && shared_secondary
+        .first()
+        .is_some_and(|(_, attached)| *attached),
     keep_video_streams,
     audio_tracks,
     target_audio_tracks,
@@ -382,6 +396,7 @@ fn run_plan(
       hevc: false,
       video_size: plan.video_size.clone(),
       keep_video_streams: plan.keep_video_streams.clone(),
+      attached_cover: plan.attached_cover,
       audio_tracks: plan.audio_tracks.clone(),
       target_audio_tracks: plan.target_audio_tracks,
       actions: plan
@@ -403,7 +418,13 @@ fn run_plan(
   };
   fs::write(concat_list, gen_input_file_content_for_ffmpeg(&inputs))
     .expect("Failed to write the concat list");
-  _cmd::merge(concat_list.to_string(), output, chapters, total_seconds)
+  _cmd::merge(
+    concat_list.to_string(),
+    output,
+    chapters,
+    total_seconds,
+    plan.attached_cover,
+  )
 }
 
 /// True when the file's first video stream is HEVC. A file that cannot be probed is not HEVC.
@@ -571,6 +592,7 @@ mod test_plan_merge {
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
         keep_video_streams: vec![],
+        attached_cover: false,
         audio_tracks: vec![1, 1],
         target_audio_tracks: 1,
       }
@@ -678,6 +700,7 @@ mod test_plan_merge {
         actions: vec![InputAction::Copy, InputAction::Copy],
         video_size: vec![None, None],
         keep_video_streams: vec![],
+        attached_cover: false,
         audio_tracks: vec![0, 0],
         target_audio_tracks: 0,
       }
@@ -817,6 +840,17 @@ mod test_plan_merge {
     ];
     let plan = plan_merge(&probes, false);
     assert!(plan.keep_video_streams.is_empty());
+    assert_eq!(
+      plan.actions,
+      vec![
+        InputAction::Convert {
+          silent_audio: false
+        },
+        InputAction::Convert {
+          silent_audio: false
+        },
+      ]
+    );
   }
 
   #[test]
@@ -1158,6 +1192,7 @@ mod test_merge_integration {
       actions: vec![InputAction::Convert { silent_audio: true }],
       video_size: vec![None],
       keep_video_streams: vec![],
+      attached_cover: false,
       audio_tracks: vec![0],
       target_audio_tracks: 1,
     };
@@ -1202,6 +1237,7 @@ mod test_merge_integration {
       ],
       video_size: vec![None, None],
       keep_video_streams: vec![],
+      attached_cover: false,
       audio_tracks: vec![0, 0],
       target_audio_tracks: 1,
     };
@@ -1314,6 +1350,14 @@ mod test_merge_integration {
       .map(|s| s.codec.as_str())
       .collect();
     assert_eq!(video_codecs, vec!["h264", "mjpeg"]);
+    let cover = streams
+      .iter()
+      .find(|s| s.kind == "video" && s.codec == "mjpeg")
+      .expect("the merged output has no MJPEG stream");
+    assert!(
+      cover.attached_pic,
+      "the merged MJPEG stream lost its attached_pic disposition"
+    );
     let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
     assert!(
       (seconds - 2.0).abs() < 0.3,
@@ -1368,6 +1412,7 @@ mod test_merge_integration {
       ],
       video_size: vec![None, None],
       keep_video_streams: vec![],
+      attached_cover: false,
       audio_tracks: vec![1, 2],
       target_audio_tracks: 2,
     };

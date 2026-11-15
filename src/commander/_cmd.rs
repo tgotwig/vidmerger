@@ -24,8 +24,16 @@ lazy_static! {
 pub const PROGRESS_ARGS: [&str; 5] = ["-progress", "pipe:1", "-nostats", "-loglevel", "error"];
 
 /// Merges the files with stream copy and shows a 0–100% progress bar.
-/// `total_seconds` is the combined length of all input files.
-pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) -> Output {
+/// `total_seconds` is the combined length of all input files. If `attached_cover` is true, the
+/// second video stream (the cover, output video index 1) is flagged as an attached picture again.
+/// The concat step drops that flag even though the cover itself is kept.
+pub fn merge(
+  input: String,
+  output: &str,
+  chapters: &str,
+  total_seconds: f64,
+  attached_cover: bool,
+) -> Output {
   let mut args: Vec<&str> = vec![
     "-y",
     "-f",
@@ -43,6 +51,9 @@ pub fn merge(input: String, output: &str, chapters: &str, total_seconds: f64) ->
     "-c",
     "copy",
   ];
+  if attached_cover {
+    args.extend(["-disposition:v:1", "attached_pic"]);
+  }
   if !verbose() {
     args.extend(PROGRESS_ARGS);
   }
@@ -1175,6 +1186,7 @@ mod test_ffmpeg_integration {
       output.to_str().unwrap(),
       chapters.to_str().unwrap(),
       2.0,
+      false,
     );
     assert!(
       result.status.success(),
