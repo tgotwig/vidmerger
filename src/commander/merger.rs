@@ -88,14 +88,15 @@ fn mp4_can_hold_codec(codec: &str) -> bool {
   )
 }
 
-/// Returns the codecs of the secondary video streams (every video stream after the first), in order.
-/// The second one is usually a cover image.
-fn secondary_video_codecs(streams: &[MediaStream]) -> Vec<String> {
+/// The secondary video streams of an input (every video stream after the first), in order, as
+/// `(codec, attached_pic)`. An attached picture is a cover image (album art), which is ffprobe's
+/// `attached_pic` disposition. Other secondary video is ordinary extra video.
+fn secondary_video(streams: &[MediaStream]) -> Vec<(String, bool)> {
   streams
     .iter()
     .filter(|s| s.kind == "video")
     .skip(1)
-    .map(|s| s.codec.clone())
+    .map(|s| (s.codec.clone(), s.attached_pic))
     .collect()
 }
 
@@ -124,19 +125,21 @@ fn plan_merge(
     .max()
     .unwrap_or(0)
     .max(usize::from(profile.is_some()));
-  // Secondary video streams are kept only when every input has the same ones, in the same order.
-  let secondary_codecs: Vec<Vec<String>> =
-    probes.iter().map(|s| secondary_video_codecs(s)).collect();
-  let shared_secondary = secondary_codecs
+  // Secondary video (covers and extra video) is kept only when every input has the same ones, in
+  // the same order, with the same attached-picture status. Covers and extra video use this same
+  // layout rule, so one check covers both.
+  let secondary: Vec<Vec<(String, bool)>> = probes.iter().map(|s| secondary_video(s)).collect();
+  let shared_secondary = secondary
     .first()
-    .filter(|first| !first.is_empty() && secondary_codecs.iter().all(|codecs| codecs == *first))
+    .filter(|first| !first.is_empty() && secondary.iter().all(|layout| layout == *first))
     .cloned()
     .unwrap_or_default();
-  // Only the codecs the MP4 format can hold are kept (e.g. a `gif` cover is not).
+  // Only the streams the MP4 format can hold are kept (e.g. a `gif` cover is not). The index is the
+  // stream's position among the video streams, starting at 1 (0 is the picture).
   let keep_video_streams: Vec<usize> = shared_secondary
     .iter()
     .enumerate()
-    .filter(|(_, codec)| mp4_can_hold_codec(codec))
+    .filter(|(_, (codec, _))| mp4_can_hold_codec(codec))
     .map(|(position, _)| position + 1)
     .collect();
   let keeps_all_secondary = keep_video_streams.len() == shared_secondary.len();
@@ -178,7 +181,7 @@ fn plan_merge(
         .filter(|s| s.kind == "audio")
         .all(matches_profile);
       let layout_differs = reference_layout.as_ref() != Some(&stream_layout(streams));
-      let own_secondary = secondary_video_codecs(streams);
+      let own_secondary = secondary_video(streams);
       // Frames of different sizes cannot be stream-copied together, so they are converted.
       let size_differs = target_size.is_some() && size.is_some() && *size != target_size;
       // Silent tracks fill the gap up to the target track count. Inputs with neither audio nor
@@ -523,6 +526,15 @@ mod test_plan_merge {
       codec: codec.into(),
       sample_rate: None,
       channels: None,
+      attached_pic: false,
+    }
+  }
+
+  /// A cover image stored as a video stream (ffprobe's `attached_pic` disposition).
+  fn attached_cover(codec: &str) -> MediaStream {
+    MediaStream {
+      attached_pic: true,
+      ..stream("video", codec)
     }
   }
 
@@ -532,6 +544,7 @@ mod test_plan_merge {
       codec: codec.into(),
       sample_rate: Some(sample_rate),
       channels: Some(channels),
+      attached_pic: false,
     }
   }
 
@@ -761,6 +774,40 @@ mod test_plan_merge {
   }
 
   #[test]
+  fn keeps_attached_cover_and_ordinary_secondary_video_together() {
+    // An attached cover (index 1) and an ordinary extra video stream (index 2) are both kept
+    // when every input has the same two streams in the same order.
+    let probes = vec![
+      vec![
+        video(),
+        attached_cover("png"),
+        stream("video", "h264"),
+        aac_stereo_48k(),
+      ],
+      vec![
+        video(),
+        attached_cover("png"),
+        stream("video", "h264"),
+        audio("pcm_alaw", 8_000, 1),
+      ],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert_eq!(plan.keep_video_streams, vec![1, 2]);
+  }
+
+  #[test]
+  fn drops_cover_when_one_input_marks_the_same_codec_as_ordinary_video() {
+    // Same codec, but only the first input's second stream is an attached picture. The layouts
+    // differ, so neither is kept and both inputs are converted without it.
+    let probes = vec![
+      vec![video(), attached_cover("png"), aac_stereo_48k()],
+      vec![video(), stream("video", "png"), aac_stereo_48k()],
+    ];
+    let plan = plan_merge(&probes, false);
+    assert!(plan.keep_video_streams.is_empty());
+  }
+
+  #[test]
   fn drops_secondary_video_streams_when_inputs_have_mismatched_layouts() {
     // The first input has an extra secondary stream the second does not. Neither is kept, so
     // the converted outputs have one layout.
@@ -775,8 +822,8 @@ mod test_plan_merge {
   #[test]
   fn keeps_covers_when_every_input_has_the_same_cover_codec() {
     let probes = vec![
-      vec![video(), stream("video", "png"), aac_stereo_48k()],
-      vec![video(), stream("video", "png"), aac_stereo_48k()],
+      vec![video(), attached_cover("png"), aac_stereo_48k()],
+      vec![video(), attached_cover("png"), aac_stereo_48k()],
     ];
     let plan = plan_merge(&probes, false);
     assert_eq!(plan.keep_video_streams, vec![1]);
@@ -786,7 +833,7 @@ mod test_plan_merge {
   #[test]
   fn drops_covers_and_converts_when_only_one_input_has_a_cover() {
     let probes = vec![
-      vec![video(), stream("video", "png"), aac_stereo_48k()],
+      vec![video(), attached_cover("png"), aac_stereo_48k()],
       vec![video(), aac_stereo_48k()],
     ];
     let plan = plan_merge(&probes, false);
@@ -809,8 +856,8 @@ mod test_plan_merge {
     // The inputs share a `gif` cover, which MP4 cannot hold. The second input's PCM audio forces
     // a conversion, so the cover must not be copied into the converted files.
     let probes = vec![
-      vec![video(), stream("video", "gif"), aac_stereo_48k()],
-      vec![video(), stream("video", "gif"), audio("pcm_alaw", 8_000, 1)],
+      vec![video(), attached_cover("gif"), aac_stereo_48k()],
+      vec![video(), attached_cover("gif"), audio("pcm_alaw", 8_000, 1)],
     ];
     let plan = plan_merge(&probes, false);
     assert!(plan.keep_video_streams.is_empty());
@@ -1056,7 +1103,7 @@ mod test_extract_title {
 #[cfg(test)]
 mod test_merge_integration {
   use super::{convert_inputs, run_plan, InputAction, MergePlan};
-  use crate::commander::_cmd::{get_media_seconds, probe_streams, AudioProfile};
+  use crate::commander::_cmd::{get_media_seconds, probe_streams, AudioProfile, MediaStream};
   use std::fs;
   use std::path::{Path, PathBuf};
   use std::process::Command;
@@ -1185,6 +1232,88 @@ mod test_merge_integration {
       String::from_utf8_lossy(&result.stderr)
     );
 
+    let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
+    assert!(
+      (seconds - 2.0).abs() < 0.3,
+      "expected about 2s, got {seconds}"
+    );
+  }
+
+  /// Creates a 1-second video with an attached PNG cover as its second video stream, and an
+  /// audio stream at `sample_rate` Hz (mono AAC).
+  fn make_clip_with_cover(path: &Path, sample_rate: u32) {
+    let status = Command::new("ffmpeg")
+      .args(["-v", "error", "-y"])
+      .args(["-f", "lavfi", "-i", "testsrc=d=1:s=160x120:r=25"])
+      .args(["-f", "lavfi", "-i", "color=c=red:s=64x64:d=1"])
+      .args(["-f", "lavfi", "-i"])
+      .arg(format!("sine=f=440:d=1:sample_rate={sample_rate}"))
+      .args(["-map", "0:v", "-map", "1:v", "-map", "2:a"])
+      .args(["-c:v:0", "libx264", "-pix_fmt", "yuv420p"])
+      .args(["-c:v:1", "mjpeg", "-disposition:v:1", "attached_pic"])
+      .args(["-c:a", "aac", "-shortest"])
+      .arg(path)
+      .status()
+      .expect("ffmpeg must be installed");
+    assert!(status.success(), "failed to create the cover test clip");
+  }
+
+  #[test]
+  fn merge_keeps_an_attached_cover_when_audio_forces_conversion() {
+    // Both inputs have an attached cover. The second input's audio rate differs, which forces
+    // a conversion. The cover must survive the conversion and the concat must succeed.
+    let dir = TempDir::new("cover-merge");
+    let first = dir.0.join("1 - first.mp4");
+    let second = dir.0.join("2 - second.mp4");
+    make_clip_with_cover(&first, 48_000);
+    make_clip_with_cover(&second, 44_100);
+
+    let files = [
+      first.to_str().unwrap().to_string(),
+      second.to_str().unwrap().to_string(),
+    ];
+    let probes: Vec<Vec<MediaStream>> = files
+      .iter()
+      .map(|path| probe_streams(path).unwrap())
+      .collect();
+    let sizes = vec![None, None];
+    let cropped = vec![false, false];
+    let plan = super::plan_merge(&probes, &sizes, &cropped, "mp4", false);
+    assert_eq!(plan.keep_video_streams, vec![1]);
+    assert!(plan
+      .actions
+      .iter()
+      .all(|action| matches!(action, InputAction::Convert { .. })));
+
+    let concat_list = dir.0.join("list.txt");
+    let chapters = dir.0.join("chapters.txt");
+    fs::write(&chapters, ";FFMETADATA1\n").unwrap();
+    let output = dir.0.join("merged.mp4");
+    let inputs_with_durations: Vec<(String, f64)> =
+      files.iter().map(|file| (file.clone(), 1.0)).collect();
+    let result = run_plan(
+      &plan,
+      &inputs_with_durations,
+      &dir.0,
+      concat_list.to_str().unwrap(),
+      output.to_str().unwrap(),
+      chapters.to_str().unwrap(),
+      2.0,
+    );
+    assert!(
+      result.status.success(),
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+
+    // The merged output keeps the picture and the cover, and both clips are joined.
+    let streams = probe_streams(output.to_str().unwrap()).unwrap();
+    let video_codecs: Vec<&str> = streams
+      .iter()
+      .filter(|s| s.kind == "video")
+      .map(|s| s.codec.as_str())
+      .collect();
+    assert_eq!(video_codecs, vec!["h264", "mjpeg"]);
     let seconds = get_media_seconds(output.to_str().unwrap()).unwrap();
     assert!(
       (seconds - 2.0).abs() < 0.3,

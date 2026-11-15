@@ -546,12 +546,15 @@ pub fn adjust_fps_by_ffmpeg(
 }
 
 /// One stream reported by ffprobe. `sample_rate` and `channels` are only set for audio.
+/// `attached_pic` is true for a cover image stored as a video stream (ffprobe's `attached_pic`
+/// disposition), such as album art.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct MediaStream {
   pub kind: String,
   pub codec: String,
   pub sample_rate: Option<u32>,
   pub channels: Option<u32>,
+  pub attached_pic: bool,
 }
 
 /// Audio settings that all merged inputs share (sample rate in Hz, channel count).
@@ -569,7 +572,7 @@ pub fn probe_streams(media_path: &str) -> Result<Vec<MediaStream>, String> {
       "-v",
       "error",
       "-show_entries",
-      "stream=codec_type,codec_name,sample_rate,channels",
+      "stream=codec_type,codec_name,sample_rate,channels:stream_disposition=attached_pic",
       "-of",
       "flat",
       media_path,
@@ -590,9 +593,13 @@ fn parse_flat_streams(text: &str) -> Result<Vec<MediaStream>, String> {
     let Some((key, value)) = line.split_once('=') else {
       continue;
     };
+    // Keys look like `streams.stream.N.field`, or `streams.stream.N.disposition.flag` for the
+    // disposition flags. The flag is stored under its own name, e.g. `attached_pic`.
     let parts: Vec<&str> = key.split('.').collect();
-    let ["streams", "stream", index, field] = parts.as_slice() else {
-      continue;
+    let (index, field) = match parts.as_slice() {
+      ["streams", "stream", index, field] => (index, *field),
+      ["streams", "stream", index, "disposition", flag] => (index, *flag),
+      _ => continue,
     };
     let Ok(index) = index.parse::<usize>() else {
       continue;
@@ -625,11 +632,13 @@ fn stream_from_fields(fields: &BTreeMap<&str, &str>) -> Result<MediaStream, Stri
   } else {
     (None, None)
   };
+  let attached_pic = fields.get("attached_pic").copied() == Some("1");
   Ok(MediaStream {
     kind: kind.to_string(),
     codec: codec.to_string(),
     sample_rate,
     channels,
+    attached_pic,
   })
 }
 
@@ -718,15 +727,30 @@ mod test_parse_flat_streams {
           codec: "h264".into(),
           sample_rate: None,
           channels: None,
+          attached_pic: false,
         },
         MediaStream {
           kind: "audio".into(),
           codec: "aac".into(),
           sample_rate: Some(44100),
           channels: Some(1),
+          attached_pic: false,
         },
       ])
     );
+  }
+
+  #[test]
+  fn reads_the_attached_picture_disposition() {
+    let text = "streams.stream.0.codec_name=\"h264\"\n\
+                streams.stream.0.codec_type=\"video\"\n\
+                streams.stream.0.disposition.attached_pic=0\n\
+                streams.stream.1.codec_name=\"mjpeg\"\n\
+                streams.stream.1.codec_type=\"video\"\n\
+                streams.stream.1.disposition.attached_pic=1\n";
+    let streams = parse_flat_streams(text).unwrap();
+    assert!(!streams[0].attached_pic);
+    assert!(streams[1].attached_pic);
   }
 
   #[test]
