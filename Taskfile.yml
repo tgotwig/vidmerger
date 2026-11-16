@@ -13,6 +13,6 @@ tasks:
     - |
       docker build -f docker/Dockerfile -t vidmerger .
       docker container run -it --rm -v ./data/call_merger:/data vidmerger
-  test: cargo test
+  test: cargo test && task count-tests
   count-tests: ./script/count-tests.sh
   lint: cargo clippy
