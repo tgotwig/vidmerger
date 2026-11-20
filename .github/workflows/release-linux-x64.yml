@@ -164,12 +164,15 @@ jobs:
             exit 0
           fi
           [ "$rc" = 0 ] || exit 1
-          # Skip when the tag exists, so re-running an old release does not move latest back
+          # latest only follows the highest version, so old releases and hotfixes do not move it back
+          tags="-t $IMAGE:$TAG"
           rc=0
-          sh script/docker-image-exists.sh "$IMAGE:$TAG" || rc=$?
+          sh script/is-newest-version.sh "$TAG" || rc=$?
           if [ "$rc" = 0 ]; then
-            echo "$IMAGE:$TAG is already on Docker Hub, skipping tags"
-            exit 0
+            tags="$tags -t $IMAGE:latest"
+          elif [ "$rc" = 1 ]; then
+            echo "$TAG is not the newest version, keeping $IMAGE:latest"
+          else
+            exit 1
           fi
-          [ "$rc" = 1 ] || exit 1
-          docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:latest" "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
+          docker buildx imagetools create $tags "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
