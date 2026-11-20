@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   install-linux-arm-curl:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@v7
       - name: Install Vidmerger
