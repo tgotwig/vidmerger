@@ -34,6 +34,8 @@ jobs:
     uses: ./.github/workflows/release-linux-arm.yml
     with:
       tag: ${{ github.ref_name }}
+    secrets:
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
   release-linux-x64:
     name: 🐧 Release on Linux x64
     needs: prepare
@@ -42,6 +44,7 @@ jobs:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
 
   release-macos:
     name: 🍎 Release on MacOS
@@ -69,7 +72,7 @@ jobs:
 
   release-docker:
     name: 🐳 Release on Docker
-    needs: prepare
+    needs: [release-linux-x64, release-linux-arm]
     uses: ./.github/workflows/release-docker.yml
     with:
       tag: ${{ github.ref_name }}

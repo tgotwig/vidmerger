@@ -13,48 +13,11 @@ on:
 permissions:
   contents: read
 jobs:
-  docker:
-    name: 🐳 Build and push Docker image
+  manifest:
+    name: 🐳 Publish multi-arch Docker manifest
     runs-on: ubuntu-latest
-    outputs:
-      exists: ${{ steps.check.outputs.exists }}
     steps:
-      - name: Validate release tag
-        env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          if [ "$TAG" = "buildcache" ]; then
-            echo "The buildcache tag is reserved for the Docker build cache" >&2
-            exit 1
-          fi
-
-      - name: Check if this version is already on Docker Hub
-        id: check
-        env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/${{ github.repository }}/tags/$TAG")
-          if [ "$code" = "200" ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "$TAG is already on Docker Hub, skipping build and push"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Checkout repository
-        if: steps.check.outputs.exists != 'true'
-        uses: actions/checkout@v7
-
-      - name: Set up QEMU
-        if: steps.check.outputs.exists != 'true'
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        if: steps.check.outputs.exists != 'true'
-        uses: docker/setup-buildx-action@v4
-
       - name: Log in to Docker Hub
-        if: steps.check.outputs.exists != 'true'
         uses: docker/login-action@v4
         env:
           # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
@@ -63,18 +26,13 @@ jobs:
           username: tgotwig
           password: ${{ env.DOCKERHUB_SECRET }}
 
-      - name: Build and push Docker image
-        if: steps.check.outputs.exists != 'true'
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          tags: |
-            ${{ github.repository }}:latest
-            ${{ github.repository }}:${{ inputs.tag }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=${{ github.repository }}:buildcache
-          cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max,ignore-error=true
-          provenance: false
-          outputs: type=registry,create-index=true
+      - name: Create manifest from amd64 and arm64 images
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$REPO:latest" \
+            --tag "$REPO:$TAG" \
+            "$REPO:$TAG-amd64" \
+            "$REPO:$TAG-arm64"
