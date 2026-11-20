@@ -67,11 +67,16 @@ jobs:
           gh release download "$TAG" --pattern vidmerger-mac.tar.gz --dir "$dir" --clobber
           echo "sha=$(shasum -a 256 "$dir/vidmerger-mac.tar.gz" | awk '{printf $1}')" >> "$GITHUB_OUTPUT"
 
+  brew:
+    name: 🍺 Bump Brew
+    needs: build
+    runs-on: macos-latest
+    steps:
       - name: 🍺 Bump Brew
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.VIDMERGER_TAPS_SECRET }}
-          VERSION: ${{ steps.get_version.outputs.version }}
-          SHA: ${{ steps.shasum.outputs.sha }}
+          VERSION: ${{ needs.build.outputs.version }}
+          SHA: ${{ needs.build.outputs.sha }}
         run: |
           brew tap tgotwig/homebrew-vidmerger
           # Skip when master or this version's bump branch (open PR) already has this sha256
