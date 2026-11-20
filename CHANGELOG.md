@@ -13,8 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The run prints where temporary files go before they are created.
 - The "Removing black bars" step shows the same 0–100% progress bar as the merge.
 
+### Changed
+
+- The cropper crops when 50% of sampled frames agree, instead of all of them, so long films with bars are cropped too (#119, #126).
+- The cropper skips files whose quick check finds no bars, so clean files no longer wait for the full check (#120).
+
 ### Fixed
 
+- The cropper keeps the source bitrate on inputs of 60 seconds or longer, and HEVC stays HEVC on every OS (#119).
 - Extra video tracks and cover images are kept when inputs are re-encoded, if every input has the same ordered video layout and MP4 can hold each stream. Ordinary BMP video is not kept. Covers stay marked as cover images (#125).
 - Ctrl+C now exits the merge confirmation prompt.
 - A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
@@ -30,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 50% of sampled frames agree. Keeps the source bitrate on inputs of 60 seconds or longer, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
+- **Cropper** which removes black bars from the videos before the merge (#50). It runs after the FPS changer and only when at least one video has bars. It samples about 66 frames spread over each video, so a black opening does not hide the bars, and it crops only where the bars are found. Videos without bars are copied unchanged, and when any video is cropped, all videos are converted so they can be merged. Rotated videos are compared in their displayed orientation. Can be skipped by `--skip-cropper`.
 - GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
 
 ### Fixed
