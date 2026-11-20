@@ -1,6 +1,7 @@
 [package]
 authors = ["tgotwig <thomas@tgotwig.dev>"]
 edition = "2021"
+license = "MIT"
 name = "vidmerger"
 version = "0.4.3"
 
