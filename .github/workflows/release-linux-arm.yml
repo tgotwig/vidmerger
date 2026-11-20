@@ -50,17 +50,9 @@ jobs:
 
   docker:
     name: 🐳 Build and push Docker image for arm64
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Validate release tag
-        env:
-          TAG: ${{ inputs.tag }}
-        run: |
-          if [ "$TAG" = "buildcache" ]; then
-            echo "The buildcache tag is reserved for the Docker build cache" >&2
-            exit 1
-          fi
-
       - name: Check if this arch is already on Docker Hub
         id: check
         env:
@@ -78,8 +70,18 @@ jobs:
         if: steps.check.outputs.exists != 'true'
         uses: actions/checkout@v7
         with:
-          submodules: true
           persist-credentials: false
+
+      - name: Download Linux arm64 binary from release
+        if: steps.check.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asset" dist
+          gh release download "$TAG" --pattern vidmerger-linux-arm64.tar.gz --dir "$RUNNER_TEMP/asset" --clobber
+          tar -xzf "$RUNNER_TEMP/asset/vidmerger-linux-arm64.tar.gz" -C dist
 
       - name: Set up QEMU
         if: steps.check.outputs.exists != 'true'
@@ -103,11 +105,9 @@ jobs:
         if: steps.check.outputs.exists != 'true'
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: dist
           file: docker/Dockerfile
           push: true
           tags: ${{ github.repository }}:${{ inputs.tag }}-arm64
           platforms: linux/arm64
-          cache-from: type=registry,ref=${{ github.repository }}:buildcache-arm64
-          cache-to: type=registry,ref=${{ github.repository }}:buildcache-arm64,mode=max,ignore-error=true
           provenance: false
