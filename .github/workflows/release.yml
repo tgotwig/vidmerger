@@ -28,15 +28,12 @@ jobs:
           fi
           gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release_notes.md"
 
-  release-docker:
-    name: 🐳 Release on Docker
+  release-linux-arm:
+    name: 🐧 Release on Linux arm64
     needs: prepare
-    uses: ./.github/workflows/release-docker.yml
+    uses: ./.github/workflows/release-linux-arm.yml
     with:
       tag: ${{ github.ref_name }}
-    secrets:
-      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
-
   release-linux-x64:
     name: 🐧 Release on Linux x64
     needs: prepare
@@ -45,13 +42,6 @@ jobs:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
-
-  release-linux-arm:
-    name: 🐧 Release on Linux arm64
-    needs: prepare
-    uses: ./.github/workflows/release-linux-arm.yml
-    with:
-      tag: ${{ github.ref_name }}
 
   release-macos:
     name: 🍎 Release on MacOS
@@ -62,11 +52,26 @@ jobs:
     secrets:
       VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
 
-  release-windows:
-    name: 🏳️ Release on Windows and Chocolatey
+  release-windows-arm:
+    name: 🏳️ Release on Windows arm64
     needs: prepare
-    uses: ./.github/workflows/release-windows.yml
+    uses: ./.github/workflows/release-windows-arm.yml
+    with:
+      tag: ${{ github.ref_name }}
+  release-windows-x64:
+    name: 🏳️ Release on Windows x64 and Chocolatey
+    needs: prepare
+    uses: ./.github/workflows/release-windows-x64.yml
     with:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
+
+  release-docker:
+    name: 🐳 Release on Docker
+    needs: prepare
+    uses: ./.github/workflows/release-docker.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets:
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}

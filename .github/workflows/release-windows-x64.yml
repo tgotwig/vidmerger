@@ -1,4 +1,4 @@
-name: 🏳️ Release on Windows
+name: 🏳️ Release on Windows x64
 on:
   workflow_call:
     inputs:
@@ -14,7 +14,7 @@ permissions:
   contents: write
 jobs:
   build:
-    name: 🏳️ Build and upload Windows asset
+    name: 🏳️ Build and upload Windows x64 asset
     runs-on: windows-latest
     steps:
       - name: Checkout code
