@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The cropper keeps the source bitrate on inputs of 60 seconds or longer, and HEVC stays HEVC on every OS (#119).
+- The cropper keeps the source bitrate on inputs of 60 seconds or longer that report one, and HEVC stays HEVC on every OS (#119).
 - Extra video tracks and cover images are kept when inputs are re-encoded, if every input has the same ordered video layout and MP4 can hold each stream. Ordinary BMP video is not kept. Covers stay marked as cover images (#125).
 - Ctrl+C now exits the merge confirmation prompt.
 - A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
