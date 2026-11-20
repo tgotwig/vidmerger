@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 50% of sampled frames agree. Keeps the source bitrate, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
+- **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 50% of sampled frames agree. Keeps the source bitrate on inputs of 60 seconds or longer, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
 - GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
 
 ### Fixed
