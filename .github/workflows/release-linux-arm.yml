@@ -1,5 +1,4 @@
 name: 🐧 Release on Linux arm64
-
 on:
   workflow_call:
     inputs:
@@ -7,10 +6,8 @@ on:
         description: "Release tag, for example 0.4.2"
         required: true
         type: string
-
 permissions:
   contents: write
-
 jobs:
   build:
     name: 🐧 Build and upload Linux arm64 asset

@@ -1,5 +1,4 @@
 name: 🏳️ Release on Windows
-
 on:
   workflow_call:
     inputs:
@@ -11,10 +10,8 @@ on:
       VIDMERGER_CHOCO_SECRET:
         description: "Chocolatey API key for pushing the package"
         required: true
-
 permissions:
   contents: write
-
 jobs:
   build:
     name: 🏳️ Build and upload Windows asset

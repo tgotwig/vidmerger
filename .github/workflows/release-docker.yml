@@ -1,5 +1,4 @@
 name: 🐳 Release on Docker
-
 on:
   workflow_call:
     inputs:
@@ -11,10 +10,8 @@ on:
       VIDMERGER_DOCKERHUB_SECRET:
         description: "Docker Hub access token for pushing the image"
         required: true
-
 permissions:
   contents: read
-
 jobs:
   docker:
     name: 🐳 Build and push Docker image

@@ -1,5 +1,4 @@
 name: 🧪 Running e2e tests
-
 on:
   push:
     branches:
@@ -9,10 +8,8 @@ on:
   pull_request:
     paths-ignore:
       - '**.md'
-
 env:
   CARGO_TERM_COLOR: always
-
 jobs:
   Linter:
     runs-on: ubuntu-latest

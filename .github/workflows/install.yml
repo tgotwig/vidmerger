@@ -1,8 +1,6 @@
 name: 💿 Running installation tests
-
 on:
   workflow_dispatch:
-
 jobs:
   # --- ❗️ X64 ---
 

@@ -1,5 +1,4 @@
 name: 🍎 Release on MacOS
-
 on:
   workflow_call:
     inputs:
@@ -18,10 +17,8 @@ on:
       sha:
         description: "SHA-256 of the published macOS archive"
         value: ${{ jobs.build.outputs.sha }}
-
 permissions:
   contents: write
-
 jobs:
   build:
     name: 🍎 Build and upload macOS asset

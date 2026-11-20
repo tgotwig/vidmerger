@@ -1,5 +1,4 @@
 name: 🐧 Release on Linux x64
-
 on:
   workflow_call:
     inputs:
@@ -18,10 +17,8 @@ on:
       sha:
         description: "SHA-256 of the published Linux amd64 archive"
         value: ${{ jobs.build.outputs.sha }}
-
 permissions:
   contents: write
-
 jobs:
   build:
     name: 🐧 Build and upload Linux x64 asset
