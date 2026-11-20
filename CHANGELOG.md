@@ -11,12 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The temporary files are removed after the output file is created. Use `--skip-cleanup` to keep them.
 - The run prints where temporary files go before they are created.
-- **Cropper** removes black bars before the merge (#50). Skips files whose quick check finds no bars. When the full check runs, it crops if 50% of sampled frames agree. Keeps the source bitrate, and HEVC stays HEVC on every OS. Can be skipped by `--skip-cropper`.
 - The "Removing black bars" step shows the same 0–100% progress bar as the merge.
-- GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
+
+### Changed
+
+- The cropper crops when 50% of sampled frames agree, instead of all of them, so long films with bars are cropped too (#119, #126).
+- The cropper skips files whose quick check finds no bars, so clean files no longer wait for the full check (#120).
 
 ### Fixed
 
+- The cropper keeps the source bitrate on inputs of 60 seconds or longer that report one, and HEVC stays HEVC on every OS (#119).
 - Extra video tracks and cover images are kept when inputs are re-encoded, if every input has the same ordered video layout and MP4 can hold each stream. Ordinary BMP video is not kept. Covers stay marked as cover images (#125).
 - Ctrl+C now exits the merge confirmation prompt.
 - A cropped input is copied into the merge without a second re-encode, when its audio, layout, and size match the other inputs. Inputs that fail those checks are still re-encoded.
@@ -27,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On macOS, the black bar crop decodes with VideoToolbox, which cuts CPU load and heat. On a 4K film test, CPU time fell from about 349 s to 52 s.
 - Inputs whose video size differs from the most common size are scaled and padded to it before the merge, so cropped and uncropped files can be merged together.
 - Cropping no longer re-encodes the other inputs before the merge. Inputs are assumed to share one video codec (all H.264 or all HEVC).
+
+## 🎉 [0.4.2] - 2026-10-18
+
+### Added
+
+- **Cropper** which removes black bars from the videos before the merge (#50). It runs after the FPS changer and only when at least one video has bars. It samples about 66 frames spread over each video, so a black opening does not hide the bars, and it crops only where the bars are found. Videos without bars are copied unchanged, and when any video is cropped, all videos are converted so they can be merged. Rotated videos are compared in their displayed orientation. Can be skipped by `--skip-cropper`.
+- GPU video encoding for merging (#46). macOS uses VideoToolbox. On Linux and Windows, the first working GPU encoder (NVIDIA NVENC, Intel QSV, or AMD AMF) is used. If none works, the CPU encoder `libx264` is used.
+
+### Fixed
+
 - Each input is now checked before the merge starts. If every input fits the output, they are copied as they are. If any input does not fit, all inputs are converted so their codecs match. MP3 output keeps MP3 audio (#102).
 - Chapter start times no longer drift earlier with each episode (#48). Chapter times are now stored in milliseconds, and each boundary is calculated from the running total of clip durations instead of whole seconds per clip.
 - Merging `.mov` inputs with a `tmcd` timecode stream no longer fails (#53). The timecode track is dropped with `-write_tmcd 0`, and if the merge still fails, each input is converted to MP4 and the merge is retried (#100).
