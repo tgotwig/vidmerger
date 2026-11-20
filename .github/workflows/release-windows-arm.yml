@@ -1,0 +1,38 @@
+name: 🏳️ Release on Windows arm64
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag, for example 0.4.2"
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  build:
+    name: 🏳️ Build and upload Windows arm64 asset
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: 🧑‍🔧 Build Release arm64
+        run: |
+          rustup target add aarch64-pc-windows-msvc
+          cargo build --release --target aarch64-pc-windows-msvc
+          mkdir tools
+          mv target\aarch64-pc-windows-msvc\release\vidmerger.exe tools\vidmerger-arm64.exe
+
+      - name: 🚀 Upload arm64 Release Asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          asset=vidmerger-arm64.exe
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx "$asset"; then
+            echo "$asset already on release, reusing it"
+          else
+            gh release upload "$TAG" "tools/$asset"
+          fi
