@@ -59,6 +59,7 @@ Options:
       --shutdown          For doing a shutdown at the end (needs sudo)
       --skip-fps-changer  Skips the fps changer
       --skip-cropper      Skips the cropper that removes black bars
+      --skip-cleanup      Keeps the temporary files after the merge
   -y, --yes               Skips confirmation of merge order
       --verbose           Prints detailed logs
   -h, --help              Print help
