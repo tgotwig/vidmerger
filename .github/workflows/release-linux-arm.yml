@@ -83,10 +83,13 @@ jobs:
           IMAGE: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
         run: |
-          if docker buildx imagetools inspect "$IMAGE:$TAG-arm64" > /dev/null 2>&1; then
+          rc=0
+          sh script/docker-image-exists.sh "$IMAGE:$TAG-arm64" || rc=$?
+          if [ "$rc" = 0 ]; then
             echo "$IMAGE:$TAG-arm64 is already on Docker Hub, skipping build and push"
             exit 0
           fi
+          [ "$rc" = 1 ] || exit 1
           docker build -f docker/Dockerfile -t "$IMAGE:$TAG-arm64" "$RUNNER_TEMP/docker"
           docker push "$IMAGE:$TAG-arm64"
 
@@ -96,8 +99,11 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           # Both Linux workflows run this step, the one that pushes last sees both arch images
-          if ! docker buildx imagetools inspect "$IMAGE:$TAG-amd64" > /dev/null 2>&1; then
+          rc=0
+          sh script/docker-image-exists.sh "$IMAGE:$TAG-amd64" || rc=$?
+          if [ "$rc" = 1 ]; then
             echo "$IMAGE:$TAG-amd64 is not on Docker Hub yet, the other Linux workflow creates the tags"
             exit 0
           fi
+          [ "$rc" = 0 ] || exit 1
           docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:latest" "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
