@@ -3,18 +3,17 @@ on:
   workflow_dispatch:
 jobs:
   install-linux-arm-curl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v7
-      - uses: pguyot/arm-runner-action@v2
-        with:
-          base_image: raspios_lite_arm64:latest
-          bind_mount_repository: true
-          commands: |
-            sudo curl -fL https://github.com/tgotwig/vidmerger/releases/latest/download/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
-            vidmerger --version
-            # 🔎 Check if version from Cargo.toml matches with binary
-            version_cargo=$(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') && version_vidmerger=$(vidmerger -V | awk '{print $2}') && [ "$version_cargo" = "$version_vidmerger" ] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
+      - name: Install Vidmerger
+        run: |
+          sudo curl -L https://github.com/TGotwig/vidmerger/releases/latest/download/vidmerger-linux-arm64.tar.gz -o /tmp/vidmerger-linux-arm64.tar.gz && sudo tar -xzvf /tmp/vidmerger-linux-arm64.tar.gz -C /usr/local/bin
+      - name: Verify installation
+        run: |
+          vidmerger --version
+          # 🔎 Check if version from Cargo.toml matches with binary
+          [[ $(grep -o '^version = ".*"' Cargo.toml | awk -F'"' '{print $2}') == $(vidmerger -V | awk '{print $2}') ]] && echo "Versions match" || { echo "Versions do not match"; exit 1; }
   install-linux-x64-curl:
     runs-on: ubuntu-latest
     steps:
