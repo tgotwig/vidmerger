@@ -71,10 +71,26 @@ jobs:
       VIDMERGER_CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
 
   release-docker:
-    name: 🐳 Release on Docker
+    name: 🐳 Publish multi-arch Docker manifest
     needs: [release-linux-x64, release-linux-arm]
-    uses: ./.github/workflows/release-docker.yml
-    with:
-      tag: ${{ github.ref_name }}
-    secrets:
-      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        env:
+          # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
+          DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
+        with:
+          username: tgotwig
+          password: ${{ env.DOCKERHUB_SECRET }}
+
+      - name: Create manifest from amd64 and arm64 images
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$REPO:latest" \
+            --tag "$REPO:$TAG" \
+            "$REPO:$TAG-amd64" \
+            "$REPO:$TAG-arm64"
