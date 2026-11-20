@@ -146,7 +146,6 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        if: steps.check.outputs.exists != 'true'
         uses: docker/login-action@v4
         env:
           # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
@@ -165,3 +164,25 @@ jobs:
           tags: ${{ github.repository }}:${{ inputs.tag }}-amd64
           platforms: linux/amd64
           provenance: false
+
+      - name: Create multi-arch manifest once both arch images exist
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # Both linux jobs run this; whichever finishes last creates the manifest
+          for i in $(seq 1 60); do
+            a=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/$REPO/tags/$TAG-amd64")
+            b=$(curl -s -o /dev/null -w "%{http_code}" "https://hub.docker.com/v2/repositories/$REPO/tags/$TAG-arm64")
+            if [ "$a" = "200" ] && [ "$b" = "200" ]; then
+              docker buildx imagetools create \
+                --tag "$REPO:latest" \
+                --tag "$REPO:$TAG" \
+                "$REPO:$TAG-amd64" \
+                "$REPO:$TAG-arm64"
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "Timed out waiting for both arch images" >&2
+          exit 1
