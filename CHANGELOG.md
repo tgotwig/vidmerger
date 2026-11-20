@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 🎉 [0.4.3] - 2026-11-20
+
 ### Added
 
 - The temporary files are removed after the output file is created. Use `--skip-cleanup` to keep them.

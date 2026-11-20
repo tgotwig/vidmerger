@@ -16,14 +16,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # Release notes are the lines between "## [Unreleased]" and the next "## " heading in CHANGELOG.md
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             echo "Release $GITHUB_REF_NAME already exists, skipping creation"
             exit 0
           fi
-          sed -n '/^## \[Unreleased\]/,/^## /{/^## /!p;}' CHANGELOG.md > "$RUNNER_TEMP/release_notes.md"
+          # Release notes are the lines between "## ... [<tag>]" and the next "## " heading in CHANGELOG.md,
+          # or between "## [Unreleased]" and the next "## " heading when the tag has no section yet
+          tag_re=$(printf '%s' "$GITHUB_REF_NAME" | sed 's/[.]/\\./g')
+          sed -n "/^## .*\[$tag_re\]/,/^## /{/^## /!p;}" CHANGELOG.md > "$RUNNER_TEMP/release_notes.md"
           if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release_notes.md"; then
-            echo "No release notes found under [Unreleased] in CHANGELOG.md" >&2
+            sed -n '/^## \[Unreleased\]/,/^## /{/^## /!p;}' CHANGELOG.md > "$RUNNER_TEMP/release_notes.md"
+          fi
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release_notes.md"; then
+            echo "No release notes found under [$GITHUB_REF_NAME] or [Unreleased] in CHANGELOG.md" >&2
             exit 1
           fi
           gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release_notes.md"

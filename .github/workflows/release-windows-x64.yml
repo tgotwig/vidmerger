@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: "Release tag, for example 0.4.2"
+        description: "Release tag in the format x.y.z"
         required: true
         type: string
     secrets:
