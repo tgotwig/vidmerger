@@ -29,19 +29,22 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release_notes.md"
 
   release-linux-arm:
-    name: 🐧 Release on Linux arm64
+    name: 🐧 Release on Linux arm64 and Docker Hub
     needs: prepare
     uses: ./.github/workflows/release-linux-arm.yml
     with:
       tag: ${{ github.ref_name }}
+    secrets:
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
   release-linux-x64:
-    name: 🐧 Release on Linux x64
+    name: 🐧 Release on Linux x64 and Docker Hub
     needs: prepare
     uses: ./.github/workflows/release-linux-x64.yml
     with:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_TAPS_SECRET: ${{ secrets.VIDMERGER_TAPS_SECRET }}
+      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
 
   release-macos:
     name: 🍎 Release on MacOS
@@ -66,12 +69,3 @@ jobs:
       tag: ${{ github.ref_name }}
     secrets:
       VIDMERGER_CHOCO_SECRET: ${{ secrets.VIDMERGER_CHOCO_SECRET }}
-
-  release-docker:
-    name: 🐳 Release on Docker
-    needs: prepare
-    uses: ./.github/workflows/release-docker.yml
-    with:
-      tag: ${{ github.ref_name }}
-    secrets:
-      VIDMERGER_DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}

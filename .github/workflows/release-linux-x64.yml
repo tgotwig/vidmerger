@@ -10,6 +10,9 @@ on:
       VIDMERGER_TAPS_SECRET:
         description: "Token that can push to the Homebrew tap"
         required: true
+      VIDMERGER_DOCKERHUB_SECRET:
+        description: "Docker Hub access token for pushing the image"
+        required: true
     outputs:
       version:
         description: "Version from the tag"
@@ -102,3 +105,74 @@ jobs:
           --sha256="$SHA" \
           --url="https://github.com/tgotwig/vidmerger/releases/download/$VERSION/vidmerger-linux.tar.gz" \
           tgotwig/homebrew-linux-vidmerger/vidmerger
+
+  docker:
+    name: 🐳 Publish on Docker Hub
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: ⬇️ Download Linux x64 asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          dir="$RUNNER_TEMP/docker"
+          mkdir -p "$dir"
+          gh release download "$TAG" --pattern vidmerger-linux.tar.gz --dir "$dir" --clobber
+          tar -C "$dir" -xzf "$dir/vidmerger-linux.tar.gz"
+          rm "$dir/vidmerger-linux.tar.gz"
+
+      - name: 🔑 Log in to Docker Hub
+        uses: docker/login-action@v4
+        env:
+          # https://app.docker.com/accounts/tgotwig/settings/personal-access-tokens
+          DOCKERHUB_SECRET: ${{ secrets.VIDMERGER_DOCKERHUB_SECRET }}
+        with:
+          username: tgotwig
+          password: ${{ env.DOCKERHUB_SECRET }}
+
+      - name: 🐳 Build and push amd64 image
+        env:
+          IMAGE: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          rc=0
+          sh script/docker-image-exists.sh "$IMAGE:$TAG-amd64" || rc=$?
+          if [ "$rc" = 0 ]; then
+            echo "$IMAGE:$TAG-amd64 is already on Docker Hub, skipping build and push"
+            exit 0
+          fi
+          [ "$rc" = 1 ] || exit 1
+          docker build -f docker/Dockerfile -t "$IMAGE:$TAG-amd64" "$RUNNER_TEMP/docker"
+          docker push "$IMAGE:$TAG-amd64"
+
+      - name: 🏷️ Create multi-arch tags
+        env:
+          IMAGE: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # Both Linux workflows run this step, the one that pushes last sees both arch images
+          rc=0
+          sh script/docker-image-exists.sh "$IMAGE:$TAG-arm64" || rc=$?
+          if [ "$rc" = 1 ]; then
+            echo "$IMAGE:$TAG-arm64 is not on Docker Hub yet, the other Linux workflow creates the tags"
+            exit 0
+          fi
+          [ "$rc" = 0 ] || exit 1
+          # latest only follows the highest version, so old releases and hotfixes do not move it back
+          tags="-t $IMAGE:$TAG"
+          rc=0
+          sh script/is-newest-version.sh "$TAG" || rc=$?
+          if [ "$rc" = 0 ]; then
+            tags="$tags -t $IMAGE:latest"
+          elif [ "$rc" = 1 ]; then
+            echo "$TAG is not the newest version, keeping $IMAGE:latest"
+          else
+            exit 1
+          fi
+          docker buildx imagetools create $tags "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
